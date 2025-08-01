@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import _cloneDeep from 'lodash/cloneDeep';
 import { bindActionCreators } from 'redux';
 // import { requestExchange } from './action';
+import _get from 'lodash/get';
 
 import CreateAsset, { default_coin_data } from '../CreateAsset';
 import FinalPreview from '../CreateAsset/Final';
@@ -17,40 +18,14 @@ import {
 	getExchange,
 	updateAssetCoins,
 	updateExchange,
+	uploadCoinLogo,
 } from './action';
 import { setCoins, setExchange } from 'actions/assetActions';
 import { requestTotalBalance } from '../Wallets/actions';
+import { CheckOutlined } from '@ant-design/icons';
+import { STATIC_ICONS } from 'config/icons';
 
 const { Item } = Breadcrumb;
-
-const ASSET_TYPE_LIST = [
-	{ key: 'Bitcoin', value: 'btc' },
-	{ key: 'Bitcoin Cash', value: 'bch' },
-	{ key: 'Ripple', value: 'xrp' },
-	{ key: 'Ethereum', value: 'eth' },
-	{ key: 'HollaEx', value: 'hex' },
-	{ key: 'HollaEx', value: 'xht' },
-	{ key: 'Bitcoin Satoshi Vision', value: 'bsv' },
-	{ key: 'USD Tether', value: 'usdt' },
-	{ key: 'BNB', value: 'bnb' },
-	{ key: 'UNUS SED LEO', value: 'leo' },
-	{ key: 'Maker', value: 'mkr' },
-	{ key: 'USD Coin', value: 'usdc' },
-	{ key: 'BAT', value: 'bat' },
-	{ key: 'Monero', value: 'xmr' },
-	{ key: 'EOS', value: 'eos' },
-	{ key: 'Litecoin', value: 'ltc' },
-	{ key: 'Stellar', value: 'xlm' },
-	{ key: 'Cardano', value: 'ada' },
-	{ key: 'Tron', value: 'trx' },
-	{ key: 'NEO', value: 'neo' },
-	{ key: 'NEM', value: 'nem' },
-	{ key: 'Ethereum Classic', value: 'etc' },
-	{ key: 'Dash', value: 'dash' },
-	{ key: 'IOTA', value: 'miota' },
-	{ key: 'ZRX', value: 'zrx' },
-	{ key: 'Gold Tether', value: 'xaut' },
-];
 
 const filterOptions = [
 	{
@@ -76,99 +51,144 @@ export const getTabParams = () => {
 
 const getColumns = (
 	allCoins = [],
-	user = {},
+	constants = {},
 	balance = {},
 	handleEdit,
-	handlePreview
+	handlePreview,
+	exchange
 ) => [
-		{
-			title: 'Assets',
-			key: 'symbol',
-			render: (data) => {
-				const selectedAsset =
-					_cloneDeep(allCoins.filter((list) => list.symbol === data.symbol)[0]) || {};
-				if (!data.id && selectedAsset.id) {
-					delete selectedAsset.id;
-				}
-				if (!selectedAsset.symbol) {
-					selectedAsset.symbol = data.symbol;
-				}
-				return (
-					<div
-						className="coin-symbol-wrapper"
-						onClick={() => handlePreview(selectedAsset)}
-					>
-						<div className="currency_ball">
-							<Coins
-								type={data.symbol.toLowerCase()}
-								small={true}
-								color={selectedAsset.meta ? selectedAsset.meta.color : ''}
-								fullname={selectedAsset.fullname}
-								onClick={() => handlePreview(selectedAsset)}
-							/>
-							<div className="fullName">{selectedAsset.fullname}</div>
-						</div>
-						{data.id && data.verified ? (
-							<IconToolTip type="success" tip="" animation={false} />
-						) : data.id && !data.verified ? (
+	{
+		title: 'Assets',
+		key: 'symbol',
+		render: (data) => {
+			const selectedAsset =
+				_cloneDeep(allCoins.filter((list) => list.symbol === data.symbol)[0]) ||
+				{};
+			if (!data.id && selectedAsset.id) {
+				delete selectedAsset.id;
+			}
+			if (!selectedAsset.symbol) {
+				selectedAsset.symbol = data.symbol;
+			}
+			return (
+				<div
+					className="coin-symbol-wrapper"
+					onClick={() => handlePreview(selectedAsset)}
+				>
+					<div className="currency_ball">
+						<Coins
+							type={data.symbol.toLowerCase()}
+							small={true}
+							color={selectedAsset.meta ? selectedAsset.meta.color : ''}
+							fullname={selectedAsset.fullname}
+							onClick={() => handlePreview(selectedAsset)}
+						/>
+						<div className="fullName">{selectedAsset.fullname}</div>
+					</div>
+					{data.id && data.verified ? (
+						<IconToolTip type="success" tip="" animation={false} />
+					) : data.id && !data.verified ? (
+						<IconToolTip
+							type="warning"
+							tip="This asset is in pending verification"
+							onClick={(e) => {
+								if (
+									selectedAsset.created_by === _get(constants, 'info.user_id')
+								) {
+									handleEdit(selectedAsset, e);
+								}
+							}}
+						/>
+					) : selectedAsset.created_by === _get(constants, 'info.user_id') ? (
+						<div className="config-content">
+							(
+							<span
+								className="link"
+								onClick={(e) => handleEdit(selectedAsset, e)}
+							>
+								Configure
+							</span>
+							)
 							<IconToolTip
-								type="warning"
-								tip="This asset is in pending verification"
-								onClick={(e) => {
-									if (selectedAsset.created_by === user.id) {
-										handleEdit(selectedAsset, e);
-									}
-								}}
+								type="settings"
+								tip="Click to complete the asset configuration"
+								onClick={(e) => handleEdit(selectedAsset, e)}
 							/>
-						) : selectedAsset.created_by === user.id ? (
-							<div className="config-content">
-								(
-								<span
-									className="link"
-									onClick={(e) => handleEdit(selectedAsset, e)}
-								>
-									Configure
-								</span>
-								)
-								<IconToolTip
-									type="settings"
-									tip="Click to complete the asset configuration"
-									onClick={(e) => handleEdit(selectedAsset, e)}
-								/>
-							</div>
-						) : null}
-					</div>
-				);
-			},
+						</div>
+					) : null}
+				</div>
+			);
 		},
-		{
-			title: 'Status',
-			dataIndex: 'verified',
-			key: 'verified',
-			className: 'balance-column',
-			render: (verified) => {
-				return verified ? <div>verified</div> : <div>pending</div>;
-			},
+	},
+	{
+		title: 'Status',
+		dataIndex: 'verified',
+		key: 'verified',
+		className: 'balance-column',
+		render: (verified, data) => {
+			const basicCoins = ['btc', 'xht', 'eth', 'usdt'];
+			if (
+				verified &&
+				(exchange.plan === 'basic' ||
+					exchange.plan === 'crypto' ||
+					exchange.plan === 'fiat' ||
+					exchange.plan === 'boost')
+			) {
+				if (
+					(exchange.plan === 'basic' && basicCoins.includes(data.symbol)) ||
+					((exchange.plan === 'crypto' ||
+						exchange.plan === 'fiat' ||
+						exchange.plan === 'boost') &&
+						data &&
+						(data.type === 'blockchain' || data.type === 'fiat'))
+				) {
+					return (
+						<div>
+							<CheckOutlined className="status-verified" />
+							verified
+						</div>
+					);
+				} else if (
+					exchange.plan === 'basic' &&
+					data &&
+					data.type === 'blockchain'
+				) {
+					return (
+						<div>
+							{' '}
+							<img
+								alt="crypto-pro"
+								className="plan-img"
+								src={STATIC_ICONS['CLOUD_PLAN_CRYPTO_PRO']}
+							></img>
+							Crypto Pro required{' '}
+							<Link to="/admin/billing" className="text-link">
+								(Upgrade)
+							</Link>
+						</div>
+					);
+				} else {
+					return (
+						<div>
+							{' '}
+							<img
+								alt="fiat-ramp"
+								className="plan-img"
+								src={STATIC_ICONS['CLOUD_PLAN_FIAT_RAMP']}
+							></img>
+							Fiat Ramp or Boost required{' '}
+							<Link to="/admin/billing" className="text-link">
+								(Upgrade)
+							</Link>
+						</div>
+					);
+				}
+			} else {
+				return <div>pending</div>;
+			}
 		},
-		{
-			title: 'Balance',
-			dataIndex: 'symbol',
-			key: 'balance',
-			className: 'balance-column',
-			render: (symbol = '', data) => {
-				const selectedAsset =
-					allCoins.filter((list) => list.symbol === data.symbol)[0] || {};
-				return (
-					<div
-						className="coin-symbol-wrapper"
-						onClick={() => handlePreview(selectedAsset)}
-					>
-						{balance[symbol] || 0}
-					</div>
-				);
-			},
-		},
-	];
+	},
+];
 
 class Assets extends Component {
 	constructor(props) {
@@ -193,25 +213,35 @@ class Assets extends Component {
 			isPresetConfirm: false,
 			exchangeBalance: {},
 			formData: {},
+			saveLoading: false,
+			submitting: false,
+			isWithdrawalEdit: false,
+			isTableLoading: true,
+			isFiat: '',
+			assetType: '',
+			currentScreen: 'step1',
+			isLoading: false,
 		};
 	}
 
 	componentDidMount() {
 		// this.getMyExchange();
 		this.getBalance();
-		const { exchange, allCoins } = this.props;
+		const { exchange, allCoins, isPreview, selectedAsset } = this.props;
 		const { tabParams } = this.state;
 
-		let coins = allCoins.filter((val) => exchange && exchange.coins && exchange.coins.includes(val.symbol));
+		let coins = allCoins.filter(
+			(val) => exchange && exchange.coins && exchange.coins.includes(val.symbol)
+		);
 		if (exchange && exchange.coins) {
 			this.setState({
 				coins: coins || [],
-				exchange: exchange,
+				exchange,
 			});
 		}
 		if (Object.keys(tabParams).length) {
-			let isAddAsset = (tabParams.isAsset === 'true');
-			let isPreview = (tabParams.preview === 'true');
+			let isAddAsset = tabParams.isAsset === 'true';
+			let isPreview = tabParams.preview === 'true';
 			let coinData = coins;
 			if (coinData.length) {
 				let temp = coinData.filter((list) => list.symbol === tabParams.symbol);
@@ -222,6 +252,11 @@ class Assets extends Component {
 						allCoins.filter((list) => list.symbol === filterSymbol)[0] || {};
 				}
 				this.props.handleHide(isPreview);
+				if (!Object.keys(filterCoin).length && tabParams?.isFiat) {
+					filterCoin =
+						allCoins.filter((item) => item.symbol === tabParams?.symbol)[0] ||
+						{};
+				}
 				this.setState({
 					isPreview,
 					isOpenAdd: isAddAsset,
@@ -229,15 +264,27 @@ class Assets extends Component {
 						...default_coin_data,
 						...filterCoin,
 					},
+					isFiat: tabParams.isFiat,
 				});
 			}
+		}
+		if (isPreview) {
+			this.setState({ isPreview: true, selectedAsset });
 		}
 	}
 
 	componentDidUpdate(prevProps, prevState) {
 		const { exchange, allCoins } = this.props;
-		if ((JSON.stringify(prevProps.exchange) !== JSON.stringify(exchange) && exchange && exchange.coins && allCoins) ||
-			(JSON.stringify(prevProps.allCoins) !== JSON.stringify(allCoins) && exchange && exchange.coins && allCoins)) {
+		if (
+			(JSON.stringify(prevProps.exchange) !== JSON.stringify(exchange) &&
+				exchange &&
+				exchange.coins &&
+				allCoins) ||
+			(JSON.stringify(prevProps.allCoins) !== JSON.stringify(allCoins) &&
+				exchange &&
+				exchange.coins &&
+				allCoins)
+		) {
 			const coins = allCoins.filter((val) =>
 				exchange.coins.includes(val.symbol)
 			);
@@ -261,6 +308,12 @@ class Assets extends Component {
 		}
 	}
 
+	updateCurrentScreen = (screen) => {
+		this.setState({
+			currentScreen: screen,
+		});
+	};
+
 	getBalance = async () => {
 		try {
 			const res = await requestTotalBalance();
@@ -268,10 +321,10 @@ class Assets extends Component {
 				this.setState({ exchangeBalance: res });
 			}
 		} catch (error) {
-			const message = error.data ? error.data.message : error.message;
-			message.error(message);
+			const errMsg = error.data ? error.data.message : error.message;
+			message.error(errMsg);
 		}
-	}
+	};
 
 	updateFormData = (name, value) => {
 		const { formData } = this.state;
@@ -280,7 +333,7 @@ class Assets extends Component {
 		} else if (name === 'decimal_points') {
 			formData.meta = {
 				...formData.meta,
-				decimal_points: value
+				decimal_points: value,
 			};
 		} else {
 			formData[name] = value;
@@ -290,11 +343,13 @@ class Assets extends Component {
 
 	handleClose = () => {
 		this.setState({
-			isOpenAdd: false,
+			isOpenAdd: this.state.currentScreen === 'step2' ? true : false,
 			isEdit: false,
 			isConfigureEdit: false,
 			isConfirm: false,
 			width: 520,
+			isWithdrawalEdit: false,
+			currentScreen: 'step1',
 			// selectedAsset: {}
 		});
 	};
@@ -327,28 +382,12 @@ class Assets extends Component {
 				(await res.data) &&
 				res.data.data &&
 				res.data.data.map((item) => {
-					// NOTE: Monero set disabled
-					if (item.symbol === 'xmr') {
-						return {
-							key: 'Monero',
-							value: 'xmr',
-							disabled: true,
-							...item,
-						};
-					}
-					const filter = ASSET_TYPE_LIST.filter(
-						(obj) => obj.value === item.symbol
-					);
-					if (filter.length === 0) {
-						return {
-							key: item.fullname,
-							value: item.symbol,
-							...item,
-						};
-					} else {
-						return { ...filter[0], ...item };
-					}
-				});
+				return {
+					key: item.fullname,
+					value: item.symbol,
+					...item,
+				};
+			});
 
 			return this.props.setCoins(coins);
 		} catch (error) {
@@ -357,16 +396,13 @@ class Assets extends Component {
 	};
 
 	handleRefreshCoin = async (coinData) => {
-		const {
-			coins,
-			exchange
-		} = this.state;
+		const { coins, exchange } = this.state;
 		try {
-			let coinList = coins.map(data => data.symbol);
+			let coinList = coins.map((data) => data.symbol);
 			let formProps = {
 				id: exchange.id,
-				coins: [...coinList, coinData.symbol]
-			}
+				coins: [...coinList, coinData.symbol],
+			};
 			await updateExchange(formProps);
 			await this.getMyExchange();
 		} catch (error) {
@@ -377,25 +413,22 @@ class Assets extends Component {
 	};
 
 	handleConfirmation = async (
-		coinData,
+		coinFormData = {},
 		isEdit = false,
 		isApply = false,
 		isPresetAsset = false
 	) => {
-		const {
-			coins,
-			exchange,
-			isConfigure,
-			selectedAsset,
-		} = this.state;
+		const { coins, exchange, isConfigure, selectedAsset } = this.state;
+		const { logoFile, iconName, ...coinData } = coinFormData;
 		if (isEdit) {
 			try {
+				this.setState({ saveLoading: true });
 				// if (!coinData.logo || selectedAsset.logo) {
 				//     coinData.logo = ''
 				// }
 				delete coinData.key;
 				delete coinData.value;
-				delete coinData.iconName;
+				// delete coinData.iconName;
 				// if (coinData.symbol) {
 				// 	coinData.symbol = coinData.symbol.toLowerCase();
 				// }
@@ -411,9 +444,18 @@ class Assets extends Component {
 				// if (!coinData.increment_unit)
 				// 	coinData.increment_unit = selectedAsset.increment_unit;
 				if (!coinData.code) coinData.code = selectedAsset.code;
+				if (logoFile) {
+					let formData = new FormData();
+					formData.append('name', iconName);
+					formData.append('file_name', iconName);
+					formData.append('file', logoFile);
+					const logo = await uploadCoinLogo(formData);
+					coinData.logo = _get(logo, 'data.path', '');
+				}
+
 				await updateAssetCoins(coinData);
 				await this.getCoins();
-				this.setState({ formData: {} });
+				this.setState({ formData: {}, saveLoading: false });
 				// if (isApply) {
 				// 	await this.handleApply();
 				// }
@@ -423,12 +465,14 @@ class Assets extends Component {
 					this.setState({ isConfigure: false, isPreview: true, formData: {} });
 				}
 			} catch (error) {
+				this.setState({ saveLoading: false });
 				if (error && error.data) {
 					message.error(error.data.message);
 				}
 			}
 		} else {
 			try {
+				this.setState({ saveLoading: true });
 				if (!coinData.logo) {
 					coinData.logo = '';
 				}
@@ -440,17 +484,20 @@ class Assets extends Component {
 					coinData.symbol = coinData.symbol.toLowerCase();
 				}
 				// let pairs = exchange.pairs || [];
-				let coinList = coins.map(data => data.symbol);
-				
+				let coinList = coins.map((data) => data.symbol);
+
 				if (!coinData.id) {
+					if (!coinData.code) {
+						coinData.code = coinData.symbol.toLowerCase();
+					}
 					await updateAssetCoins(coinData);
 				}
 				if (!coinList.includes(coinData.symbol)) {
 					let formProps = {
 						id: exchange.id,
 						// pairs: pairs.map(data => data.name ? data.name : data.symbol),
-						coins: [...coinList, coinData.symbol]
-					}
+						coins: [...coinList, coinData.symbol],
+					};
 					await updateExchange(formProps);
 				}
 				await this.getMyExchange();
@@ -462,8 +509,10 @@ class Assets extends Component {
 				// 	await this.handleApply();
 				// }
 				this.handleClose();
+				this.setState({ saveLoading: false, formData: {} });
 				message.success('Asset created successfully');
 			} catch (error) {
+				this.setState({ saveLoading: false });
 				if (error && error.data) {
 					message.error(error.data.message);
 				}
@@ -473,25 +522,41 @@ class Assets extends Component {
 
 	handleDelete = async (symbol) => {
 		const { coins, exchange } = this.state;
+		this.setState({ isLoading: true });
+		this.setState({ submitting: true });
+		const pairedCoins = exchange.pairs.filter((data) => {
+			let pairData = data.split('-');
+			return pairData[0] === symbol || pairData[1] === symbol;
+		});
 		try {
 			let formProps = {
 				id: exchange.id,
-				coins: coins.filter(data => data.symbol !== symbol).map(data => data.symbol),
-				pairs: exchange.pairs.filter(data => {
-					let pairData = data.split('-');
-					return (pairData[0] !== symbol && pairData[1] !== symbol)
-				})
+				coins: coins
+					.filter((data) => data.symbol !== symbol)
+					.map((data) => data.symbol),
 			};
+			if (pairedCoins.length) {
+				formProps.pairs = exchange.pairs.filter((data) => {
+					let pairData = data.split('-');
+					return pairData[0] !== symbol && pairData[1] !== symbol;
+				});
+			}
 			await updateExchange(formProps);
 			await this.getMyExchange();
 			await this.getCoins();
+			this.setState({ isLoading: false });
 			message.success('Asset removed successfully');
-			this.setState({ isConfigure: false, isPreview: false });
+			this.setState({
+				isConfigure: false,
+				isPreview: false,
+				submitting: false,
+			});
 			this.props.handleHide(false);
 		} catch (error) {
 			if (error && error.data) {
 				message.error(error.data.message);
 			}
+			this.setState({ submitting: false });
 		}
 	};
 
@@ -546,14 +611,22 @@ class Assets extends Component {
 		this.setState({ selectedAsset: data });
 	};
 
+	renderLink = (isFiat) => {
+		if (isFiat === 'onRamp') {
+			return <Link to="/admin/fiat?tab=2">Fiat controls</Link>;
+		} else if (isFiat === 'offRamp') {
+			return <Link to="/admin/fiat?tab=3">Fiat controls</Link>;
+		} else {
+			return <Link to="/admin/financials?tab=0&isAssetHome=true">Assets</Link>;
+		}
+	};
+
 	renderBreadcrumb = () => {
 		return (
 			<div>
 				{this.state.isPreview || this.state.isConfigure ? (
 					<Breadcrumb>
-						<Item>
-							<Link to="/admin/financials?tab=0&isAssetHome=true">Assets</Link>
-						</Item>
+						<Item>{this.renderLink(this.state.isFiat)}</Item>
 						<Item
 							className={
 								this.state.isPreview || this.state.isConfigure
@@ -585,20 +658,50 @@ class Assets extends Component {
 		});
 	};
 
+	handleWithdrawalEdit = (assetType) => {
+		this.handleConfigureEdit('edit_withdrawal_fees');
+		this.setState({ isWithdrawalEdit: true, assetType });
+	};
+
 	renderPreview = () => {
-		const { user } = this.props;
-		if (this.state.isConfigure) {
+		const {
+			constants: {
+				info: { user_id },
+			},
+			fiat,
+		} = this.props;
+
+		const {
+			selectedAsset,
+			isConfigure,
+			isPreview,
+			exchangeUsers,
+			userEmails,
+			submitting,
+			saveLoading,
+			isFiat,
+			isLoading,
+		} = this.state;
+
+		const { owner_id, created_by, verified, type } = selectedAsset;
+		const showMintAndBurnButtons = verified && (owner_id === user_id || type === 'fiat');
+		const showConfigureButton = created_by === user_id || owner_id === user_id ;
+
+		if (isConfigure) {
 			return (
 				<div className="overview-wrap">
 					<div className="preview-container">
-						{this.renderBreadcrumb()}
+						{!fiat && this.renderBreadcrumb()}
 						<FinalPreview
 							isConfigure
-							coinFormData={this.state.selectedAsset}
-							user={user}
+							coinFormData={selectedAsset}
+							user_id={user_id}
 							setConfigEdit={this.handleConfigureEdit}
 							handleFileChange={this.handleFileChange}
 							handleDelete={this.handleDelete}
+							submitting={submitting}
+							handleWithdrawalEdit={this.handleWithdrawalEdit}
+							isLoading={isLoading}
 						/>
 					</div>
 					<div>
@@ -606,61 +709,66 @@ class Assets extends Component {
 							type="primary"
 							className="configure-btn green-btn"
 							onClick={this.applyConfirmation}
+							loading={saveLoading}
 						>
 							Save
 						</Button>
 					</div>
 				</div>
 			);
-		} else if (this.state.isPreview) {
+		} else if (isPreview) {
 			return (
 				<div className="overview-wrap">
 					<div className="preview-container">
-						{this.renderBreadcrumb()}
+						{!fiat && this.renderBreadcrumb()}
 						<FinalPreview
 							isPreview
-							coinFormData={this.state.selectedAsset}
-							user={user}
+							coinFormData={selectedAsset}
+							user_id={user_id}
 							handleEdit={this.handleEdit}
 							handleDelete={this.handleDelete}
 							setConfigEdit={this.handleConfigureEdit}
-							exchangeUsers={this.state.exchangeUsers}
-							userEmails={this.state.userEmails}
+							exchangeUsers={exchangeUsers}
+							userEmails={userEmails}
+							submitting={submitting}
+							handleWithdrawalEdit={this.handleWithdrawalEdit}
+							isFiat={isFiat}
+							isLoading={isLoading}
 						/>
 					</div>
-					{this.state.selectedAsset.created_by === user.id ? (
-						<div>
-							<div className="d-flex">
-								<Button
-									type="primary"
-									className="green-btn"
-									onClick={this.handleConfigure}
-								>
-									Configure
-								</Button>
-								<div className="separator"></div>
-								{this.state.selectedAsset.verified ? (
-									<Fragment>
-										<Button
-											className="green-btn"
-											type="primary"
-											onClick={() => this.handleConfigureEdit('mint')}
-										>
-											Mint
-										</Button>
-										<div className="separator"></div>
-										<Button
-											className="green-btn"
-											type="primary"
-											onClick={() => this.handleConfigureEdit('burn')}
-										>
-											Burn
-										</Button>
-									</Fragment>
-								) : null}
-							</div>
+					<div>
+						<div className="d-flex">
+							{showConfigureButton && (
+							<Button
+								type="primary"
+								className="green-btn"
+								onClick={this.handleConfigure}
+							>
+								Configure
+							</Button>
+							)}
+							<div className="separator" />
+							{showMintAndBurnButtons && (
+								<Fragment>
+									<Button
+										className="green-btn"
+										type="primary"
+										onClick={() => this.handleConfigureEdit('mint')}
+									>
+										Mint
+									</Button>
+									<div className="separator" />
+									<Button
+										className="green-btn"
+										type="primary"
+										onClick={() => this.handleConfigureEdit('burn')}
+									>
+										Burn
+									</Button>
+								</Fragment>
+							)}
 						</div>
-					) : null}
+					</div>
 				</div>
 			);
 		}
@@ -685,19 +793,22 @@ class Assets extends Component {
 	handleFileChange = async (event, name) => {
 		const file = event.target.files[0];
 		if (file) {
-			const base64Url = await new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.readAsDataURL(file);
-				reader.onload = () => resolve(reader.result);
-				reader.onerror = (error) => reject(error);
-			});
+			// const base64Url = await new Promise((resolve, reject) => {
+			// 	const reader = new FileReader();
+			// 	reader.readAsDataURL(file);
+			// 	reader.onload = () => resolve(reader.result);
+			// 	reader.onerror = (error) => reject(error);
+			// });
 			const coinFormData = {
 				...this.state.selectedAsset,
-				[name]: base64Url,
+				[name]: file,
+				logoFile: file,
 				iconName: file.name,
 			};
 			this.handleEditData(coinFormData);
-			this.updateFormData(name, base64Url);
+			this.updateFormData(name, file);
+			this.updateFormData('logoFile', file);
+			this.updateFormData('iconName', file.name);
 		}
 	};
 
@@ -713,6 +824,7 @@ class Assets extends Component {
 			exchangeUsers,
 			userEmails,
 			formData,
+			saveLoading,
 		} = this.state;
 		const { allCoins } = this.props;
 		if (isConfirm) {
@@ -724,7 +836,8 @@ class Assets extends Component {
 						<Button
 							type="primary"
 							className="apply-btn"
-							onClick={() => this.handleConfirmation(selectedAsset, true)}
+							onClick={() => this.handleConfirmation(formData, true)}
+							disabled={saveLoading}
 						>
 							Save without applying
 						</Button>
@@ -732,7 +845,8 @@ class Assets extends Component {
 						<Button
 							type="primary"
 							className="apply-btn"
-							onClick={() => this.handleConfirmation(selectedAsset, true, true)}
+							onClick={() => this.handleConfirmation(formData, true, true)}
+							disabled={saveLoading}
 						>
 							Save and apply
 						</Button>
@@ -760,6 +874,10 @@ class Assets extends Component {
 					formData={formData}
 					exchangeCoins={this.state.coins}
 					handleRefreshCoin={this.handleRefreshCoin}
+					isWithdrawalEdit={this.state.isWithdrawalEdit}
+					assetType={this.state.assetType}
+					currentScreen={this.state.currentScreen}
+					updateCurrentScreen={this.updateCurrentScreen}
 				/>
 			);
 		}
@@ -778,10 +896,9 @@ class Assets extends Component {
 			isConfirm,
 			isPresetConfirm,
 			exchangeBalance,
-			// exchange
+			exchange,
 		} = this.state;
-		const { allCoins, user } = this.props;
-
+		const { allCoins, constants } = this.props;
 		return (
 			<div className="admin-asset-wrapper">
 				{isPreview || isConfigure ? (
@@ -806,13 +923,16 @@ class Assets extends Component {
 							<Table
 								columns={getColumns(
 									allCoins,
-									user,
+									constants,
 									exchangeBalance,
 									this.handleEdit,
-									this.handlePreview
+									this.handlePreview,
+									exchange
 								)}
 								rowKey={(data, index) => index}
 								dataSource={coins}
+								loading={!coins.length}
+								pagination={false}
 							/>
 						</div>
 					</Fragment>
@@ -845,7 +965,6 @@ const mapDispatchToProps = (dispatch) => ({
 	setExchange: bindActionCreators(setExchange, dispatch),
 });
 const mapStateToProps = (state) => ({
-	user: state.user,
 	allCoins: state.asset.allCoins,
 	constants: state.app.constants,
 	exchange: state.asset && state.asset.exchange,

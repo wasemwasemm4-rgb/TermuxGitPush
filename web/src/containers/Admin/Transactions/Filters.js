@@ -16,19 +16,21 @@ const getFilters = (coinOptions) => [
 		placeholder: 'Status',
 		key: 'status',
 		options: [
-			{ value: 'true', text: 'Confirmed' },
-			{ value: 'false', text: 'Pending' },
+			{ value: 'status', text: 'Completed' },
+			{ value: 'pending', text: 'Pending' },
+			{ value: 'dismiss', text: 'Dismissed' },
+			{ value: 'reject', text: 'Rejected' },
 		],
 	},
-	{
-		label: 'Dismissed',
-		placeholder: 'Dismissed',
-		key: 'dismissed',
-		options: [
-			{ value: 'true', text: 'Yes' },
-			{ value: 'false', text: 'No' },
-		],
-	},
+	// {
+	// 	label: 'Dismissed',
+	// 	placeholder: 'Dismissed',
+	// 	key: 'dismissed',
+	// 	options: [
+	// 		{ value: 'true', text: 'Yes' },
+	// 		{ value: 'false', text: 'No' },
+	// 	],
+	// },
 ];
 
 export const Filters = ({
@@ -88,6 +90,13 @@ export const Filters = ({
 						placeholder="Wallet Address"
 						// description="Wallet address"
 						className={'adjacent-fields pl-2'}
+					/>
+					<FilterInput
+						onChange={onChange('description')}
+						label={'Description'}
+						defaultValue={params.description}
+						className={'adjacent-fields pl-2'}
+						placeholder="Description"
 					/>
 				</div>
 				<div className="filters-wrapper-buttons pl-2">

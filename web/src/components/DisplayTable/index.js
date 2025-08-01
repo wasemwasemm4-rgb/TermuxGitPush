@@ -1,9 +1,15 @@
 import React from 'react';
 import classnames from 'classnames';
+import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import { Loading } from 'containers/DigitalAssets/components/utils';
 
-const DisplayTable = (props) => {
-	const { headers, data, rowClassName } = props;
-
+const DisplayTable = ({
+	headers,
+	data,
+	rowClassName,
+	cssTransitionClassName = '',
+	loading = false,
+}) => {
 	return (
 		<div
 			className={classnames(
@@ -31,23 +37,39 @@ const DisplayTable = (props) => {
 					'f-1'
 				)}
 			>
-				{data.map((row, rowIndex) => {
-					return (
-						<div
-							key={rowIndex}
-							className={classnames('display_table-cell d-flex', rowClassName)}
-						>
-							{headers.map(({ key, renderCell, className }, cellIndex) => (
+				<TransitionGroup component={null}>
+					{data.map((row, rowIndex) => {
+						const index = row.id || rowIndex;
+						return (
+							<CSSTransition
+								key={index}
+								timeout={500}
+								classNames={cssTransitionClassName}
+							>
 								<div
-									key={`${rowIndex}-${cellIndex}`}
-									className={classnames('f-1 text_overflow', className)}
+									key={index}
+									className={classnames(
+										'display_table-cell d-flex',
+										rowClassName
+									)}
 								>
-									{renderCell(row, `${rowIndex}-${cellIndex}`)}
+									{headers.map(({ key, renderCell, className }, cellIndex) => (
+										<div
+											key={`${rowIndex}-${cellIndex}`}
+											className={classnames('f-1 text_overflow', className)}
+										>
+											{!loading ? (
+												renderCell(row, `${rowIndex}-${cellIndex}`)
+											) : (
+												<Loading index={rowIndex} />
+											)}
+										</div>
+									))}
 								</div>
-							))}
-						</div>
-					);
-				})}
+							</CSSTransition>
+						);
+					})}
+				</TransitionGroup>
 			</div>
 		</div>
 	);

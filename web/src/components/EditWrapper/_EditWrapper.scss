@@ -3,6 +3,8 @@ $operator-controls__panel-text-color: #ffffff;
 
 .edit-wrapper__container {
 	display: inline-flex !important;
+	justify-content: center;
+	align-items: center;
 
 	&.reverse {
 		flex-direction: row-reverse !important;
@@ -24,6 +26,11 @@ $operator-controls__panel-text-color: #ffffff;
 	font-size: 10px !important;
 	text-decoration: none !important;
 	font-weight: normal !important;
+
+	&.medium {
+		width: 35px !important;
+		height: 35px !important;
+	}
 
 	&.large {
 		width: 50px !important;

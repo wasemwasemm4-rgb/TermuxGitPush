@@ -1,8 +1,6 @@
 import React from 'react';
-import { Button } from '../';
-import STRINGS from '../../config/localizedStrings';
-import Image from 'components/Image';
-import { EditWrapper } from 'components';
+import { Image, Button, EditWrapper } from 'components';
+import STRINGS from 'config/localizedStrings';
 
 const MessageDisplay = ({
 	stringId,
@@ -16,7 +14,13 @@ const MessageDisplay = ({
 	style,
 }) => (
 	<div
-		className="success_display-wrapper d-flex align-content-between flex-wrap flex-column"
+		className={`${
+			iconId === 'OTP_ACTIVE'
+				? 'success_active-display-wrapper'
+				: iconId === 'OTP_DEACTIVATED'
+				? 'success_disable-display-wrapper'
+				: 'success_display-wrapper'
+		} d-flex align-content-between flex-wrap flex-column`}
 		style={style}
 	>
 		<div className="success_display-content d-flex flex-column align-self-center flex-wrap justify-content-center align-items-center">
@@ -28,6 +32,13 @@ const MessageDisplay = ({
 			{title && (
 				<div className="success_display-content-text bold">
 					<EditWrapper stringId={titleId}>{title}</EditWrapper>
+				</div>
+			)}
+			{iconId === 'OTP_ACTIVE' && (
+				<div className="font-weight-bold">
+					<EditWrapper stringId={'ACCOUNT_SECURITY.OTP.ACCOUNT_SECURED'}>
+						{STRINGS['ACCOUNT_SECURITY.OTP.ACCOUNT_SECURED']}
+					</EditWrapper>
 				</div>
 			)}
 			<div className="success_display-content-text">

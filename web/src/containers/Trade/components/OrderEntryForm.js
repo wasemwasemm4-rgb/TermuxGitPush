@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Collapse } from 'antd';
 import classnames from 'classnames';
 import { connect } from 'react-redux';
 import { reduxForm, formValueSelector } from 'redux-form';
 
-import STRINGS from '../../../config/localizedStrings';
-import { Button } from '../../../components';
-import renderFields from '../../../components/Form/factoryTradeFields';
-import { isLoggedIn } from '../../../utils/token';
+import STRINGS from 'config/localizedStrings';
+import { Button, EditWrapper } from 'components';
+import renderFields from 'components/Form/factoryTradeFields';
+import { isLoggedIn } from 'utils/token';
 
 export const FORM_NAME = 'OrderEntryForm';
 
@@ -50,15 +50,22 @@ const Form = ({
 	onReview,
 	formKeyDown,
 }) => {
+	const [activeKey, setActiveKey] = useState([]);
+
 	const fields = getFields(formValues, type, orderType);
 	const errorText = error || outsideFormError;
 	const hasPostOnly =
 		Object.entries(fields).filter(([key]) => key === 'postOnly').length !== 0;
+
+	const handleChange = (key) => {
+		setActiveKey(key);
+	};
+
 	return (
 		<div className="trade_order_entry-form d-flex">
 			<form
 				className="trade_order_entry-form_inputs-wrapper"
-				autocomplete="off"
+				autoComplete="off"
 				onSubmit={handleSubmit}
 				onKeyDown={(e) => {
 					if (!submitting && valid && !errorText && isLoggedIn())
@@ -70,12 +77,22 @@ const Form = ({
 						.filter(([key]) => key !== 'postOnly')
 						.map(renderFields)}
 					{hasPostOnly && (
-						<Collapse defaultActiveKey={[]} bordered={false} ghost>
+						<Collapse
+							defaultActiveKey={activeKey}
+							bordered={false}
+							activeKey={activeKey}
+							onChange={handleChange}
+							ghost
+						>
 							<Collapse.Panel
 								showArrow={false}
 								header={
-									<span className="underline-text">
-										{STRINGS['ORDER_ENTRY_ADVANCED']}
+									<span className="advacnce-text underline-text">
+										<EditWrapper stringId="ORDER_ENTRY_ADVANCED">
+											{activeKey.includes('1')
+												? STRINGS['ORDER_ENTRY_HIDE_ADVANCE']
+												: STRINGS['ORDER_ENTRY_SHOW_ADVANCE']}
+										</EditWrapper>
 									</span>
 								}
 								key="1"

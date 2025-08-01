@@ -1,11 +1,15 @@
 import PhoneNumber from 'awesome-phonenumber';
 import _get from 'lodash/get';
+import { isMobile } from 'react-device-detect';
 
-import { initialCountry, COUNTRIES } from '../../utils/countries';
+import STRINGS from 'config/localizedStrings';
+import { required } from 'components/Form/validations';
+import { initialCountry, COUNTRIES } from 'utils/countries';
+import { generateDynamicStringKey } from 'utils/id';
 
 export const mobileInitialValues = ({ country }, defaults) => {
 	let countryVal = country ? country : _get(defaults, 'country');
-	return { phone_country: getCountry(countryVal).phoneCode };
+	return { phone_country: getCountry(countryVal).phoneCodes[0] || '' };
 };
 
 export const identityInitialValues = (
@@ -59,17 +63,43 @@ export const documentInitialValues = ({ nationality, id_data = {} }) => {
 };
 
 export const getCountry = (country) => {
-	const filterValue = COUNTRIES.filter((data) => data.value === country);
+	const filterValue = COUNTRIES.filter(
+		({ value, name }) =>
+			value?.toUpperCase() === country?.toUpperCase() ||
+			name?.toUpperCase() === country?.toUpperCase()
+	);
 	if (filterValue.length) return filterValue[0];
 	return initialCountry;
 };
 
 export const getCountryFromNumber = (phone = '') => {
-	const number = PhoneNumber(phone);
-	const phoneCode = `+${PhoneNumber.getCountryCodeForRegionCode(
-		number.getRegionCode()
-	)}`;
-	const filterValue = COUNTRIES.filter((data) => data.phoneCode === phoneCode);
-	if (filterValue.length) return filterValue[0];
-	return initialCountry;
+	const alpha2 = PhoneNumber(phone).getRegionCode();
+	const country =
+		COUNTRIES.find(({ value }) => value === alpha2) || initialCountry;
+	return country;
+};
+
+export const generateUserPaymentFormFields = ({ data = [] }, paymentKey) => {
+	const formFields = {};
+	const generateId = generateDynamicStringKey('ULTIMATE_FIAT', paymentKey);
+
+	data.forEach(({ key, label, placeholder, required: is_required }) => {
+		const [labelId, placeholderId] = [
+			generateId(key),
+			generateId(`${key}_placeholder`),
+		];
+
+		formFields[key] = {
+			type: 'text',
+			stringId: `${labelId},${placeholderId}`,
+			label: STRINGS[labelId] || label,
+			placeholder:
+				STRINGS[placeholderId] || placeholder || STRINGS[labelId] || label,
+			validate: is_required ? [required] : [],
+			fullWidth: isMobile,
+			ishorizontalfield: true,
+		};
+	});
+
+	return formFields;
 };

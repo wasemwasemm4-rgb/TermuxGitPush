@@ -2,8 +2,9 @@
 HollaEx Kit has a built in server based on express + swagger and provides API and Websocket communication for HollaEx Web or any other clients.
 
 The main 3rd-party applications being used throughout the Server are:
-- [HollaEx Tools Library](https://github.com/bitholla/hollaex-tools-lib)
-- [HollaEx Node Library](https://github.com/bitholla/hollaex-node-lib#readme)
+- [HollaEx Tools Library](https://github.com/hollaex/hollaex-kit/tree/master/server/utils/hollaex-tools-lib)
+- [HollaEx Network Library](https://github.com/hollaex/hollaex-kit/tree/master/server/utils/hollaex-network-lib)
+- [HollaEx Node Library](https://github.com/hollaex/hollaex-node-lib#readme)
 - [Express v4.16.2](https://expressjs.com/en/api.html)
 - [SwaggerUI v2.0.0](https://swagger.io/docs/specification/2-0/basic-structure/)
 - [Sequelize v4.37.7](https://sequelize.org/v4/)
@@ -46,7 +47,7 @@ This folder holds the `swagger.yaml` file that contains all the endpoints for th
   - Database used is `postgreSQL`
 - mail
   - This directory holds everything relevant to emails.
-  - The `strings` directory holds all the strings that contain email messages. They are separated by langauge e.g. `en.js`, `fa.js`, etc.
+  - The `strings` directory holds all the strings that contain email messages. They are separated by language e.g. `en.js`, `fa.js`, etc.
   - The `templates` directory holds all the email templates. They are separated by the emails being send e.g. `welcome.js`, `deposit.js`, etc.
   - The library used for emails is `Nodemailer`.
 - config
@@ -55,7 +56,7 @@ This folder holds the `swagger.yaml` file that contains all the endpoints for th
 ## Websocket
 
 All websocket related files are contained in the `ws` directory. The HollaEx Kit websocket uses the following libraries:
-- [HollaEx Node Library](https://github.com/bitholla/hollaex-node-lib#readme) - Used to connect to the HollaEx Network Websocket
+- [HollaEx Network Library](https://github.com/hollaex/hollaex-kit/tree/master/server/utils/hollaex-network-lib) - Used to connect to the HollaEx Network Websocket
 - [ws](https://www.npmjs.com/package/ws) - Used to create the websocket server
 - [ws-heartbeat](https://www.npmjs.com/package/ws-heartbeat) - Used to maintain websocket connection to the Network and also to disconnect any clients that don't send a message within 60 seconds
 
@@ -73,7 +74,7 @@ The HollaEx Kit websocket acts as a proxy between clients and the HollaEx Networ
 
 All clients connected to the Kit will need to send a message at least once per minute or their connection will be dropped from the Kit.
 
-For an easier way to connect to the websocket, use the [HollaEx Node Library](https://github.com/bitholla/hollaex-node-lib/blob/2.0/NETWORK_README.md#websocket).
+For an easier way to connect to the websocket, use the [HollaEx Node Library](https://github.com/hollaex/hollaex-node-lib/blob/2.0/NETWORK_README.md#websocket).
 
 ### Usage
 

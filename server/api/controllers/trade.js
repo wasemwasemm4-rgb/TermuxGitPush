@@ -3,6 +3,8 @@
 const { loggerTrades } = require('../../config/logger');
 const toolsLib = require('hollaex-tools-lib');
 const { errorMessageConverter } = require('../../utils/conversion');
+const { ROLES } = require('../../constants');
+const { API_KEY_NOT_PERMITTED } = require('../../messages');
 
 const getUserTrades = (req, res) => {
 	loggerTrades.verbose(
@@ -79,7 +81,8 @@ const getUserTrades = (req, res) => {
 		})
 		.catch((err) => {
 			loggerTrades.error(req.uuid, 'controllers/trade/getUserTrades', err.message);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -116,6 +119,10 @@ const getAdminTrades = (req, res) => {
 		return res.status(400).json({ message: 'Invalid symbol' });
 	}
 
+	if (format.value && req.auth.scopes.indexOf(ROLES.ADMIN) === -1) {
+		return res.status(403).json({ message: API_KEY_NOT_PERMITTED });
+	}
+	toolsLib.user.createAuditLog({ email: req?.auth?.sub?.email, session_id: req?.session_id }, req?.swagger?.apiPath, req?.swagger?.operationPath?.[2], req?.swagger?.params);
 	let promiseQuery;
 
 	if (user_id.value) {
@@ -166,7 +173,8 @@ const getAdminTrades = (req, res) => {
 		})
 		.catch((err) => {
 			loggerTrades.error(req.uuid, 'controllers/trade/getAdminTrades', err.message);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 

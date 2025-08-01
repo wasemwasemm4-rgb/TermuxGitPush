@@ -1,15 +1,17 @@
 # build environment
-FROM node:12.18.3-buster as build
-ENV NODE_OPTIONS=--max_old_space_size=3072
+FROM node:14.21.1-buster as build
+ENV NODE_OPTIONS=--max_old_space_size=4096
+ENV GENERATE_SOURCEMAP=false
 WORKDIR /app
 COPY package.json /app/package.json
-RUN npm config set unsafe-perm true && \
-    npm install -g node-gyp && \
+RUN npm install -g node-gyp && \
     npm install --loglevel=error
 COPY . /app
-RUN npm run build
+RUN export REACT_APP_LAST_BUILD=$(date +"%Y-%m-%dT%H-%M-%S") && \
+    npm run build && \
+    echo $REACT_APP_LAST_BUILD > /app/build/react-app-last-build.txt
 
-FROM nginx:1.16.0-alpine
+FROM nginx:1.24.0-alpine
 RUN apk add --update \
     curl \
     && rm -rf /var/cache/apk/*

@@ -1,0 +1,162 @@
+.modal-market-menu {
+	background-color: $app-background-color;
+	color: $app-bar-menu-list-color;
+
+	.field-wrapper {
+		margin: 0;
+		.field-content-outline {
+			&:before,
+			&:after {
+				height: 0.5px;
+				opacity: 0.7;
+			}
+		}
+	}
+
+	.app-bar-search-field {
+		flex-direction: row;
+		// padding-left: 0.5rem;
+	}
+
+	.app-bar-add-tab-search {
+		height: 4rem;
+	}
+
+	.app-bar-tab-menu-list {
+		background-color: $app-bar-background-color;
+		color: $app-bar-menu-list-color;
+		font-size: 0.9rem;
+		height: 2.5rem;
+		padding: 0.5rem 0.8rem;
+		width: 4.2rem;
+		max-width: 4.2rem;
+		/* (22 -6) / 5 */
+	}
+
+	.active-tab {
+		background-color: $app-background-color;
+		color: $colors-main-black;
+		font-weight: bold;
+	}
+
+	.app-bar-add-tab-content {
+		font-size: 0.9rem;
+		// overflow-y: scroll;
+		scrollbar-width: thin;
+		scrollbar-color: $colors-black $app-background-color;
+		padding: 0.3rem 0;
+		.scroll-view {
+			overflow-y: auto;
+			height: $market-menu-height-dialog-mobile;
+			.app-bar-add-tab-content-list {
+				font-size: 13px;
+			}
+		}
+	}
+
+	.app-bar-tab-overflow-content {
+		background-color: $dark-app-bar-add-tab-menu-background;
+		color: $app-bar-menu-list-color;
+		font-size: 0.9rem;
+		overflow-y: scroll;
+		padding: 0.3rem 0;
+	}
+
+	.active-market {
+		background-color: $app-light-background;
+		color: $colors-black;
+	}
+
+	.app-bar-add-tab-content-list {
+		color: $app-bar-menu-list-color;
+		height: 2.2rem;
+
+		&:hover {
+			background-color: $app-light-background;
+			color: $colors-black;
+
+			svg {
+				.st0 {
+					fill: $colors-black !important;
+					stroke-width: 0rem;
+				}
+			}
+		}
+	}
+
+	.app-bar-tab-setting {
+		margin: 0.3rem 0.4rem 0 0.4rem;
+		width: 1rem;
+	}
+
+	.app-price-diff-down {
+		color: $sell;
+	}
+
+	.app-price-diff-up {
+		color: $buy;
+	}
+}
+
+@media (min-width: 1920px) {
+	.modal-market-menu {
+		width: 24rem;
+
+		&.narrow {
+			width: 14rem;
+		}
+
+		.app-bar-tab-menu-list {
+			width: 3.6rem;
+			max-width: 3.6rem;
+			/* (24 -6) / 5 */
+		}
+
+		.app-bar-add-tab-content,
+		.app-bar-tab-menu-list,
+		.app-bar-tab-overflow-content {
+			font-size: 1rem;
+		}
+	}
+}
+
+@media screen and (max-width: 1096px) {
+	.modal-market-menu {
+		.app-bar-add-tab-content,
+		.app-bar-tab-menu-list,
+		.app-bar-tab-overflow-content {
+			font-size: 0.9rem;
+		}
+	}
+}
+
+.layout-mobile {
+	.modal-market-menu {
+		.app-bar-add-tab-content,
+		.app-bar-tab-menu-list,
+		.app-bar-tab-overflow-content {
+			font-size: 1.3rem;
+		}
+
+		.app-bar-tab-menu-list {
+			height: 3.5rem;
+			width: 6rem;
+			max-width: 6rem;
+			/* (40 -6) / 5 */
+		}
+
+		.app-bar-add-tab-content-list {
+			height: 4rem;
+		}
+		.loading-anime {
+			height: 20px;
+			width: 10rem;
+			margin: 2%;
+			border-radius: 7px;
+			animation: mymove 3s infinite;
+		}
+		.view-market-link {
+			padding: 1.5rem 0.5rem;
+		}
+	}
+}

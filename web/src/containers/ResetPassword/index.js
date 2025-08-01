@@ -3,13 +3,13 @@ import classnames from 'classnames';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { SubmissionError } from 'redux-form';
-import { resetPassword } from '../../actions/authAction';
+import { resetPassword } from 'actions/authAction';
 import ResetPasswordForm from './ResetPasswordForm';
 import ResetPasswordSuccess from './ResetPasswordSuccess';
-import { IconTitle, Dialog } from '../../components';
-import { ContactForm } from '../';
-import { FLEX_CENTER_CLASSES } from '../../config/constants';
-import STRINGS from '../../config/localizedStrings';
+import { IconTitle, Dialog } from 'components';
+import { ContactForm } from 'containers';
+import { FLEX_CENTER_CLASSES } from 'config/constants';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 import { openContactForm } from 'actions/appActions';
 
@@ -55,12 +55,7 @@ class ResetPassword extends Component {
 	};
 
 	render() {
-		const {
-			languageClasses,
-			activeTheme,
-			icons: ICONS,
-			openContactForm,
-		} = this.props;
+		const { languageClasses, icons: ICONS, openContactForm } = this.props;
 		const { success, showContactForm } = this.state;
 
 		if (success) {
@@ -120,7 +115,6 @@ class ResetPassword extends Component {
 					style={{ 'z-index': 100 }}
 					className={classnames(languageClasses)}
 					showCloseText={false}
-					theme={activeTheme}
 				>
 					<ContactForm
 						onSubmitSuccess={this.onCloseDialog}
@@ -133,7 +127,6 @@ class ResetPassword extends Component {
 }
 
 const mapStateToProps = (store) => ({
-	activeTheme: store.app.theme,
 	constants: store.app.constants,
 });
 

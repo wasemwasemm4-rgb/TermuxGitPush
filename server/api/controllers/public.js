@@ -12,12 +12,13 @@ const getHealth = (req, res) => {
 			name: toolsLib.getKitConfig().api_name || packageJson.name,
 			version: packageJson.version,
 			host: API_HOST,
-			basePath: req.swagger.swaggerObject.basePath,
+			basePath: '/v2',
 			status: toolsLib.getKitConfig().status
 		});
 	} catch (err) {
 		loggerPublic.verbose('controller/public/getHealth', err.message);
-		return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+		const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+		return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 	}
 };
 
@@ -26,11 +27,16 @@ const getConstants = (req, res) => {
 		return res.json({
 			coins: toolsLib.getKitCoinsConfig(),
 			pairs: toolsLib.getKitPairsConfig(),
+			broker: toolsLib.getBrokerDeals(),
+			quicktrade: toolsLib.getQuickTrades(),
+			transactionLimits: toolsLib.getTransactionLimits(),
+			networkQuickTrades: toolsLib.getNetworkQuickTrades(),
 			network: HOLLAEX_NETWORK_ENDPOINT
 		});
 	} catch (err) {
 		loggerPublic.verbose('controller/public/getConstants', err.message);
-		return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+		const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+		return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 	}
 };
 
@@ -45,7 +51,8 @@ const getNetworkConstants = (req, res) => {
 		})
 		.catch((err) => {
 			loggerPublic.verbose('controller/public/getNetworkConstants', err.message);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -54,7 +61,8 @@ const getKitConfigurations = (req, res) => {
 		return res.json(toolsLib.getKitConfig());
 	} catch (err) {
 		loggerPublic.verbose('controller/public/getKitConfigurations', err.message);
-		return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+		const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+		return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 	}
 };
 
@@ -66,7 +74,8 @@ const sendSupportEmail = (req, res) => {
 		})
 		.catch((err) => {
 			loggerPublic.verbose('controller/public/sendSupportEmail', err.message);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -87,7 +96,8 @@ const getTopOrderbook = (req, res) => {
 				'controller/public/getTopOrderbook',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -106,7 +116,8 @@ const getTopOrderbooks = (req, res) => {
 				'controller/public/getTopOrderbooks',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -136,7 +147,8 @@ const getTrades = (req, res) => {
 				'controller/public/getTrades',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -176,7 +188,8 @@ const getTradesHistory = (req, res) => {
 				'controller/public/getTrades',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -197,7 +210,8 @@ const getTicker = (req, res) => {
 				'controller/public/getTicker',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -216,7 +230,8 @@ const getAllTicker = (req, res) => {
 				'controller/public/getAllTicker',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -246,7 +261,8 @@ const getChart = (req, res) => {
 				'controller/public/getChart',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -267,7 +283,28 @@ const getCharts = (req, res) => {
 				'controller/public/getCharts',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
+		});
+};
+
+const getMiniCharts = (req, res) => {
+	const { assets, from, to, quote, period } = req.swagger.params;
+
+	toolsLib.getMiniCharts(assets.value, { from: from.value, to: to.value, quote: quote.value, period: period.value, additionalHeaders: {
+		'x-forwarded-for': req.headers['x-forwarded-for']
+	}})
+		.then((data) => {
+			return res.json(data);
+		})
+		.catch((err) => {
+			loggerPublic.error(
+				req.uuid,
+				'controller/public/getMiniCharts',
+				err.message
+			);
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -286,7 +323,8 @@ const getConfig = (req, res) => {
 				'controller/public/getConfig',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -316,7 +354,8 @@ const getHistory = (req, res) => {
 				'controller/public/getHistory',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -346,7 +385,8 @@ const getSymbols = (req, res) => {
 				'controller/public/getSymbols',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -378,7 +418,8 @@ const getAssetsPrices = (req, res) => {
 				'controller/public/getAssetsPrices',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -394,6 +435,7 @@ module.exports = {
 	getAllTicker,
 	getChart,
 	getCharts,
+	getMiniCharts,
 	getConfig,
 	getHistory,
 	getSymbols,

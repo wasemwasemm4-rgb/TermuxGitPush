@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
 	const Tier = sequelize.define(
 		'Tier',
 		{
@@ -18,8 +18,16 @@ module.exports = function(sequelize, DataTypes) {
 				defaultValue: ''
 			},
 			description: {
-				type: DataTypes.STRING,
+				type: DataTypes.TEXT,
 				allowNull: false
+			},
+			fees: {
+				type: DataTypes.JSONB,
+				defaultValue: {}
+			},
+			note: {
+				type: DataTypes.STRING,
+				defaultValue: ''
 			},
 			deposit_limit: {
 				type: DataTypes.DOUBLE,
@@ -29,17 +37,14 @@ module.exports = function(sequelize, DataTypes) {
 				type: DataTypes.DOUBLE,
 				defaultValue: 0
 			},
-			fees: {
-				type: DataTypes.JSONB,
-				defaultValue: {}
-			},
-			note: {
-				type: DataTypes.STRING,
-				defaultValue: ''
+			native_currency_limit: {
+				type: DataTypes.BOOLEAN,
+				defaultValue: true
 			}
 		},
 		{
-			underscored: true
+			underscored: true,
+			tableName: 'Tiers'
 		}
 	);
 

@@ -1,18 +1,19 @@
 import React from 'react';
+import { isMobile } from 'react-device-detect';
 import math from 'mathjs';
 import Image from 'components/Image';
-import { Button } from '../../components';
-import { formatToCurrency } from '../../utils/currency';
+import { Button } from 'components';
+import { formatToCurrency } from 'utils/currency';
 import {
 	BASE_CURRENCY,
 	CURRENCY_PRICE_FORMAT,
 	DEFAULT_COIN_DATA,
-} from '../../config/constants';
+} from 'config/constants';
 import withConfig from 'components/ConfigProvider/withConfig';
 import { EditWrapper } from 'components';
-import { getNetworkLabelByKey } from 'utils/wallet';
-
-import STRINGS from '../../config/localizedStrings';
+import { getNetworkNameByKey } from 'utils/wallet';
+import { limitNumberWithinRange } from 'utils/math';
+import STRINGS from 'config/localizedStrings';
 
 const ButtonSection = ({ onClickAccept, onClickCancel }) => {
 	return (
@@ -41,31 +42,60 @@ const ReviewModalContent = ({
 	onClickCancel,
 	icons: ICONS,
 	hasDestinationTag,
+	getWithdrawCurrency,
 }) => {
-	const { min, fullname, symbol = '' } =
+	const { min, fullname, withdrawal_fees, network } =
 		coins[currency || BASE_CURRENCY] || DEFAULT_COIN_DATA;
 	const baseCoin = coins[BASE_CURRENCY] || DEFAULT_COIN_DATA;
-	const shortName = symbol.toUpperCase();
+	const fee_coin = data.fee_coin ? data.fee_coin : '';
+	const fee_type = data.fee_type ? data.fee_type : '';
+	const isPercentage = fee_type === 'percentage';
+	const hasDifferentFeeCoin =
+		!isPercentage && !!fee_coin && fee_coin !== currency;
 
-	const totalTransaction = math.number(
-		math.add(math.fraction(data.amount), math.fraction(data.fee || 0))
-	);
+	let min_fee;
+	let max_fee;
+	const feeKey = network ? data.network : currency;
+	const display_name = getWithdrawCurrency.toUpperCase();
+	if (withdrawal_fees && withdrawal_fees[feeKey]) {
+		min_fee = withdrawal_fees[feeKey].min;
+		max_fee = withdrawal_fees[feeKey].max;
+	}
+
+	const fee = isPercentage
+		? limitNumberWithinRange(
+				math.number(
+					math.multiply(
+						math.fraction(data.amount),
+						math.fraction(math.divide(math.fraction(data.fee), 100) || 0)
+					)
+				),
+				min_fee,
+				max_fee
+		  )
+		: data.fee
+		? data.fee
+		: 0;
+
+	const feePrice = math.number(math.multiply(fee, price));
+
+	const totalTransaction = !!hasDifferentFeeCoin
+		? math.number(math.fraction(data.amount))
+		: math.number(math.add(math.fraction(data.amount), fee));
 
 	const cryptoAmountText = STRINGS.formatString(
 		CURRENCY_PRICE_FORMAT,
 		formatToCurrency(totalTransaction, min),
-		shortName
+		display_name
 	);
 
-	const feePrice = data.fee ? math.number(math.multiply(data.fee, price)) : 0;
-	const fee = data.fee ? data.fee : 0;
-	const fee_coin = data.fee_coin ? data.fee_coin : '';
-	const hasDifferentFeeCoin = fee_coin && fee_coin !== currency;
+	const { display_name: fee_coin_display } =
+		coins[fee_coin] || DEFAULT_COIN_DATA;
 
-	const withdrawFeeMessage = hasDifferentFeeCoin
+	const withdrawFeeMessage = !!hasDifferentFeeCoin
 		? STRINGS.formatString(
 				STRINGS['WITHDRAW_PAGE.MESSAGE_FEE_COIN'],
-				STRINGS.formatString(CURRENCY_PRICE_FORMAT, fee, fee_coin.toUpperCase())
+				STRINGS.formatString(CURRENCY_PRICE_FORMAT, fee, fee_coin_display)
 		  )
 		: STRINGS.formatString(
 				STRINGS['WITHDRAW_PAGE.MESSAGE_FEE'],
@@ -73,12 +103,18 @@ const ReviewModalContent = ({
 				STRINGS.formatString(
 					CURRENCY_PRICE_FORMAT,
 					formatToCurrency(feePrice, baseCoin.min),
-					baseCoin.symbol.toUpperCase()
+					baseCoin.display_name
 				)
 		  );
 
 	return (
-		<div className="d-flex flex-column review-wrapper">
+		<div
+			className={
+				isMobile
+					? 'd-flex flex-column review-wrapper review-withdraw-details-wrapper'
+					: 'd-flex flex-column review-wrapper'
+			}
+		>
 			<Image
 				iconId="CHECK_SENDING_BITCOIN"
 				icon={ICONS['CHECK_SENDING_BITCOIN']}
@@ -91,7 +127,9 @@ const ReviewModalContent = ({
 					</EditWrapper>
 				</div>
 				<div className="review-crypto-amount review-crypto-address">
-					<div>{cryptoAmountText}</div>
+					<div>
+						<EditWrapper>{cryptoAmountText}</EditWrapper>
+					</div>
 					<div className="review-fee_message">
 						<EditWrapper stringId="WITHDRAW_PAGE.MESSAGE_FEE,WITHDRAW_PAGE.MESSAGE_FEE_COIN">
 							{withdrawFeeMessage}
@@ -99,34 +137,53 @@ const ReviewModalContent = ({
 					</div>
 				</div>
 				<div className="review-warning_arrow" />
-				<div className="review-crypto-address">{data.address}</div>
-				{data.network && (
-					<div className="review-fee_message">
-						{STRINGS.formatString(
-							STRINGS['WITHDRAW_PAGE_NETWORK_TYPE_MESSAGE'],
-							fullname,
-							getNetworkLabelByKey(data.network)
-						)}
+				{!data.email ? (
+					<div className="review-crypto-address">{data.address}</div>
+				) : (
+					<div className="review-crypto-mail">
+						{' '}
+						<span className="review-fee_message">
+							<b>Email:</b> {data.email}
+						</span>
 					</div>
 				)}
-				{hasDestinationTag && (
-					<div className="review-fee_message">
-						{STRINGS.formatString(
-							STRINGS['WITHDRAW_PAGE_DESTINATION_TAG_MESSAGE'],
-							data.destination_tag
-								? data.destination_tag
-								: STRINGS['WITHDRAW_PAGE_DESTINATION_TAG_NONE']
-						)}
+				{data.network && !data.email && (
+					<div
+						className={
+							isMobile ? 'review-fee_message mt-3' : 'review-fee_message mt-2'
+						}
+					>
+						<EditWrapper stringId="WITHDRAW_PAGE_NETWORK_TYPE_MESSAGE">
+							{STRINGS.formatString(
+								STRINGS['WITHDRAW_PAGE_NETWORK_TYPE_MESSAGE'],
+								fullname,
+								getNetworkNameByKey(data.network)
+							)}
+						</EditWrapper>
 					</div>
 				)}
-				<div className="warning_text review-info_message">
-					<EditWrapper stringId="WITHDRAW_PAGE.MESSAGE_BTC_WARNING">
-						{STRINGS.formatString(
-							STRINGS['WITHDRAW_PAGE.MESSAGE_BTC_WARNING'],
-							fullname
-						)}
-					</EditWrapper>
-				</div>
+				{hasDestinationTag && !data.email && (
+					<div className="review-fee_message">
+						<EditWrapper stringId="WITHDRAW_PAGE_DESTINATION_TAG_MESSAGE,WITHDRAW_PAGE_DESTINATION_TAG_NONE">
+							{STRINGS.formatString(
+								STRINGS['WITHDRAW_PAGE_DESTINATION_TAG_MESSAGE'],
+								data.destination_tag
+									? data.destination_tag
+									: STRINGS['WITHDRAW_PAGE_DESTINATION_TAG_NONE']
+							)}
+						</EditWrapper>
+					</div>
+				)}
+				{!data.email && (
+					<div className="warning_text review-info_message">
+						<EditWrapper stringId="WITHDRAW_PAGE.MESSAGE_BTC_WARNING">
+							{STRINGS.formatString(
+								STRINGS['WITHDRAW_PAGE.MESSAGE_BTC_WARNING'],
+								fullname
+							)}
+						</EditWrapper>
+					</div>
+				)}
 			</div>
 			<ButtonSection
 				onClickAccept={onClickAccept}

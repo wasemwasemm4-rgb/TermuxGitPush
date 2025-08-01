@@ -18,6 +18,11 @@ subscriber.on('message', (channel, message) => {
 		const { action } = JSON.parse(message);
 		switch (action) {
 			case 'restart':
+				loggerWebsocket.info(
+					'ws/hub subscriber action restart',
+					hubConnected(),
+					networkNodeLib.wsConnected()
+				);
 				if (hubConnected() && networkNodeLib && networkNodeLib.wsConnected()) {
 					networkNodeLib.disconnect();
 					connect();
@@ -63,12 +68,12 @@ const connect = () => {
 			});
 
 			networkNodeLib.ws.on('message', (data) => {
-				if (data !== 'pong') {
+				if (data.toString() !== 'pong' && data.toString() !== 'Welcome to HollaEx Network') {
 					try {
 						data = JSON.parse(data);
 						handleHubData(data);
 					} catch (err) {
-						loggerWebsocket.error('ws/hub message err', err.message);
+						loggerWebsocket.error('ws/hub message err', err.message, data.toString());
 					}
 				}
 			});
@@ -88,8 +93,16 @@ const connect = () => {
 			loggerWebsocket.error('ws/hub/connect/checkStatus Error ', message);
 			setTimeout(() => {
 				process.exit(1);
-			}, 5000);
+			}, 60000);
 		});
+
+	// check after 10 seconds to make sure stream is connected
+	setTimeout(() => {
+		if (!hubConnected()) {
+			loggerWebsocket.error('ws/hub/connect hub not connected');
+			process.exit(1);
+		}
+	}, 60000);
 };
 
 const sendNetworkWsMessage = (op, topic, networkId) => {
@@ -117,6 +130,7 @@ const handleHubData = (data) => {
 			});
 			break;
 		case 'order':
+		case 'usertrade':
 		case 'wallet':
 			each(getChannels()[WEBSOCKET_CHANNEL(data.topic, data.user_id)], (ws) => {
 				if (ws.readyState === WebSocket.OPEN) {

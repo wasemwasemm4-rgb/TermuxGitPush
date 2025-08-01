@@ -1,15 +1,19 @@
 import React, { Component } from 'react';
-import { Spin, Table } from 'antd';
+import { Button, message, Modal, Spin, Table } from 'antd';
 import { SubmissionError } from 'redux-form';
 import { ReactSVG } from 'react-svg';
-import Moment from 'react-moment';
 
 import { DonutChart, CurrencyBall } from '../../../components';
-import { requestUserBalance } from './actions';
+import { generateCryptoAddress, requestUserBalance } from './actions';
+import { requestUserData } from '../User/actions';
 import { getPrices, generateChartData } from '../../../actions/assetActions';
 import { isSupport } from '../../../utils/token';
-import { calculateBalancePrice } from '../../../utils/currency';
+import {
+	calculateBalancePrice,
+	formatCurrencyByIncrementalUnit,
+} from '../../../utils/currency';
 import { STATIC_ICONS } from 'config/icons';
+import { BASE_CURRENCY, DEFAULT_COIN_DATA } from 'config/constants';
 
 const INITIAL_STATE = {
 	userBalance: {},
@@ -17,12 +21,16 @@ const INITIAL_STATE = {
 	tableData: [],
 	chartData: [],
 	userInformation: {},
+	showGenerateWalletAddress: false,
+	generateWalletStep: 'step-1',
+	generateAddressParams: {},
+	totalAvaliableAsset: 0,
 };
 
 class UserBalance extends Component {
 	state = INITIAL_STATE;
 
-	componentWillMount = () => {
+	UNSAFE_componentWillMount = () => {
 		const isSupportUser = isSupport();
 		if (this.props.userData) {
 			this.handleBalance(this.props.userData, isSupportUser);
@@ -39,33 +47,52 @@ class UserBalance extends Component {
 		) {
 			this.handleChartData();
 			const wallet = this.state.userInformation.wallet || [];
-			const tableData = Object.entries(this.props.coins).map(([key, value]) => {
-				let addressData = {};
-				let networks = value.network ? value.network.split(',') : [];
-				if (networks.length) {
-					networks.map((networkKey) => {
-						let temp =
-							wallet.filter(
-								(data) =>
-									data.network === networkKey && data.currency === value.symbol
-							)[0] || {};
-						return (addressData[`${networkKey}_address`] = temp.address);
-					});
-				} else {
-					let temp = wallet.filter((data) => data.currency === key)[0] || {};
-					addressData.address = temp.address;
-				}
-				return {
-					...value,
-					...addressData,
-					balance: this.state.userBalance[`${key}_balance`],
-					balance_available: this.state.userBalance[`${key}_available`],
-				};
-			});
+
+			const tableData = Object.entries(this.props.coins)
+				.sort()
+				.map(([key, value]) => {
+					let addressData = {};
+					let networks = value.network ? value.network.split(',') : [];
+					if (networks.length) {
+						networks.map((networkKey) => {
+							let temp =
+								wallet.filter(
+									(data) =>
+										data.network === networkKey &&
+										data.currency === value.symbol
+								)[0] || {};
+							return (addressData[`${networkKey}_address`] = temp.address);
+						});
+					} else {
+						let temp = wallet.filter((data) => data.currency === key)[0] || {};
+						addressData.address = temp.address;
+					}
+					return {
+						...value,
+						...addressData,
+						balance: this.state.userBalance[`${key}_balance`],
+						balance_available: this.state.userBalance[`${key}_available`],
+					};
+				});
 			this.setState({ tableData });
 		}
 	}
-	renderAddress = ({ network, address, ...rest }) => {
+
+	onHandleParams = (data, network) => {
+		let params = {};
+		if (network) {
+			params = { ...data, network };
+		} else {
+			params = { ...data };
+		}
+		this.setState({
+			showGenerateWalletAddress: true,
+			generateAddressParams: params,
+		});
+	};
+
+	renderAddress = ({ network, address, symbol, ...rest }) => {
+		let params = { user_id: this.state.userInformation.id, crypto: symbol };
 		const networks = network ? network.split(',') : [];
 		if (networks.length) {
 			return (
@@ -78,6 +105,14 @@ class UserBalance extends Component {
 								{rest[`${data}_address`]
 									? rest[`${data}_address`]
 									: 'Not generated'}{' '}
+								{!rest[`${data}_address`] && (
+									<span
+										onClick={() => this.onHandleParams(params, data)}
+										className="generate-link"
+									>
+										(Generate)
+									</span>
+								)}
 							</div>
 						);
 					})}
@@ -86,7 +121,17 @@ class UserBalance extends Component {
 		} else if (address) {
 			return <div>address: {address}</div>;
 		} else {
-			return <div>address: Not generated</div>;
+			return (
+				<div>
+					address: Not generated{' '}
+					<span
+						onClick={() => this.onHandleParams(params)}
+						className="generate-link"
+					>
+						(Generate)
+					</span>
+				</div>
+			);
 		}
 	};
 	getBalanceColumn = () => {
@@ -127,14 +172,6 @@ class UserBalance extends Component {
 			// 	}
 			// },
 			{
-				title: 'Last generated',
-				dataIndex: 'updated_at',
-				key: 'updated_at',
-				render: (updated) => (
-					<Moment format="YYYY/MM/DD HH:mm">{updated}</Moment>
-				),
-			},
-			{
 				title: 'Available',
 				dataIndex: 'balance_available',
 				key: 'balance_available',
@@ -149,7 +186,7 @@ class UserBalance extends Component {
 		const prices = await getPrices({ coins });
 		const totalAsset = calculateBalancePrice(userBalance, prices, coins);
 		const chartData = generateChartData(userBalance, prices, coins, totalAsset);
-		this.setState({ chartData });
+		this.setState({ chartData, totalAvaliableAsset: totalAsset });
 	};
 
 	handleBalance = (userData, isSupportUser) => {
@@ -180,10 +217,119 @@ class UserBalance extends Component {
 		}
 	};
 
+	onHandleGenerate = async (params) => {
+		this.setState({ showGenerateWalletAddress: false });
+		try {
+			let res = await generateCryptoAddress({
+				body: JSON.stringify(params),
+				method: 'POST',
+			});
+			if (res) {
+				requestUserData({ id: params.user_id }).then((res) => {
+					if (res && res.data && res.data[0]) {
+						this.setState({ userInformation: res.data[0] });
+					}
+				});
+			}
+		} catch (error) {
+			message.error(error.message);
+		}
+	};
+
+	GenerateWalletAddress = (key) => {
+		const { generateAddressParams } = this.state;
+		switch (key) {
+			case 'step-2':
+				return (
+					<div className="step-2-container">
+						<div className="title">Generate wallet address</div>
+						<div className="middle-container pt-3">
+							<fieldset style={{ border: '1px solid' }}>
+								<legend style={{ width: 'auto' }} className="ml-3">
+									Check and confirm
+								</legend>
+								<div>
+									<div className="d-flex mt-3 pl-3">
+										<div className="width-6">User:</div>{' '}
+										{generateAddressParams.user_id}
+									</div>
+									<div className="d-flex mt-3 pl-3">
+										<div className="width-6">Assets:</div>{' '}
+										{generateAddressParams.crypto}
+									</div>
+									{generateAddressParams.network && (
+										<div className="d-flex mt-3 pl-3 pb-5">
+											<div className="width-6">Network:</div>
+											{generateAddressParams.network}
+										</div>
+									)}
+								</div>
+							</fieldset>
+						</div>
+						<div className="btn-container">
+							<Button
+								className="green-btn"
+								onClick={() =>
+									this.setState({ showGenerateWalletAddress: false })
+								}
+							>
+								Cancel
+							</Button>
+							<Button
+								className="green-btn"
+								onClick={() => this.onHandleGenerate(generateAddressParams)}
+							>
+								Generate
+							</Button>
+						</div>
+					</div>
+				);
+			default:
+			case 'step-1':
+				return (
+					<div className="step-1-container">
+						<div className="title">Generate wallet address</div>
+						<div className="info mt-3">
+							This will generate crypto address for this assets.
+						</div>
+						<div className="info mt-3">Are you sure you want to proceed?</div>
+						<div className="btn-container">
+							<Button
+								onClick={() =>
+									this.setState({ showGenerateWalletAddress: false })
+								}
+								className="green-btn"
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={() => this.setState({ generateWalletStep: 'step-2' })}
+								className="green-btn"
+							>
+								Next
+							</Button>
+						</div>
+					</div>
+				);
+		}
+	};
+
 	render() {
-		const { loading, tableData, chartData } = this.state;
+		const {
+			loading,
+			tableData,
+			chartData,
+			generateWalletStep,
+			showGenerateWalletAddress,
+			userInformation,
+			totalAvaliableAsset,
+		} = this.state;
 		const { coins } = this.props;
 		const BALANCE_COLUMN = this.getBalanceColumn();
+		const { increment_unit, display_name } =
+			coins[
+				userInformation?.settings?.interface?.display_currency || BASE_CURRENCY
+			] || DEFAULT_COIN_DATA;
 
 		if (loading) {
 			return (
@@ -195,6 +341,15 @@ class UserBalance extends Component {
 
 		return (
 			<div className="f-1 admin-user-container">
+				<Modal
+					visible={showGenerateWalletAddress}
+					className="admin-user-modal"
+					footer={false}
+					onCancel={() => this.setState({ showGenerateWalletAddress: false })}
+					afterClose={() => this.setState({ generateWalletStep: 'step-1' })}
+				>
+					{this.GenerateWalletAddress(generateWalletStep)}
+				</Modal>
 				<div className="d-flex align-items-center mb-4">
 					<div>
 						<ReactSVG
@@ -207,6 +362,16 @@ class UserBalance extends Component {
 						<div>
 							Below are all the balances of the assets owned by this user
 						</div>
+						<div>
+							<span>
+								Total:{' '}
+								{formatCurrencyByIncrementalUnit(
+									totalAvaliableAsset,
+									increment_unit
+								)}{' '}
+								{display_name && display_name}
+							</span>
+						</div>
 					</div>
 				</div>
 				<Table
@@ -217,6 +382,7 @@ class UserBalance extends Component {
 					expandedRowRender={this.renderAddress}
 					dataSource={tableData}
 					className="blue-admin-table"
+					pagination={false}
 				/>
 				<div className="user-donut-chart-wrapper">
 					<div>Percentage balance breakdown</div>

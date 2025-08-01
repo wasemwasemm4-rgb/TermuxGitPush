@@ -8,14 +8,14 @@ import {
 } from '@ant-design/icons';
 import { Button, Tooltip } from 'antd';
 import { Link } from 'react-router';
-import { formatCurrency, formatDate } from '../../../utils/index';
 import { isSupport } from 'utils/token';
+import { formatDate } from 'utils';
 
 /*export const renderBoolean = (value) => (
 	<LegacyIcon type={value ? 'check-circle' : 'close-circle-o'} />
 );*/
 
-const renderStatus = (_, { status, dismissed, rejected }) => {
+export const renderStatus = (_, { status, dismissed, rejected }) => {
 	if (status) {
 		return 'Completed';
 	}
@@ -86,7 +86,34 @@ export const renderUser = (id) => (
 	</Tooltip>
 );
 
-const renderContent = (renderData, onOpenModal) => {
+export const renderResendContent = (renderData, onOpenModal) => {
+	if (
+		!renderData.status &&
+		!renderData.dismissed &&
+		!renderData.rejected &&
+		renderData.waiting
+	) {
+		return (
+			<div className="d-flex validate-wrapper">
+				<ClockCircleOutlined style={{ margin: '5px' }} />
+				<Tooltip placement="bottom" title="RETRY">
+					<div
+						className="anchor"
+						onClick={(e) => {
+							onOpenModal(renderData, 'retry');
+							e.preventDefault();
+							e.stopPropagation();
+						}}
+					>
+						Retry
+					</div>
+				</Tooltip>
+			</div>
+		);
+	}
+};
+
+export const renderContent = (renderData, onOpenModal) => {
 	if (renderData.status) {
 		return (
 			<div className="d-flex">
@@ -172,6 +199,10 @@ export const COLUMNS = (currency, onOpenModal) => {
 				title: 'Validate/dismiss',
 				render: (renderData) => renderContent(renderData, onOpenModal),
 			},
+			{
+				title: 'Retry',
+				render: (renderData) => renderResendContent(renderData, onOpenModal),
+			},
 		];
 		return columns.concat(adminColumns);
 	}
@@ -197,14 +228,15 @@ export const renderRowContent = ({
 	created_at,
 	currency,
 	fee_coin,
+	coins,
 }) => {
 	return (
 		<div>
 			<div>
-				Amount: {formatCurrency(amount)} {currency}
+				Amount: {amount} {currency}
 			</div>
 			<div>
-				Fee: {formatCurrency(fee)} {fee_coin}
+				Fee: {fee} {fee_coin}
 			</div>
 			{address && <div>Address: {address}</div>}
 			<div>Timestamp: {formatDate(created_at)}</div>

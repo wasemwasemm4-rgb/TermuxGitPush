@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import classnames from 'classnames';
 import { FieldContent } from './FieldWrapper';
-
-import STRINGS from '../../../config/localizedStrings';
-import { FLEX_CENTER_CLASSES } from '../../../config/constants';
+import { EditWrapper } from 'components';
+import { DEFAULT_TOGGLE_OPTIONS } from 'config/options';
+import { FLEX_CENTER_CLASSES } from 'config/constants';
 
 class ToggleField extends Component {
 	state = {
@@ -21,8 +21,9 @@ class ToggleField extends Component {
 	}
 
 	UNSAFE_componentWillReceiveProps(nextProps) {
+		const { input } = this.props;
 		if (
-			this.props.input.value !== nextProps.input.value &&
+			input.value !== nextProps.input.value &&
 			(nextProps.input.value || nextProps.input.value === false)
 		) {
 			this.setState({ selected: nextProps.input.value });
@@ -74,7 +75,13 @@ class ToggleField extends Component {
 						{...rest}
 					>
 						<div className="d-flex justify-content-between">
-							<div>{label}</div>
+							<div
+								className={classnames({
+									'half-opacity': !selected || disabled,
+								})}
+							>
+								<EditWrapper>{label}</EditWrapper>
+							</div>
 							<Toggle
 								selected={selected}
 								options={options}
@@ -144,7 +151,7 @@ const Toggle = ({
 );
 
 ToggleField.defaultProps = {
-	options: STRINGS['DEFAULT_TOGGLE_OPTIONS'],
+	options: DEFAULT_TOGGLE_OPTIONS,
 	onChange: () => {},
 	toggleOnly: false,
 };

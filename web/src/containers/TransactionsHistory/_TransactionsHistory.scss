@@ -10,7 +10,9 @@
 		.history_block-wrapper {
 			max-height: calc(100% - 1rem);
 			overflow-x: scroll;
-
+			.history-title {
+				font-size: 14px;
+			}
 			.table-content {
 				overflow-x: scroll;
 				white-space: nowrap;
@@ -23,6 +25,43 @@
 				}
 				.table_body-wrapper {
 					height: 4.5rem;
+				}
+			}
+		}
+		#trades-filters,
+		#orders-filters,
+		#deposits-filters,
+		#withdrawals-filters {
+			.ant-select-selector {
+				.ant-select-selection-item {
+					font-size: 13px;
+					div {
+						align-items: flex-start;
+					}
+				}
+			}
+			.ant-form-item {
+				.ant-form-item-label {
+					padding: unset;
+					label {
+						font-size: 13px;
+						height: unset;
+					}
+				}
+				.ant-form-item-control {
+					.ant-form-item-control-input-content {
+						.ant-radio-group {
+							padding: unset;
+						}
+					}
+				}
+			}
+			.ant-picker {
+				margin: unset;
+				.ant-picker-input {
+					input {
+						font-size: 13px;
+					}
 				}
 			}
 		}
@@ -43,8 +82,11 @@
 					font-size: 1.2rem !important;
 				}
 				td {
-					padding: 0.5rem;
+					padding: 0.75rem;
 					min-width: 9rem;
+				}
+				.expand-icon {
+					min-width: unset !important;
 				}
 
 				.sticky-col {
@@ -61,6 +103,14 @@
 					min-width: 10rem !important;
 					max-width: 10rem !important;
 					z-index: 1;
+					&::before {
+						content: '';
+						position: absolute;
+						bottom: 0;
+						left: 0;
+						right: 0;
+						border-bottom: 1px solid $colors-border !important;
+					}
 				}
 			}
 		}
@@ -158,12 +208,29 @@
 			margin-right: 10px;
 		}
 	}
-	.check-deposit-txt {
-		right: 150px !important;
-	}
+
 	.loader_wrapper {
 		top: 0;
 		left: 0;
+	}
+	.transactions-history-table {
+		.table_body-wrapper {
+			.expandable-container {
+				.custom-row-line {
+					width: 5px;
+					height: 1px;
+					background-color: $colors-main-black;
+				}
+				.blue-link {
+					.edit-wrapper__container {
+						text-decoration: underline !important;
+					}
+				}
+				.blue-link:hover {
+					cursor: pointer;
+				}
+			}
+		}
 	}
 	.table-wrapper {
 		.table_body-wrapper.with_icon {
@@ -171,15 +238,24 @@
 				border-top: 1px solid $colors-border !important;
 				border-bottom: 1px solid $colors-border !important;
 			}
-			.currency-ball-image-wrapper {
-				padding-right: 8px;
-				padding-bottom: 12px;
-			}
-			.coin-icons {
-				width: 30px;
-				padding-top: 4px;
+		}
+	}
+	.table-wrapper {
+		.table_body-wrapper.with_icon {
+			tr td:first-child.category-label {
+				border: none !important;
 			}
 		}
+	}
+	.ant-picker-clear {
+		background: none;
+	}
+	.action_notification-wrapper {
+		top: 21px;
+	}
+
+	.loader_background {
+		filter: opacity(0.25) !important;
 	}
 }
 
@@ -196,7 +272,6 @@
 
 .transaction-history-wrapper {
 	svg {
-		.trade-history-1,
 		.deposit-history-3,
 		.withdrawals-history-3,
 		.transaction-history-1,
@@ -235,5 +310,43 @@
 
 	.rejected {
 		color: $colors-notifications-red;
+	}
+}
+
+.flex-row {
+	flex-direction: row;
+}
+
+.expandable-container {
+	display: flex;
+	flex-direction: column;
+
+	div {
+		display: flex;
+		flex-direction: row;
+	}
+
+	p {
+		margin-right: 5px;
+		font-weight: thin;
+		margin-bottom: 0px;
+	}
+
+	.font-bold {
+		font-weight: bolder;
+	}
+}
+
+.action_notification-container {
+	display: flex;
+
+	.action_notification-wrapper {
+		position: unset;
+	}
+
+	> div:not(:last-child)::after {
+		padding: 0 0.8rem;
+		content: '|';
+		color: $trade-fill-indicator-text;
 	}
 }

@@ -3,10 +3,8 @@ import classnames from 'classnames';
 import TradeBlock from './components/TradeBlock';
 import ActiveOrders from './components/ActiveOrders';
 import UserTrades from './components/UserTrades';
-import { ActionNotification } from '../../components';
-import STRINGS from '../../config/localizedStrings';
-import LogoutInfoOrder from './components/LogoutInfoOrder';
-import LogoutInfoTrade from './components/LogoutInfoTrade';
+import { ActionNotification, NotLoggedIn } from 'components';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 
 const MobileOrders = ({
@@ -17,12 +15,12 @@ const MobileOrders = ({
 	pair,
 	pairData,
 	userTrades,
-	activeTheme,
 	isLoggedIn,
 	pairs,
 	coins,
 	cancelDelayData,
 	icons: ICONS,
+	activeOrdersMarket,
 }) => (
 	<div
 		className={classnames(
@@ -51,7 +49,7 @@ const MobileOrders = ({
 			}
 			className="f-1"
 		>
-			{isLoggedIn ? (
+			<NotLoggedIn placeholderKey="NOT_LOGGEDIN.TXT_1" hasBackground={false}>
 				<ActiveOrders
 					pairs={pairs}
 					cancelDelayData={cancelDelayData}
@@ -59,9 +57,7 @@ const MobileOrders = ({
 					onCancel={cancelOrder}
 					onCancelAll={cancelAllOrders}
 				/>
-			) : (
-				<LogoutInfoOrder activeTheme={activeTheme} />
-			)}
+			</NotLoggedIn>
 		</TradeBlock>
 		<TradeBlock
 			title={STRINGS['RECENT_TRADES']}
@@ -71,7 +67,7 @@ const MobileOrders = ({
 					<ActionNotification
 						text={STRINGS['TRANSACTION_HISTORY.TITLE']}
 						iconPath={ICONS['ARROW_TRANSFER_HISTORY_ACTIVE']}
-						onClick={goToTransactionsHistory}
+						onClick={() => goToTransactionsHistory('trades')}
 						status=""
 						showActionText={true}
 					/>
@@ -81,7 +77,7 @@ const MobileOrders = ({
 			}
 			className="f-1"
 		>
-			{isLoggedIn ? (
+			<NotLoggedIn placeholderKey="NOT_LOGGEDIN.TXT_1" hasBackground={false}>
 				<UserTrades
 					pageSize={10}
 					trades={userTrades}
@@ -90,10 +86,9 @@ const MobileOrders = ({
 					lessHeaders={true}
 					pairs={pairs}
 					coins={coins}
+					icons={ICONS}
 				/>
-			) : (
-				<LogoutInfoTrade />
-			)}
+			</NotLoggedIn>
 		</TradeBlock>
 	</div>
 );

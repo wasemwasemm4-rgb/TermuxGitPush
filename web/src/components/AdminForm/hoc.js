@@ -1,7 +1,9 @@
 import React from 'react';
 import renderFields from './utils';
-import { reduxForm, reset } from 'redux-form';
+import { reduxForm, reset, getFormValues } from 'redux-form';
 import { Button } from 'antd';
+import { connect } from 'react-redux';
+import FormButton from 'components/FormButton/Button';
 
 const Form = (name, className = '', allowPristine = false) => {
 	const HocForm = ({
@@ -20,6 +22,9 @@ const Form = (name, className = '', allowPristine = false) => {
 		disableAllFields = false,
 		secondaryBtnTxt = '',
 		onClose = () => {},
+		buttonSubmitting = false,
+		renderCustomFooter = () => {},
+		formValues,
 	}) => {
 		return (
 			<form
@@ -39,37 +44,54 @@ const Form = (name, className = '', allowPristine = false) => {
 						<strong>{error}</strong>
 					</div>
 				)}
-				{secondaryBtnTxt ? (
-					<Button type="primary" onClick={onClose} className={'green-btn'}>
-						{secondaryBtnTxt}
-					</Button>
-				) : null}
-				<Button
-					type={buttonType ? buttonType : 'primary'}
-					onClick={handleSubmit(onSubmit)}
-					disabled={
-						disableAllFields ||
-						(allowPristine ? false : fields && pristine) ||
-						submitting ||
-						!valid ||
-						error
-					}
-					size={small ? 'small' : 'large'}
-					className={small ? `${buttonClass}` : `w-100 ${buttonClass}`}
-					style={small ? { float: 'right' } : null}
+				{renderCustomFooter(formValues)}
+				<div
+					className={secondaryBtnTxt ? 'd-flex justify-content-between' : ''}
 				>
-					{buttonText}
-				</Button>
+					{secondaryBtnTxt ? (
+						<Button
+							type="primary"
+							onClick={onClose}
+							className={`green-btn btn-48`}
+						>
+							{secondaryBtnTxt}
+						</Button>
+					) : null}
+					<FormButton
+						type={buttonType ? buttonType : 'primary'}
+						handleSubmit={handleSubmit(onSubmit)}
+						disabled={
+							disableAllFields ||
+							(allowPristine ? false : fields && pristine) ||
+							submitting ||
+							!valid ||
+							error ||
+							buttonSubmitting
+						}
+						size={small ? 'small' : 'large'}
+						className={`${small ? buttonClass : buttonClass} ${
+							secondaryBtnTxt ? 'btn-48' : 'w-100'
+						}`}
+						style={small ? { float: 'right' } : null}
+						buttonText={buttonText}
+						secondaryClassName={'w-100'}
+					/>
+				</div>
 			</form>
 		);
 	};
 
-	return reduxForm({
+	const CommonHocForm = reduxForm({
 		form: name,
 		// onSubmitFail: (result, dispatch) => dispatch(reset(FORM_NAME)),
 		onSubmitSuccess: (result, dispatch) => dispatch(reset(name)),
 		enableReinitialize: true,
 	})(HocForm);
+
+	const mapStateToProps = (state) => ({
+		formValues: getFormValues(name)(state),
+	});
+	return connect(mapStateToProps)(CommonHocForm);
 };
 
 export default Form;

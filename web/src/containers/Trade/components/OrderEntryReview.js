@@ -1,9 +1,11 @@
 import React, { Fragment } from 'react';
+import { Link } from 'react-router';
 import classnames from 'classnames';
 import math from 'mathjs';
 import { connect } from 'react-redux';
 import { estimatedMarketPriceSelector } from 'containers/Trade/utils';
-import STRINGS from '../../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
+import { EditWrapper } from 'components';
 
 const ROW_CLASSNAMES = ['d-flex', 'justify-content-between'];
 
@@ -21,6 +23,8 @@ const Review = ({
 	type,
 	onFeeStructureAndLimits,
 	estimatedPrice,
+	symbol,
+	side,
 }) => {
 	// const orderAmountReceived = math.add(
 	// 	math.fraction(orderPrice),
@@ -29,14 +33,26 @@ const Review = ({
 	const upToMarket = !math.smaller(orderPrice, 0);
 	return (
 		<div className="trade_order_entry-review d-flex flex-column">
-			<div className={classnames(...ROW_CLASSNAMES)}>
-				<div>
-					{type === 'market'
-						? STRINGS['ESTIMATED_PRICE']
-						: STRINGS['ORDER_PRICE']}
-					:
+			<div className={classnames(...ROW_CLASSNAMES, 'align-items-center')}>
+				<div className="trade-order-price-text font-weight-bold important-text">
+					<EditWrapper stringId="ESTIMATED_PRICE,ORDER_PRICE">
+						<span
+							className={
+								side === 'buy' ? 'market-buy-side' : 'market-sell-side'
+							}
+						>
+							{STRINGS[
+								side === 'buy' ? 'SIDES_VALUES.buy' : 'SIDES_VALUES.sell'
+							]?.toUpperCase()}
+						</span>
+						{type === 'market' ? (
+							<span>{STRINGS['ESTIMATED_PRICE']}:</span>
+						) : (
+							<span>{STRINGS['ORDER_PRICE']}:</span>
+						)}
+					</EditWrapper>
 				</div>
-				<div className="text-price">
+				<div className="text-price font-weight-bold">
 					{type !== 'market' && (
 						<Fragment>
 							{upToMarket
@@ -64,12 +80,34 @@ const Review = ({
 				</div>
 			</div>
 			<div className={classnames(...ROW_CLASSNAMES)}>
-				<div>{STRINGS['FEES']}:</div>
+				<div>
+					<EditWrapper stringId="FEES">{STRINGS['FEES']}</EditWrapper>:
+				</div>
 				<div
-					className="text-price blue-link pointer"
+					className="text-price blue-link pointer caps"
 					onClick={onFeeStructureAndLimits}
 				>
-					{STRINGS['VIEW_MY_FEES']}
+					<EditWrapper stringId="VIEW_MY_FEES">
+						{STRINGS['VIEW_MY_FEES']}
+					</EditWrapper>
+				</div>
+			</div>
+			<div className={classnames('d-flex', 'justify-content-end')}>
+				<div />
+				<div className="text-price blue-link pointer caps">
+					<Link to={`/prices/coin/${symbol?.toLowerCase()}`}>
+						<EditWrapper stringId="ABOUT_LINK">
+							{STRINGS.formatString(STRINGS['ABOUT_LINK'], symbol)}
+						</EditWrapper>
+					</Link>
+				</div>
+				<span className="link-separator mx-2"></span>
+				<div className="blue-link pointer caps">
+					<Link to="/prices">
+						<EditWrapper stringId="VIEW_ALL_PRICES_LINK">
+							{STRINGS['VIEW_ALL_PRICES_LINK']}
+						</EditWrapper>
+					</Link>
 				</div>
 			</div>
 		</div>

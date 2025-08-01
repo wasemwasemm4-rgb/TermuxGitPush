@@ -1,9 +1,9 @@
-import React, { Component, Fragment } from 'react';
+import React, { Component } from 'react';
 import classnames from 'classnames';
 // import { Link } from 'react-router';
 import { connect } from 'react-redux';
 import TradeBlock from './components/TradeBlock';
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import TradeHistory from './components/TradeHistory';
 import TVChartContainer from './ChartContainer';
 
@@ -26,7 +26,6 @@ class MobileChart extends Component {
 		const {
 			pair,
 			pairData,
-			activeTheme,
 			activeLanguage,
 			symbol,
 			// constants,
@@ -50,31 +49,17 @@ class MobileChart extends Component {
 						</div>
 					}
 					setRef={this.setChartRef}
-					className="f-1 overflow-x"
+					className="f-1 overflow-x trade-chart"
 					alignChildTitle={true}
-					tailHead={
-						// constants &&
-						// constants.features &&
-						// constants.features.quick_trade ? (
-						// 	<div className="quick-trade-tab p-1 mt-1">
-						// 		<Link to={`/quick-trade/${pairValue}`}>
-						// 			{STRINGS['QUICK_TRADE']}
-						// 		</Link>
-						// 	</div>
-						// ) : (
-							<Fragment />
-						// )
-					}
 				>
 					{pair && chartHeight > 0 && (
-						<TVChartContainer
-							activeTheme={activeTheme}
-							symbol={symbol}
-							pairData={pairData}
-						/>
+						<TVChartContainer symbol={symbol} pairData={pairData} />
 					)}
 				</TradeBlock>
-				<TradeBlock title={STRINGS['PUBLIC_SALES']} className="f-1">
+				<TradeBlock
+					title={STRINGS['PUBLIC_SALES']}
+					className="f-1 trade-public-sales"
+				>
 					<TradeHistory pairData={pairData} language={activeLanguage} />
 				</TradeBlock>
 			</div>

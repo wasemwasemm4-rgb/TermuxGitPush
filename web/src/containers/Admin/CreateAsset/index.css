@@ -93,6 +93,14 @@
 	text-align: center;
 	margin-top: 1rem;
 }
+.create-asset-container .create-new-link .btn-content {
+	margin-top: 1rem;
+	margin-bottom: 0.5rem;
+	color: #fff;
+	background-color: #3a4fff;
+	border-color: #3a4fff;
+	width: 100%;
+}
 .create-asset-container .grey-warning {
 	background-color: #545454;
 	color: #ffffff;
@@ -114,10 +122,46 @@
 .create-asset-container .grey-warning .fiat-icon {
 	width: 4rem;
 }
-.create-asset-container .grey-warning .sub-title {
-	color: #ffffff;
+.create-asset-container .grey-warning .image-crypto .fiat-icon {
+	width: 5rem;
 }
-
+.red-warning {
+	background-color: #460000;
+	color: #ffffff;
+	display: flex;
+	padding: 1rem 2rem 1rem 1rem;
+	margin-top: 2rem;
+}
+.red-warning .icon-wrapper {
+	margin-right: 1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.red-warning .image-crypto .fiat-icon {
+	width: 5rem;
+}
+.red-warning .link-content {
+	color: #3a4fff;
+	cursor: pointer;
+}
+.active-status-form-container {
+	margin-bottom: unset !important;
+}
+.create-asset-container .coin-limit-wrap h3,
+.create-asset-container .coin-limit-wrap .fee-wrapper,
+.create-asset-container .grey-warning .sub-title,
+.withdrawal-fee-text {
+	color: #ffffff !important;
+}
+.create-asset-container .coin-limit-wrap .fee-wrapper .tiers-icon,
+.tieredWrapper .tiers-icon,
+.checkToConfirmDeposit .tiers-icon {
+	width: 25px;
+}
+.create-asset-container .coin-limit-wrap .fee-wrapper .network-border {
+	border-bottom: 1px solid #ffffff;
+}
 .preview-coin-container {
 	display: flex;
 	margin: 2rem 0rem;
@@ -285,6 +329,7 @@
 }
 .create-asset-container .md-field-wrap {
 	padding-top: 1rem;
+	color: #ffffff;
 }
 .create-asset-container .md-field-wrap .ant-upload,
 .create-asset-container .md-field-wrap .ant-input-number,
@@ -384,9 +429,8 @@
 	padding: 1.5rem;
 	border-bottom: 1px solid #a9a9a9;
 }
-.create-asset-container .burn-wrapper .type_wrapper h3 {
+.create-asset-container .burn-wrapper h3 {
 	font-weight: bold;
-	margin-bottom: 0;
 	color: #ffffff !important;
 }
 .create-asset-container .burn-wrapper .ant-btn,
@@ -462,4 +506,114 @@
 .create-asset-container .type-wrap .warning-container {
 	position: relative;
 	display: flex;
+}
+.coin-limit-wrap .btn-wrapper .ant-btn {
+	width: 45%;
+}
+.create-asset-container .coin-limit-wrap .ant-input[disabled] {
+	opacity: 0.5;
+	color: #c4c4c4;
+	background-color: var(--admin_panel_input);
+}
+.preview-detail-container .border-separator,
+.create-asset-container .coin-limit-wrap .fee-seperator {
+	border-bottom: 1px solid #ffffff;
+	margin-top: 14px;
+	width: 5rem;
+}
+.create-asset-container .coin-limit-wrap .fee-seperator {
+	width: 8rem;
+}
+.create-asset-container .coin-limit-wrap .infotxt {
+	font-size: 11px;
+	color: #bcbcbc;
+	margin-bottom: 24px !important;
+}
+.create-asset-container .coin-limit-wrap .field-wrap .ant-form-item {
+	margin-bottom: 0px !important;
+}
+.create-asset-container
+	.coin-limit-wrap
+	.field-wrap
+	.ant-form-item
+	.ant-select
+	.ant-select-arrow {
+	color: white !important;
+}
+.create-asset-container .viewLink {
+	cursor: pointer;
+	color: #ffffff;
+	text-decoration: underline;
+	margin-bottom: 20px;
+}
+
+.checkToConfirmDeposit .legend {
+	background-color: #27339d;
+	left: 1rem;
+	top: 21px;
+	width: 42%;
+	padding: 5px;
+	position: relative;
+}
+
+.checkToConfirmDeposit .confirm-container {
+	border: 1px solid #bcbcbc;
+	padding: 1.5rem;
+	display: flex;
+}
+
+.checkToConfirmDeposit .confirmTiers,
+.fee-wrapper .confirmTiers {
+	border: 1px solid #bcbcbc;
+	padding: 1.5rem;
+}
+
+.checkToConfirmDeposit .centerBorder,
+.fee-wrapper .centerBorder {
+	border: 1px solid #bcbcbc;
+	margin-left: 1rem;
+	margin-right: 1rem;
+}
+
+.tieredWrapper .withdrawhead {
+	color: white;
+}
+
+.coin-limit-wrap .disableall {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.coin-limit-wrap .withdrawInput,
+.coin-limit-wrap .withdrawInput .ant-input,
+.tieredWrapper .tieredInput {
+	background-color: #202980;
+	color: #bcbcbc;
+}
+
+.tieredWrapper .headStaticTier,
+.tieredWrapper .headPercentageTier {
+	display: flex;
+	margin-left: 18.5rem;
+}
+
+.checkToConfirmDeposit .legend2 {
+	background-color: #27339d;
+	left: 1rem;
+	top: 21px;
+	width: 31%;
+	position: relative;
+}
+
+.fee-wrapper .confirmTiers {
+	width: 70%;
+}
+
+.fee-wrapper .coin-ico {
+	background-color: #202980;
+}
+
+.create-asset-container .coin-limit-wrap .infotxt2 {
+	font-size: 11px;
+	color: #bcbcbc;
 }

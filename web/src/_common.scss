@@ -96,6 +96,10 @@ table th {
 	color: $link !important;
 }
 
+.blue-link:hover {
+	opacity: 0.5;
+}
+
 .arrow {
 	border: solid grey;
 	border-width: 0 3px 3px 0;
@@ -166,15 +170,15 @@ table th {
 }
 
 .align-center {
-	align-items: center;
+	align-items: center !important;
 }
 
 .align-start {
-	align-items: flex-start;
+	align-items: flex-start !important;
 }
 
 .align-end {
-	align-items: flex-end;
+	align-items: flex-end !important;
 }
 
 .underline-text {
@@ -216,6 +220,14 @@ table th {
 	}
 }
 
+.gap-1 {
+	gap: 1rem;
+}
+
+.filter-dropdown {
+	width: 150px !important;
+}
+
 .custom-select-input-style {
 	&.no-border {
 		.ant-select-selector {
@@ -250,7 +262,7 @@ table th {
 		&.ant-select {
 			margin: 0 0.4rem !important;
 			max-width: 100px !important;
-			min-width: 70px;
+			min-width: 80px;
 		}
 
 		.ant-select-selector {
@@ -300,14 +312,89 @@ table th {
 }
 
 .important-text {
-	color: $colors-main-black;
+	color: $colors-main-black !important;
 }
 
 .secondary-text {
 	color: $colors-black;
 }
 
+.blue-icon {
+	svg path {
+		fill: $link;
+	}
+}
+
 .kit-divider {
 	margin: 1rem 0;
 	border-bottom: solid 1px $colors-black;
+}
+
+.flex-direction-row {
+	flex-direction: row !important;
+}
+
+.text-align-left {
+	text-align: left !important;
+}
+
+.normal {
+	font-weight: normal;
+}
+
+.text-align-right {
+	text-align: right !important;
+}
+
+.zoom-in {
+	cursor: -moz-zoom-in;
+	cursor: -webkit-zoom-in;
+	cursor: zoom-in;
+}
+
+.inline-flex {
+	display: inline-flex !important;
+}
+
+.no-wrap {
+	white-space: nowrap !important;
+}
+
+.margin-auto {
+	margin: auto;
+}
+
+.row-reverse {
+	flex-direction: row-reverse;
+}
+
+.danger-zone {
+	border-top: $colors-notifications-red 4px solid;
+	background-color: $calculated_specials_notifications-alerts-pale;
+}
+
+.fs-12 {
+	font-size: 12px;
+}
+
+.fs-16 {
+	font-size: 16px;
+}
+
+.fs-24 {
+	font-size: 24px;
+}
+
+.text-decoration-underline {
+	text-decoration: underline;
+}
+
+.refresh-link {
+	position: static !important;
+	top: unset;
+	right: unset;
+}
+
+.font-raleway {
+	font-family: Raleway;
 }

@@ -3,26 +3,19 @@ import classnames from 'classnames';
 import { connect } from 'react-redux';
 import { isBrowser, isMobile } from 'react-device-detect';
 
-import STRINGS from '../../config/localizedStrings';
-import { AppFooter, NotificationsList } from '../../components';
-import { getClasesForLanguage } from '../../utils/string';
-import { getThemeClass } from '../../utils/theme';
+import STRINGS from 'config/localizedStrings';
+import { AppFooter, NotificationsList } from 'components';
+import { getClasesForLanguage } from 'utils/string';
 
 class Home extends Component {
 	render() {
-		const {
-			activeTheme,
-			activeLanguage,
-			constants,
-			enabledPlugins,
-		} = this.props;
+		const { activeLanguage, constants, enabledPlugins } = this.props;
 		return (
 			<div
 				className={classnames(
 					'app_container',
 					'home_container-mobile',
 					getClasesForLanguage(activeLanguage),
-					getThemeClass(activeTheme),
 					{
 						'layout-mobile': isMobile,
 						'layout-desktop': isBrowser,
@@ -98,7 +91,7 @@ class Home extends Component {
 					</div>
 				</div>
 				<div>
-					<AppFooter theme={activeTheme} constants={constants} />
+					<AppFooter constants={constants} />
 				</div>
 			</div>
 		);
@@ -106,7 +99,6 @@ class Home extends Component {
 }
 
 const mapStateToProps = (state) => ({
-	activeTheme: state.app.theme,
 	activeLanguage: state.app.language,
 	constants: state.app.constants,
 	enabledPlugins: state.app.enabledPlugins,

@@ -6,7 +6,7 @@ import TableBody from './TableBody';
 // import TableFooter from './TableFooter';
 import Paginator from './paginator';
 import { EditWrapper } from 'components';
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 
 class Table extends Component {
 	state = {
@@ -95,24 +95,59 @@ class Table extends Component {
 	};
 
 	render() {
-		const count = this.props.count || this.props.data.length;
-
-		if (count === 0) {
-			return (
-				<div className="no-data d-flex justify-content-center align-items-center">
-					<EditWrapper stringId="NO_DATA">{STRINGS['NO_DATA']}</EditWrapper>
-				</div>
-			);
-		}
-
 		const {
+			noData,
+			showHeaderNoData,
 			withIcon,
 			displayPaginator,
 			pageSize,
 			cancelDelayData,
 			className,
+			expandable,
+			cssTransitionClassName,
+			rowKey,
 		} = this.props;
+
+		const count = this.props.count || this.props.data.length;
 		const { data, page, headers } = this.state;
+		if (className === 'address-book-table') {
+			const totalPages = Math.ceil(count / pageSize);
+			const currentPage = page + 1;
+			if (page !== 0 && currentPage > totalPages) {
+				this.goToPreviousPage();
+			}
+		}
+
+		if (count === 0) {
+			if (!showHeaderNoData) {
+				return (
+					<div className="no-data d-flex justify-content-center align-items-center py-3">
+						<EditWrapper stringId="NO_DATA">
+							{noData ? noData : STRINGS['NO_DATA']}
+						</EditWrapper>
+					</div>
+				);
+			} else {
+				const { headers } = this.props;
+				return (
+					<div className="table_container">
+						<div className={classnames('table-content', className)}>
+							<table className={classnames('table-wrapper')}>
+								<TableHeader
+									headers={headers}
+									HeaderClassName="border-bottom"
+								/>
+							</table>
+						</div>
+						<div className="no-data d-flex justify-content-center align-items-center">
+							<EditWrapper stringId="NO_DATA">
+								{noData ? noData : STRINGS['NO_DATA']}
+							</EditWrapper>
+						</div>
+					</div>
+				);
+			}
+		}
 
 		return (
 			<div className="table_container">
@@ -124,6 +159,9 @@ class Table extends Component {
 							headers={headers}
 							data={data}
 							withIcon={withIcon}
+							expandable={expandable}
+							cssTransitionClassName={cssTransitionClassName}
+							rowKey={rowKey}
 						/>
 					</table>
 				</div>
@@ -153,6 +191,15 @@ Table.defaultProps = {
 	handleNext: () => {},
 	handlePrevious: () => {},
 	jumpToPage: 0,
+	noData: '',
+	showHeaderNoData: false,
+	expandable: {
+		expandedRowRender: () => <p>No content</p>,
+		defaultExpanded: () => false,
+		rowExpandable: () => false,
+	},
+	cssTransitionClassName: '',
+	rowKey: ({ id }) => id,
 };
 
 export default Table;

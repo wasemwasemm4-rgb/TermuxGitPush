@@ -1,4 +1,5 @@
 import React, { Fragment } from 'react';
+import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 import { RemoteComponent } from 'RemoteComponent';
 import STRINGS from 'config/localizedStrings';
@@ -8,26 +9,77 @@ import { PLUGIN_URL } from 'config/constants';
 import { withRouter } from 'react-router';
 import { generateGlobalId } from 'utils/id';
 import withEdit from 'components/EditProvider/withEdit';
+import renderFields from 'components/Form/factoryFields';
+import { getErrorLocalized } from 'utils/errors';
+import { IconTitle, ErrorBoundary } from 'components';
+import { setSnackNotification } from 'actions/appActions';
+
+const DefaultChildren = ({
+	strings: STRINGS,
+	icons: ICONS,
+	extra: { top, bottom } = {},
+}) => {
+	return (
+		<Fragment>
+			{top}
+			<div
+				style={{
+					height: '28rem',
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					justifyContent: 'center',
+				}}
+			>
+				<IconTitle
+					stringId="PAGE_UNDER_CONSTRUCTION"
+					text={STRINGS['PAGE_UNDER_CONSTRUCTION']}
+					iconId="FIAT_UNDER_CONSTRUCTION"
+					iconPath={ICONS['FIAT_UNDER_CONSTRUCTION']}
+					className="flex-direction-column"
+				/>
+			</div>
+			{bottom}
+		</Fragment>
+	);
+};
 
 const SmartTarget = (props) => {
-	const { targets, id, children, webViews } = props;
+	const {
+		targets,
+		id,
+		children,
+		webViews,
+		showLoader = true,
+		loaderClassName = 'default-remote-component-loader',
+		errorClassName = 'default-remote-component-error',
+		icons: ICONS,
+		extra,
+	} = props;
 
 	return targets.includes(id) ? (
-		<Fragment>
+		<ErrorBoundary>
 			{webViews[id].map(({ src, name }, index) => (
 				<RemoteComponent
 					key={`${name}_${index}`}
 					url={src}
+					showLoader={showLoader}
+					loaderClassName={loaderClassName}
+					errorClassName={errorClassName}
 					generateId={generateGlobalId(name)}
 					strings={STRINGS}
 					plugin_url={PLUGIN_URL}
 					token={getToken()}
+					renderFields={renderFields}
+					getErrorLocalized={getErrorLocalized}
 					{...props}
 				/>
 			))}
-		</Fragment>
-	) : (
+		</ErrorBoundary>
+	) : children ? (
 		<Fragment>{children}</Fragment>
+	) : (
+		<DefaultChildren strings={STRINGS} icons={ICONS} extra={extra} />
 	);
 };
 
@@ -57,6 +109,11 @@ const mapStateToProps = (store) => ({
 	pairsTradesFetched: store.orderbook.pairsTradesFetched,
 });
 
-export default connect(mapStateToProps)(
-	withEdit(withConfig(withRouter(SmartTarget)))
-);
+const mapDispatchToProps = (dispatch) => ({
+	setSnackNotification: bindActionCreators(setSnackNotification, dispatch),
+});
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(withEdit(withConfig(withRouter(SmartTarget))));

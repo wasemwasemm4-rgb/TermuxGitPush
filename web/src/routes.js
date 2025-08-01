@@ -3,84 +3,343 @@ import { Router, Route, browserHistory } from 'react-router';
 import ReactGA from 'react-ga';
 import { isMobile } from 'react-device-detect';
 
-import {
-	App as Container,
-	Account,
-	MainWallet,
-	CurrencyWallet,
-	Login,
-	Signup,
-	VerificationEmailRequest,
-	VerificationEmailCode,
-	Home,
-	Deposit,
-	Withdraw,
-	TransactionsHistory,
-	Trade,
-	Legal,
-	AuthContainer,
-	RequestResetPassword,
-	ResetPassword,
-	QuickTrade,
-	Chat,
-	WithdrawConfirmation,
-	AddTradeTabs,
-	// Stake,
-	// StakeDetails,
-	// ADMIN
-	User,
-	AppWrapper as AdminContainer,
-	// Main,
-	// DepositsPage,
-	Limits,
-	// Wallets,
-	UserFees,
-	PATHS,
-	AdminOrders,
-	MobileHome,
-	Broker,
-	Plugins,
-	// PluginServices,
-	Settings,
-	// Transfer,
-	AdminFees,
-	Init,
-	AdminLogin,
-	AdminDashboard,
-	AdminFinancials,
-	MoveToDash,
-	General,
-	Tiers,
-	Roles,
-	Resources,
-	Pairs,
-} from './containers';
-import chat from './containers/Admin/Chat';
-
-import store from './store';
+import { PATHS } from './containers';
 import { verifyToken } from './actions/authAction';
 import { setLanguage } from './actions/appActions';
-import { SmartTarget } from 'components';
-
+import { SmartTarget, NotLoggedIn } from 'components';
 import {
 	isLoggedIn,
 	getToken,
 	removeToken,
-	getTokenTimestamp,
 	isAdmin,
+	checkRole,
 } from './utils/token';
 import {
 	getLanguage,
 	getInterfaceLanguage,
 	getLanguageFromLocal,
 } from './utils/string';
-import { checkUserSessionExpired } from './utils/utils';
 import { getExchangeInitialized, getSetupCompleted } from './utils/initialize';
+import { STAKING_INDEX_COIN, isStakingAvailable } from 'config/contracts';
+import { Loader } from 'components';
+
+import chat from './containers/Admin/Chat';
+import store from './store';
 import PluginConfig from 'containers/Admin/PluginConfig';
-import ConfirmChangePassword from 'containers/ConfirmChangePassword';
+import Loadable from 'react-loadable';
+import DesktopSearch from 'components/AppBar/DesktopSearch';
+
+const LoadingComponent = ({ isLoading, error }) => {
+	return <Loader background={false} />;
+};
+
+const EmptyLoadingComponent = ({ isLoading, error }) => {
+	return <></>;
+};
+
+const Container = Loadable({
+	loader: () => import('./containers/App'),
+	loading: LoadingComponent,
+});
+
+const Account = Loadable({
+	loader: () => import('./containers/Account'),
+	loading: EmptyLoadingComponent,
+});
+
+const P2P = Loadable({
+	loader: () => import('./containers/P2P'),
+	loading: LoadingComponent,
+});
+
+const MainWallet = Loadable({
+	loader: () => import('./containers/Wallet/MainWallet'),
+	loading: EmptyLoadingComponent,
+});
+
+const Volume = Loadable({
+	loader: () => import('./containers/Volume'),
+	loading: LoadingComponent,
+});
+
+const CurrencyWallet = Loadable({
+	loader: () => import('./containers/Wallet/CurrencyWallet'),
+	loading: LoadingComponent,
+});
+
+const Login = Loadable({
+	loader: () => import('./containers/Login'),
+	loading: LoadingComponent,
+});
+
+const Signup = Loadable({
+	loader: () => import('./containers/Signup'),
+	loading: LoadingComponent,
+});
+const VerificationEmailRequest = Loadable({
+	loader: () => import('./containers/VerificationEmailRequest'),
+	loading: LoadingComponent,
+});
+const VerificationEmailCode = Loadable({
+	loader: () => import('./containers/VerificationEmailCode'),
+	loading: LoadingComponent,
+});
+const Home = Loadable({
+	loader: () => import('./containers/Home'),
+	loading: LoadingComponent,
+});
+const Deposit = Loadable({
+	loader: () => import('./containers/Deposit'),
+	loading: LoadingComponent,
+});
+const Withdraw = Loadable({
+	loader: () => import('./containers/Withdraw'),
+	loading: LoadingComponent,
+});
+const TransactionsHistory = Loadable({
+	loader: () => import('./containers/TransactionsHistory'),
+	loading: LoadingComponent,
+});
+const Trade = Loadable({
+	loader: () => import('./containers/Trade'),
+	loading: LoadingComponent,
+});
+const ChartEmbed = Loadable({
+	loader: () => import('./containers/ChartEmbed'),
+	loading: LoadingComponent,
+});
+const Legal = Loadable({
+	loader: () => import('./containers/Legal'),
+	loading: LoadingComponent,
+});
+const AuthContainer = Loadable({
+	loader: () => import('./containers/AuthContainer'),
+	loading: LoadingComponent,
+});
+const RequestResetPassword = Loadable({
+	loader: () => import('./containers/RequestResetPassword'),
+	loading: LoadingComponent,
+});
+const ResetPassword = Loadable({
+	loader: () => import('./containers/ResetPassword'),
+	loading: LoadingComponent,
+});
+const QuickTrade = Loadable({
+	loader: () => import('./containers/QuickTrade'),
+	loading: LoadingComponent,
+});
+const Chat = Loadable({
+	loader: () => import('./containers/Chat'),
+	loading: LoadingComponent,
+});
+const WithdrawConfirmation = Loadable({
+	loader: () => import('./containers/WithdrawConfirmation'),
+	loading: LoadingComponent,
+});
+const LoginConfirmation = Loadable({
+	loader: () => import('./containers/LoginConfirmation'),
+	loading: LoadingComponent,
+});
+const EmailConfirmation = Loadable({
+	loader: () => import('./containers/LoginConfirmation/emailConfirmation'),
+	loading: LoadingComponent,
+});
+const AddTradeTabs = Loadable({
+	loader: () => import('./containers/TradeTabs'),
+	loading: LoadingComponent,
+});
+const Stake = Loadable({
+	loader: () => import('./containers/Stake'),
+	loading: LoadingComponent,
+});
+const StakeDetails = Loadable({
+	loader: () => import('./containers/StakeDetails'),
+	loading: LoadingComponent,
+});
+const Apps = Loadable({
+	loader: () => import('./containers/Apps'),
+	loading: LoadingComponent,
+});
+const AppDetails = Loadable({
+	loader: () => import('./containers/AppDetails'),
+	loading: LoadingComponent,
+});
+
+// ADMIN
+const User = Loadable({
+	loader: () => import('./containers/Admin/User'),
+	loading: LoadingComponent,
+});
+
+const AdminStake = Loadable({
+	loader: () => import('./containers/Admin/Stakes'),
+	loading: LoadingComponent,
+});
+
+const Audits = Loadable({
+	loader: () => import('./containers/Admin/Audits'),
+	loading: LoadingComponent,
+});
+const Session = Loadable({
+	loader: () => import('./containers/Admin/Sessions'),
+	loading: LoadingComponent,
+});
+const AdminContainer = Loadable({
+	loader: () => import('./containers/Admin/AppWrapper'),
+	loading: LoadingComponent,
+});
+const Limits = Loadable({
+	loader: () => import('./containers/Admin/Limits'),
+	loading: LoadingComponent,
+});
+const UserFees = Loadable({
+	loader: () => import('./containers/Admin/UserFees'),
+	loading: LoadingComponent,
+});
+const AdminOrders = Loadable({
+	loader: () => import('./containers/Admin/ActiveOrders'),
+	loading: LoadingComponent,
+});
+const MobileHome = Loadable({
+	loader: () => import('./containers/MobileHome'),
+	loading: LoadingComponent,
+});
+const Broker = Loadable({
+	loader: () => import('./containers/Admin/Broker'),
+	loading: LoadingComponent,
+});
+const Plugins = Loadable({
+	loader: () => import('./containers/Admin/Plugins'),
+	loading: LoadingComponent,
+});
+const PluginStore = Loadable({
+	loader: () => import('./containers/Admin/Plugins/PluginStore'),
+	loading: LoadingComponent,
+});
+const Settings = Loadable({
+	loader: () => import('./containers/Admin/Settings'),
+	loading: LoadingComponent,
+});
+const AdminFees = Loadable({
+	loader: () => import('./containers/Admin/AdminFees'),
+	loading: LoadingComponent,
+});
+const Init = Loadable({
+	loader: () => import('./containers/Init'),
+	loading: LoadingComponent,
+});
+const AdminLogin = Loadable({
+	loader: () => import('./containers/Init/Login'),
+	loading: LoadingComponent,
+});
+const AdminDashboard = Loadable({
+	loader: () => import('./containers/Admin/Dashboard'),
+	loading: LoadingComponent,
+});
+const AdminFinancials = Loadable({
+	loader: () => import('./containers/Admin/AdminFinancials'),
+	loading: LoadingComponent,
+});
+const MoveToDash = Loadable({
+	loader: () => import('./containers/Admin/MoveToDash'),
+	loading: LoadingComponent,
+});
+
+const General = Loadable({
+	loader: () => import('./containers/Admin/General'),
+	loading: LoadingComponent,
+});
+
+const Tiers = Loadable({
+	loader: () => import('./containers/Admin/Tiers'),
+	loading: LoadingComponent,
+});
+const Roles = Loadable({
+	loader: () => import('./containers/Admin/Roles'),
+	loading: LoadingComponent,
+});
+const Resources = Loadable({
+	loader: () => import('./containers/Admin/Resources'),
+	loading: LoadingComponent,
+});
+const Pairs = Loadable({
+	loader: () => import('./containers/Admin/Trades'),
+	loading: LoadingComponent,
+});
+const Fiatmarkets = Loadable({
+	loader: () => import('./containers/Admin/Fiat'),
+	loading: LoadingComponent,
+});
+const AdminApps = Loadable({
+	loader: () => import('./containers/Admin/Apps'),
+	loading: LoadingComponent,
+});
+
+const Billing = Loadable({
+	loader: () => import('./containers/Admin/Billing'),
+	loading: LoadingComponent,
+});
+
+const DigitalAssets = Loadable({
+	loader: () => import('./containers/DigitalAssets'),
+	loading: LoadingComponent,
+});
+const CoinPage = Loadable({
+	loader: () => import('./containers/CoinPage'),
+	loading: LoadingComponent,
+});
+const WhiteLabel = Loadable({
+	loader: () => import('./containers/WhiteLabel'),
+	loading: LoadingComponent,
+});
+const FeesAndLimits = Loadable({
+	loader: () => import('./containers/FeesAndLimits'),
+	loading: LoadingComponent,
+});
+const ReferralList = Loadable({
+	loader: () => import('./containers/Summary/components/ReferralList'),
+	loading: LoadingComponent,
+});
+
+const AddressBook = Loadable({
+	loader: () => import('./containers/Wallet/AddressBook'),
+	loading: LoadingComponent,
+});
+
+const MobileBarMoreOptions = Loadable({
+	loader: () => import('./containers/App/MobileBarMoreOptions'),
+	loading: LoadingComponent,
+});
+
+const ConfirmChangePassword = Loadable({
+	loader: () => import('./containers/ConfirmChangePassword'),
+	loading: LoadingComponent,
+});
+
+const AutoTrader = Loadable({
+	loader: () => import('./containers/AutoTrader'),
+	loading: LoadingComponent,
+});
+
+const Announcement = Loadable({
+	loader: () => import('./containers/Announcement'),
+	loading: LoadingComponent,
+});
+
+const AdminAnnouncement = Loadable({
+	loader: () => import('./containers/Admin/Announcement'),
+	loading: LoadingComponent,
+});
 
 ReactGA.initialize('UA-154626247-1'); // Google analytics. Set your own Google Analytics values
 browserHistory.listen((location) => {
+	if (window) {
+		window.scroll({
+			top: 0,
+			left: 0,
+			behavior: 'smooth',
+		});
+	}
 	ReactGA.set({ page: window.location.pathname });
 	ReactGA.pageview(window.location.pathname);
 });
@@ -97,12 +356,7 @@ if (getLanguageFromLocal()) {
 let token = getToken();
 
 if (token) {
-	// check if the token has expired, in that case, remove token
-	if (checkUserSessionExpired(getTokenTimestamp())) {
-		removeToken();
-	} else {
-		store.dispatch(verifyToken(token));
-	}
+	store.dispatch(verifyToken(token));
 }
 
 function requireAuth(nextState, replace) {
@@ -173,6 +427,20 @@ function loggedIn(nextState, replace) {
 	}
 }
 
+const checkStaking = (nextState, replace) => {
+	const {
+		app: { contracts, features },
+	} = store.getState();
+	if (
+		!features.cefi_stake &&
+		!isStakingAvailable(STAKING_INDEX_COIN, contracts)
+	) {
+		replace({
+			pathname: '/account',
+		});
+	}
+};
+
 const checkLanding = (nextState, replace) => {
 	if (!store.getState().app.home_page) {
 		replace({
@@ -215,6 +483,16 @@ const noLoggedUserCommonProps = {
 
 function withAdminProps(Component, key) {
 	let adminProps = {};
+	let restrictedPaths = [
+		'general',
+		'financials',
+		'trade',
+		'plugins',
+		'tiers',
+		'roles',
+		'billing',
+	];
+
 	PATHS.map((data) => {
 		const { pathProps = {}, routeKey, ...rest } = data;
 		if (routeKey === key) {
@@ -223,26 +501,49 @@ function withAdminProps(Component, key) {
 		return 0;
 	});
 	return function (matchProps) {
-		return <Component {...adminProps} {...matchProps} />;
+		if (
+			checkRole() !== 'admin' &&
+			restrictedPaths.includes(key) &&
+			!(checkRole() === 'supervisor' && key === 'financials')
+		) {
+			return <NotFound {...matchProps} />;
+		} else {
+			return <Component {...adminProps} {...matchProps} />;
+		}
 	};
 }
 
 function generateRemoteRoutes(remoteRoutes) {
+	const privateRouteProps = { onEnter: requireAuth };
+
 	return (
 		<Fragment>
-			{remoteRoutes.map(({ path, name, target }, index) => (
-				<Route
-					key={`${name}_remote-route_${index}`}
-					path={path}
-					name={name}
-					component={() => (
-						<div>
-							<SmartTarget id={target} />
-						</div>
-					)}
-					onEnter={requireAuth}
-				/>
-			))}
+			{remoteRoutes.map(
+				({ path, name, target, is_public, token_required }, index) => (
+					<Route
+						key={`${name}_remote-route_${index}`}
+						path={path}
+						name={name}
+						component={() => {
+							const Wrapper = token_required ? NotLoggedIn : Fragment;
+							const props = token_required
+								? {
+										wrapperClassName:
+											'pt-4 presentation_container apply_rtl settings_container',
+								  }
+								: {};
+							return (
+								<div>
+									<Wrapper {...props}>
+										<SmartTarget id={target} />
+									</Wrapper>
+								</div>
+							);
+						}}
+						{...(!is_public && privateRouteProps)}
+					/>
+				)
+			)}
 		</Fragment>
 	);
 }
@@ -257,6 +558,16 @@ export const generateRoutes = (routes = []) => {
 				<Route path="signup" name="signup" component={Signup} />
 			</Route>
 			<Route component={AuthContainer} {...noLoggedUserCommonProps}>
+				<Route
+					path="confirm-login"
+					name="ConfirmLogin"
+					component={LoginConfirmation}
+				/>
+				<Route
+					path="email-confirm"
+					name="EmailConfirm"
+					component={EmailConfirmation}
+				/>
 				<Route
 					path="reset-password"
 					name="Reset Password Request"
@@ -280,6 +591,11 @@ export const generateRoutes = (routes = []) => {
 			</Route>
 			<Route component={Container}>
 				<Route path="/" name="Home" component={Home} onEnter={checkLanding} />
+				<Route
+					path="/chart-embed/:pair"
+					name="ChartEmbed"
+					component={ChartEmbed}
+				/>
 				{isMobile ? (
 					<Route
 						path="/home"
@@ -293,52 +609,127 @@ export const generateRoutes = (routes = []) => {
 					name="Reset Password Request"
 					component={ConfirmChangePassword}
 				/>
-				<Route
-					path="account"
-					name="Account"
-					component={Account}
-					onEnter={requireAuth}
-				/>
+				<Route path="account" name="Account" component={Account} />
 				<Route
 					path="account/settings/username"
 					name="username"
 					component={Account}
 				/>
-				<Route
-					path="security"
-					name="Security"
-					component={Account}
-					onEnter={requireAuth}
-				/>
+				<Route path="security" name="Security" component={Account} />
 				<Route
 					path="developers"
 					name="Developers"
 					component={Account}
 					onEnter={requireAuth}
 				/>
+				<Route path="settings" name="Settings" component={Account} />
+				<Route path="apps" name="Apps" component={Apps} />
 				<Route
-					path="settings"
-					name="Settings"
-					component={Account}
+					path="apps/details/:app"
+					name="AppDetails"
+					component={AppDetails}
+					onEnter={requireAuth}
+				/>
+				<Route path="summary" name="Summary" component={Account} />
+				<Route
+					path="fees-and-limits"
+					name="Fees and limits"
+					component={FeesAndLimits}
+				/>
+				<Route
+					path="referral"
+					name="referral"
+					component={ReferralList}
+					onEnter={requireAuth}
+				/>
+				<Route path="prices" name="Digital Asset" component={DigitalAssets} />
+				<Route path="white-label" name="WhiteLabel" component={WhiteLabel} />
+				<Route path="verification" name="Verification" component={Account} />
+				<Route path="wallet" name="Wallet" component={MainWallet} />
+				{isMobile && (
+					<Route path="more" name="More" component={MobileBarMoreOptions} />
+				)}
+				{!isMobile && (
+					<Route path="details" name="Details" component={DesktopSearch} />
+				)}
+				<Route
+					path="wallet/address-book"
+					name="wallet/address-book"
+					component={AddressBook}
+				/>
+				<Route
+					path="wallet/deposit"
+					name="Withdraw Deposit"
+					component={Deposit}
 					onEnter={requireAuth}
 				/>
 				<Route
-					path="summary"
-					name="Summary"
-					component={Account}
-					onEnter={requireAuth}
-				/>
-				<Route
-					path="verification"
-					name="Verification"
-					component={Account}
-					onEnter={requireAuth}
-				/>
-				<Route
-					path="wallet"
+					path="wallet/withdraw"
 					name="Wallet"
+					component={Withdraw}
+					onEnter={requireAuth}
+				/>
+				<Route
+					path="wallet/history"
+					name="Wallet History"
 					component={MainWallet}
 					onEnter={requireAuth}
+				/>
+				<Route
+					path="wallet/volume"
+					name="Volume"
+					component={Volume}
+					onEnter={requireAuth}
+				/>
+				<Route path="p2p" name="P2P" component={P2P} />
+
+				<Route
+					path="p2p/order/:order_id"
+					name="P2P Order"
+					component={P2P}
+					onEnter={requireAuth}
+				/>
+
+				<Route
+					path="p2p/orders"
+					name="P2P Orders"
+					component={P2P}
+					onEnter={requireAuth}
+				/>
+				<Route
+					path="p2p/deals"
+					name="P2P Deals"
+					component={P2P}
+					onEnter={requireAuth}
+				/>
+				<Route
+					path="p2p/mydeals"
+					name="P2P Deals"
+					component={P2P}
+					onEnter={requireAuth}
+				/>
+				<Route
+					path="p2p/profile"
+					name="P2P Deals"
+					component={P2P}
+					onEnter={requireAuth}
+				/>
+				<Route
+					path="p2p/post-deal"
+					name="P2P Deals"
+					component={P2P}
+					onEnter={requireAuth}
+				/>
+				<Route
+					path="auto-trader"
+					name="Auto trader"
+					component={AutoTrader}
+					onEnter={requireAuth}
+				/>
+				<Route
+					path="announcement"
+					name="Announcement"
+					component={Announcement}
 				/>
 				<Route
 					path="wallet/:currency"
@@ -362,18 +753,20 @@ export const generateRoutes = (routes = []) => {
 					path="transactions"
 					name="Transactions"
 					component={TransactionsHistory}
-					onEnter={requireAuth}
 				/>
 				<Route path="trade/:pair" name="Trade" component={Trade} />
-				<Route
-					path="trade/add/tabs"
-					name="Trade Tabs"
-					component={AddTradeTabs}
-				/>
+				<Route path="trade" name="Trade Tabs" component={AddTradeTabs} />
+				<Route path="markets" name="Trade Tabs" component={AddTradeTabs} />
+				<Route path="quick-trade" name="Quick Trade" component={QuickTrade} />
 				<Route
 					path="quick-trade/:pair"
 					name="Quick Trade"
 					component={QuickTrade}
+				/>
+				<Route
+					path="prices/coin/:token"
+					name="Coin Page"
+					component={CoinPage}
 				/>
 				<Route path="chat" name="Chat" component={Chat} onEnter={requireAuth} />
 				<Route
@@ -381,12 +774,18 @@ export const generateRoutes = (routes = []) => {
 					name="ConfirmWithdraw"
 					component={WithdrawConfirmation}
 				/>
-				{/*<Route path="stake" name="Stake" component={Stake} />*/}
-				{/*<Route*/}
-				{/*path="stake/details/:token"*/}
-				{/*name="StakeToken"*/}
-				{/*component={StakeDetails}*/}
-				{/*/>*/}
+				<Route
+					path="stake"
+					name="Stake"
+					component={Stake}
+					onEnter={checkStaking}
+				/>
+				<Route
+					path="stake/details/:token"
+					name="StakeToken"
+					component={StakeDetails}
+					onEnter={checkStaking}
+				/>
 				<Route path="logout" name="LogOut" onEnter={setLogout} />
 				{remoteRoutes}
 			</Route>
@@ -396,6 +795,11 @@ export const generateRoutes = (routes = []) => {
 					path="/admin/general"
 					name="Admin General"
 					component={withAdminProps(General, 'general')}
+				/>
+				<Route
+					path="/admin/fiat"
+					name="Admin Fiat"
+					component={withAdminProps(Fiatmarkets, 'fiat')}
 				/>
 				<Route
 					path="/admin/tiers"
@@ -411,6 +815,21 @@ export const generateRoutes = (routes = []) => {
 					path="/admin/user"
 					name="Admin User"
 					component={withAdminProps(User, 'user')}
+				/>
+				<Route
+					path="/admin/audits"
+					name="Admin Audits"
+					component={withAdminProps(Audits, 'audit')}
+				/>
+				<Route
+					path="/admin/stakes"
+					name="Admin Stakes"
+					component={withAdminProps(AdminStake, 'stake')}
+				/>
+				<Route
+					path="/admin/sessions"
+					name="Admin Session"
+					component={withAdminProps(Session, 'session')}
 				/>
 				<Route
 					path="/admin/financials"
@@ -435,7 +854,7 @@ export const generateRoutes = (routes = []) => {
 				<Route
 					path="/admin/billing"
 					name="Admin Billing"
-					component={withAdminProps(MoveToDash, 'billing')}
+					component={withAdminProps(Billing, 'billing')}
 				/>
 				<Route
 					path="/admin/chat"
@@ -451,6 +870,11 @@ export const generateRoutes = (routes = []) => {
 					path="/admin/plugin/adminView/:name"
 					name="Admin Announcement"
 					component={withAdminProps(PluginConfig, 'adminView')}
+				/>
+				<Route
+					path="/admin/announcement"
+					name="Admin Announcement Details"
+					component={withAdminProps(AdminAnnouncement, 'adminView')}
 				/>
 				{/* <Route
 				path="/admin/wallets"
@@ -501,6 +925,16 @@ export const generateRoutes = (routes = []) => {
 					path="/admin/plugins"
 					name="Admin plugins"
 					component={withAdminProps(Plugins, 'plugins')}
+				/>
+				<Route
+					path="/admin/plugins/store"
+					name="Admin plugins store"
+					component={withAdminProps(PluginStore, 'plugins')}
+				/>
+				<Route
+					path="/admin/apps"
+					name="Admin apps"
+					component={withAdminProps(AdminApps, 'apps')}
 				/>
 				{/* <Route
 				path="/admin/plugins/:services"

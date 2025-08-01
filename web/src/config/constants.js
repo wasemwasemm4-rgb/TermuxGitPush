@@ -1,10 +1,10 @@
 import config from './index';
-
 import STRINGS from './localizedStrings';
 export { default as ICONS } from './icons';
 
 export const ENV = process.env.NODE_ENV || 'production';
 export const NETWORK = process.env.REACT_APP_NETWORK || 'mainnet';
+export const LAST_BUILD = process.env.REACT_APP_LAST_BUILD;
 
 export const APP_TITLE =
 	process.env.REACT_APP_EXCHANGE_NAME || STRINGS['APP_TITLE'];
@@ -26,73 +26,64 @@ export const DEFAULT_LANDING_SECTIONS = {
 		name: 'Title/heading',
 		is_active: true,
 		order: 0,
+		className: '',
 	},
-	market_list: {
-		name: 'Market list',
-		is_active: false,
+	carousel_section: {
+		name: 'Moving ticker cards',
+		is_active: true,
 		order: 1,
+	},
+	card_section: {
+		name: 'Key icon features',
+		is_active: true,
+		order: 3,
 	},
 	quick_trade: {
 		name: 'Quick trade calculator',
-		is_active: false,
+		is_active: true,
 		order: 2,
+		className: 'px-2',
+	},
+	question_section: {
+		name: 'Q&A Accordian',
+		is_active: true,
+		order: 2,
+		className: 'px-2 faq-container',
+	},
+	create_account_section: {
+		name: 'Call-to-action',
+		is_active: true,
+		order: 2,
+		className: 'px-2 create-account-section',
+	},
+	quick_trade_calculator: {
+		name: 'Mini-convert Tool',
+		is_active: true,
+		order: 2,
+		className: 'px-2 mini-quick-trade-section',
 	},
 };
 
-export const SOCIAL_ICONS = {
-	FACEBOOK: '/assets/icons/facebook.png',
-	LINKEDIN: '/assets/icons/linkedin.png',
-	TWITTER: '/assets/icons/twitter.png',
-	INSTAGRAM: '/assets/icons/instagram.svg',
-	TELEGRAM: '/assets/icons/telegram.png',
-	GOOGLE: '/assets/icons/google.png',
-	YOUTUBE: '/assets/icons/youtube.png',
-};
-
-export const FEATURES_ICONS = {
-	PRO_TRADING: '/assets/images/features-pro-trade-icons.svg',
-	PAYMENT: '/assets/images/features-payment-card-icons.svg',
-	SECURITY: '/assets/images/features-lock-icons.svg',
-	REPORTING: '/assets/images/features-data-icons.svg',
-	SUPPORT: '/assets/images/features-support-icons.svg',
-	LEGAL: '/assets/images/features-legal-icons.svg',
-};
-
-export const SUMMMARY_ICON = {
-	LEVEL_1: '/assets/summary/level-1.png',
-	LEVEL_1_DARK: '/assets/summary/level-1-dark.png',
-	LEVEL_2: '/assets/summary/level-2.png',
-	LEVEL_2_DARK: '/assets/summary/level-2-dark.png',
-	LEVEL_3: '/assets/summary/level-3.png',
-	LEVEL_3_DARK: '/assets/summary/level-3-dark.png',
-	LEVEL_4: '/assets/summary/level-4.png',
-	LEVEL_4_DARK: '/assets/summary/level-4-dark.png',
-};
-
-export const HOLLAEX_LOGO =
-	process.env.REACT_APP_LOGO_PATH ||
-	'https://bitholla.s3.ap-northeast-2.amazonaws.com/kit/LOGO_IMAGE_LIGHT';
-export const HOLLAEX_LOGO_BLACK =
-	process.env.REACT_APP_LOGO_BLACK_PATH ||
-	'https://bitholla.s3.ap-northeast-2.amazonaws.com/kit/LOGO_IMAGE_DARK';
-
 export const AUDIOS = {
-	ORDERBOOK_FIELD_UPDATE: '/assets/audio/orderbook_field_update.wav',
-	ORDERBOOK_LIMIT_ORDER: '/assets/audio/orderbook-limit-order.wav',
+	ORDERBOOK_FIELD_UPDATE: '/assets/audio/orderbook_field_update_1.wav',
+	ORDERBOOK_LIMIT_ORDER: '/assets/audio/orderbook-limit-order_1.wav',
 	PUBLIC_TRADE_NOTIFICATION: '/assets/audio/public-trade-notification.wav',
-	ORDER_COMPLETED: '/assets/audio/order-filled.wav',
-	ORDER_PARTIALLY_COMPLETED: '/assets/audio/part-fill.wav',
-	CANCEL_ORDER: '/assets/audio/cancel_order.wav',
-	QUICK_TRADE_COMPLETE: '/assets/audio/quick-trade-complete.wav',
-	REVIEW_QUICK_TRADE_ORDER: '/assets/audio/review-quick-trade-order.wav',
+	ORDER_COMPLETED: '/assets/audio/order-filled_1.wav',
+	ORDER_PARTIALLY_COMPLETED: '/assets/audio/part-fill_1.wav',
+	CANCEL_ORDER: '/assets/audio/cancel_order_1.wav',
+	QUICK_TRADE_COMPLETE: '/assets/audio/quick-trade-complete_1.wav',
+	REVIEW_QUICK_TRADE_ORDER: '/assets/audio/review-quick-trade-order_1.wav',
 	TIME_OUT_QUICK_TRADE: '/assets/audio/time-out-quick-trade.wav',
 };
 
 export const CURRENCY_PRICE_FORMAT = '{0} {1}';
+export const APPROXIMATELY_EQAUL_CURRENCY_PRICE_FORMAT = '\u2248{0} {1}';
 // this DEFAULT_COIN_PAIR to prevent from error while irrelevant BASE_CURRENCY
 export const DEFAULT_COIN_DATA = {
 	fullname: '',
 	symbol: '',
+	display_name: '',
+	icon_id: 'DEFAULT_ICON',
 	min: 0.001,
 };
 
@@ -105,6 +96,7 @@ export const FLEX_CENTER_CLASSES = [
 ];
 
 export const TIMESTAMP_FORMAT = STRINGS['TIMESTAMP_FORMAT'];
+export const DEFAULT_TIMESTAMP_FORMAT = STRINGS['DEFAULT_TIMESTAMP_FORMAT'];
 export const HOUR_FORMAT = STRINGS['HOUR_FORMAT'];
 export const TIMESTAMP_FORMAT_FA = STRINGS['TIMESTAMP_FORMAT']
 	.split('/')
@@ -115,6 +107,7 @@ export const TIMESTAMP_FORMAT_FA = STRINGS['TIMESTAMP_FORMAT']
 export const DEFAULT_TRADING_PAIRS = ['xht-usdt'];
 
 export const TOKEN_KEY = `${ENV}_${NETWORK}_TOKEN`;
+export const DASH_TOKEN_KEY = `${ENV}_${NETWORK}_DASH_TOKEN`;
 export const LANGUAGE_KEY = `${ENV}_${NETWORK}_LANGUAGE`;
 export const DEFAULT_LANGUAGE = process.env.REACT_APP_DEFAULT_LANGUAGE || 'en';
 
@@ -159,17 +152,6 @@ export const EXPLORERS_ENDPOINT = (currency) => {
 					? 'https://explorer.bitcoin.com/tbch/tx/'
 					: 'https://explorer.bitcoin.com/bch/tx/';
 			break;
-		case 'xht':
-		case 'usdt':
-		case 'busd':
-		case 'tusd':
-		case 'dai':
-		case 'mkr':
-			endpoint =
-				NETWORK === 'testnet'
-					? 'https://ropsten.etherscan.io/tx/'
-					: 'https://etherscan.io/tx/';
-			break;
 		case 'xmr':
 			endpoint =
 				NETWORK === 'testnet'
@@ -200,6 +182,33 @@ export const EXPLORERS_ENDPOINT = (currency) => {
 		case 'ada':
 			endpoint = 'https://blockchair.com/cardano/transaction/';
 			break;
+		case 'bnb':
+			endpoint = 'https://bscscan.com/tx/';
+			break;
+		case 'sol':
+			endpoint = 'https://solscan.io/tx/';
+			break;
+		case 'ton':
+			endpoint = 'https://tonscan.org/tx/';
+			break;
+		case 'arb':
+			endpoint = 'https://arbiscan.io/tx/';
+			break;
+		case 'matic':
+			endpoint = 'https://polygonscan.com/tx/';
+			break;
+		case 'pol':
+			endpoint = 'https://polygonscan.com/tx/';
+			break;
+		case 'etc':
+			endpoint = 'https://etc.blockscout.com/tx/';
+			break;
+		case 'ftm':
+			endpoint = 'https://ftmscan.com/tx/';
+			break;
+		case 's':
+			endpoint = 'https://sonicscan.org/tx/';
+			break;
 		default:
 			endpoint = '';
 			break;
@@ -211,10 +220,6 @@ export const BALANCE_ERROR = 'Insufficient balance to perform the order';
 
 export const DEFAULT_CAPTCHA_SITEKEY =
 	'6LeuOKoUAAAAAGVoZcSWXJH60GHt4crvIaNXn1YA'; // default recaptcha v3; // default recaptcha v3
-
-export const CAPTCHA_TIMEOUT = process.env.REACT_APP_CAPTCHA_TIMEOUT
-	? parseInt(process.env.REACT_APP_CAPTCHA_TIMEOUT, 10)
-	: 2000;
 
 export const TIME_ZONE = process.env.REACT_APP_TIMEZONE || 'GMT';
 export const TOKEN_EMAIL = 'token::email';
@@ -230,13 +235,6 @@ export const THEMES = ['dark', 'white'];
 export const THEME_DEFAULT = THEME_COLOR ? THEME_COLOR : THEMES[1];
 export const CHAT_STATUS_KEY = 'chat:minimized';
 
-/* these values are used for the chart limits on the summary page */
-export const TRADING_VOLUME_CHART_LIMITS = [10000, 100000];
-export const TRADE_ACCOUNT_UPGRADE_MONTH = [3, 6];
-/*****************************************************************/
-
-export const BAR_CHART_LIMIT_CAPACITY = [340000, 2050000];
-
 export const DEFAULT_COUNTRY = process.env.REACT_APP_DEFAULT_COUNTRY
 	? process.env.REACT_APP_DEFAULT_COUNTRY.toUpperCase()
 	: 'KR';
@@ -247,72 +245,43 @@ export const BASE_CURRENCY = local_base_currnecy
 	? local_base_currnecy.toLowerCase()
 	: 'usdt';
 
-export const FEES_LIMIT_SITE_URL = 'https://www.hollaex.com';
-export const API_DOCS_URL = 'https://docs.bitholla.com/';
-export const EXCHANGE_URL = 'https://dash.bitholla.com/';
+export const API_DOCS_URL = 'https://docs.hollaex.com/';
+export const EXCHANGE_URL = 'https://dash.hollaex.com/';
 export const EXCHANGE_EXPIRY_DAYS = 15;
 export const EXCHANGE_EXPIRY_SECONDS = EXCHANGE_EXPIRY_DAYS * 86400;
-export const SUPPORT_HELP_URL =
-	'https://info.hollaex.com/hc/en-us/requests/new';
 export const REQUEST_VAULT_SUPPORTED_COINS =
-	'https://api.vault.bitholla.com/v1/coins';
-export const ADMIN_GUIDE_DOWNLOAD_LINK =
-	'https://bitholla.s3.ap-northeast-2.amazonaws.com/kit/Admin+panel+manual.pdf';
+	'https://www.hollaex.com/coin-and-market-listing';
 
 export const MAX_NUMBER_BANKS = 3;
 
-export const CHART_MONTHS = [
-	{ key: 1, value: 'Jan' },
-	{ key: 2, value: 'Feb' },
-	{ key: 3, value: 'Mar' },
-	{ key: 4, value: 'Apr' },
-	{ key: 5, value: 'May' },
-	{ key: 6, value: 'Jun' },
-	{ key: 7, value: 'Jul' },
-	{ key: 8, value: 'Aug' },
-	{ key: 9, value: 'Sep' },
-	{ key: 10, value: 'Oct' },
-	{ key: 11, value: 'Nov' },
-	{ key: 12, value: 'Dec' },
-];
-
-export const DARK_THEME_COLORS = {
-	border_main: '#b7b5cd',
-	sub_text: '#a3a1ca',
-	sub_text_1: '#808184',
-};
-
-export const WHITE_THEME_COLORS = {
-	border_main: '#000000',
-	sub_text: '#000000',
-	sub_text_1: '#000000',
-};
-
-export const DARK_THEME_CHART_COLORS = {
-	SELL: '#f69321',
-	BUY: '#29abe2',
-	LINE: '#b7b7ce',
-	FILL: 'orange',
-	AXIS: '#b7b7ce',
-	BUY_CANDLE: '#29abe2',
-	SELL_CANDLE: '#f69321',
-	BUY_VOLUME: '#29abe2',
-	SELL_VOLUME: '#f69321',
-};
-export const WHITE_THEME_CHART_COLORS = {
-	SELL: 'red',
-	BUY: 'green',
-	LINE: 'black',
-	FILL: 'green',
-	AXIS: '#4D4D4D',
-	BUY_CANDLE: 'green',
-	SELL_CANDLE: '#ed1c24',
-	BUY_VOLUME: 'lightgreen',
-	SELL_VOLUME: '#ed1c24',
-};
-
 export const SHOW_SUMMARY_ACCOUNT_DETAILS = false;
 export const SHOW_TOTAL_ASSETS = false;
-export const IS_XHT = false;
 export const FIT_SCREEN_HEIGHT = ['trade'];
-export const SIMPLE_FORMAT_MIN = '0.1';
+
+export const DEFAULT_BANK_PAYMENT_ACCOUNTS = [
+	{ key: 'bank_name', label: 'Bank name', required: true },
+	{ key: 'account_number', label: 'Bank Account number', required: true },
+	{ key: 'bank_account_owner', label: 'Bank Account Owner', required: true },
+	{ key: 'swift_code', label: 'SWIFT code', required: false },
+	{ key: 'iban', label: 'Iban', required: false },
+	{ key: 'bank_location', label: 'Bank location (country)', required: false },
+];
+export const DEFAULT_PAYPAL_PAYMENT_PAYPAL = [
+	{ key: 'email', label: 'Email', required: true },
+];
+export const DEFAULT_CUSTOM_PAYMENT_CUSTOM = [
+	{ key: 'payment_info', label: 'Payment Info', required: true },
+];
+
+export const DEFAULT_PINNED_COINS = [
+	'xht',
+	'btc',
+	'eth',
+	'usdt',
+	'bnb',
+	'xrp',
+	'ada',
+	'trx',
+	'matic',
+];
+export const METAMASK_LINK = 'https://metamask.io/download';

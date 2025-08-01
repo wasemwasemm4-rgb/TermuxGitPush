@@ -1,8 +1,10 @@
-import React, { Fragment } from 'react';
+import React, { useEffect, Fragment } from 'react';
+import { message } from 'antd';
 import { isDate } from 'moment';
 import classnames from 'classnames';
 import _map from 'lodash/map';
-import { formatTimestampGregorian, DATETIME_FORMAT } from '../../../utils/date';
+import moment from 'moment';
+import { DATETIME_FORMAT } from '../../../utils/date';
 import { ZoomInOutlined } from '@ant-design/icons';
 export const KEYS_TO_HIDE = [
 	// 'email',
@@ -35,6 +37,7 @@ export const renderRowImages = ([key, value]) => (
 					style={{ backgroundImage: `url(${value.icon})` }}
 					onClick={() => value.onZoom(value.icon)}
 				>
+					<img src={value.icon} alt={key} />
 					<ZoomInOutlined className="search_icon" key={key} />
 				</div>
 			) : (
@@ -50,7 +53,7 @@ export const renderRowInformation = ([key, value]) =>
 export const renderJSONKey = (key, value) => {
 	let valueText = '';
 	if (key === 'dob' && isDate(new Date(value))) {
-		valueText = `${formatTimestampGregorian(value, DATETIME_FORMAT)}`;
+		valueText = `${moment.parseZone(value).format(DATETIME_FORMAT)}`;
 	} else if (key === 'wallet') {
 		valueText = _map(value, (wallet, index) => {
 			return (
@@ -122,13 +125,33 @@ export const renderJSONKey = (key, value) => {
 		</div>
 	);
 };
-export default ({ className = '', renderRow, title, data = {} }) => (
-	<div className={classnames('verification_data_container-data', className)}>
-		{title ? <h2>{title}</h2> : null}
-		{data.message ? (
-			<div>{JSON.stringify(data.message)}</div>
-		) : (
-			Object.entries(data).map(renderRow)
-		)}
-	</div>
-);
+
+const DataDisplay = ({
+	className = '',
+	renderRow,
+	title,
+	data = {},
+	popError = false,
+}) => {
+	useEffect(() => {
+		if (popError && data.message) {
+			message.error(JSON.stringify(data.message));
+		}
+
+		//  TODO: Fix react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	return (
+		<div className={classnames('verification_data_container-data', className)}>
+			{title ? <h2>{title}</h2> : null}
+			{data.message ? (
+				<div>{JSON.stringify(data.message)}</div>
+			) : (
+				Object.entries(data).map(renderRow)
+			)}
+		</div>
+	);
+};
+
+export default DataDisplay;

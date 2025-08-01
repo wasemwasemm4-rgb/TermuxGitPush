@@ -3,11 +3,17 @@ import { Link } from 'react-router';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { CaretLeftOutlined } from '@ant-design/icons';
-import { Layout, Menu, Row, Col, Spin, message } from 'antd';
+import { Layout, Menu, Row, Col, Spin, message, Tooltip } from 'antd';
 import { debounce, capitalize } from 'lodash';
 import { ReactSVG } from 'react-svg';
-
-import { PATHS } from '../paths';
+import MobileDetect from 'mobile-detect';
+// eslint-disable-next-line
+import {
+	// PATHS,
+	ADMIN_PATHS,
+	// SUPERVISOR_PATH,
+	pathToPermissionMap,
+} from '../paths';
 import SetupWizard from '../SetupWizard';
 import {
 	removeToken,
@@ -15,16 +21,15 @@ import {
 	isSupport,
 	isSupervisor,
 	isAdmin,
-	getTokenTimestamp,
-} from '../../../utils/token';
-import { checkUserSessionExpired } from '../../../utils/utils';
-import {
-	getExchangeInitialized,
-	getSetupCompleted,
-} from '../../../utils/initialize';
-import { logout } from '../../../actions/authAction';
-import { getMe, setMe } from '../../../actions/userAction';
-import { setPairsData } from '../../../actions/orderbookAction';
+	// eslint-disable-next-line
+	checkRole,
+	getRole,
+	getPermissions,
+} from 'utils/token';
+import { getExchangeInitialized, getSetupCompleted } from 'utils/initialize';
+import { logout } from 'actions/authAction';
+import { getMe, setMe } from 'actions/userAction';
+import { setPairsData } from 'actions/orderbookAction';
 import {
 	setPairs,
 	changePair,
@@ -36,26 +41,25 @@ import {
 	// requestAvailPlugins,
 	requestInitial,
 	requestConstant,
-} from '../../../actions/appActions';
-import { SESSION_TIME } from '../../../config/constants';
+} from 'actions/appActions';
+import { SESSION_TIME } from 'config/constants';
 import { STATIC_ICONS } from 'config/icons';
-import { checkRole } from '../../../utils/token';
-
-import MobileDetect from 'mobile-detect';
 import MobileSider from './mobileSider';
 import './index.css';
 import '../../../.././src/admin_theme_variables.css';
 import 'antd/dist/antd.css';
-import { requestMyPlugins } from '../Plugins/action';
+import { requestMyPlugins } from 'containers/Admin/Plugins/action';
 import { setAllPairs, setCoins, setExchange } from 'actions/assetActions';
 // import { allCoins } from '../AdminFinancials/Assets';
 // import { allPairs } from '../Trades/Pairs';
 import {
 	getAllCoins,
-	getAllPairs, 
+	getAllPairs,
 	// getConstants,
 	getExchange,
 } from '../AdminFinancials/action';
+import Timer from './Timer';
+import { getTabParams } from '../AdminFinancials/Assets';
 
 const md = new MobileDetect(window.navigator.userAgent);
 
@@ -106,12 +110,6 @@ class AppWrapper extends React.Component {
 			myPlugins: [],
 			isConfigure: false,
 		};
-	}
-
-	componentWillMount() {
-		if (isLoggedIn() && checkUserSessionExpired(getTokenTimestamp())) {
-			this.logout('Token is expired');
-		}
 	}
 
 	componentDidMount() {
@@ -178,23 +176,11 @@ class AppWrapper extends React.Component {
 		}
 	}
 
-	// getAssets = async () => {
-	// 	try {
-	// 		const res = await getConstants();
-	// 		const { coins, pairs } = res.data;
-	// 		this.props.setCoins(Object.values(coins));
-
-	// 		this.props.setAllPairs(Object.values(pairs));
-	// 	} catch (error) {
-	// 		throw error;
-	// 	}
-	// };
-
 	getData = async () => {
 		await this.getExchange();
 		await this.getCoins();
 		await this.getPairs();
-	}
+	};
 
 	getExchange = async () => {
 		try {
@@ -316,6 +302,15 @@ class AppWrapper extends React.Component {
 						this.props.changeTheme(data.settings.interface.theme);
 						localStorage.setItem('theme', data.settings.interface.theme);
 					}
+					if (
+						data.settings.interface &&
+						data.settings.interface.display_currency
+					) {
+						localStorage.setItem(
+							'base_currnecy',
+							data.settings.interface.display_currency
+						);
+					}
 				}
 			})
 			.catch((err) => {
@@ -402,6 +397,7 @@ class AppWrapper extends React.Component {
 
 	getTitle = () => {
 		const { location = {}, router } = this.props;
+		const tabParams = getTabParams();
 		if (location.pathname.includes('/admin/user') && !this.state.isConfigure) {
 			return 'Users';
 		} else if (
@@ -411,12 +407,24 @@ class AppWrapper extends React.Component {
 			return 'Configure Meta';
 		} else if (location.pathname.includes('/admin/general')) {
 			return 'General';
+		} else if (
+			location.pathname.includes('/admin/fiat') ||
+			tabParams?.isFiat === 'onRamp' ||
+			tabParams?.isFiat === 'offRamp'
+		) {
+			return 'Fiat controls';
+		} else if (location.pathname.includes('/admin/stakes')) {
+			return 'Stakes';
+		} else if (location.pathname.includes('/admin/sessions')) {
+			return 'Sessions';
 		} else if (location.pathname.includes('/admin/financial')) {
 			return 'Assets';
 		} else if (location.pathname.includes('/admin/trade')) {
 			return 'Markets';
 		} else if (location.pathname.includes('/admin/plugins')) {
-			return 'Plugins';
+			return 'Plugin apps';
+		} else if (location.pathname.includes('/admin/apps')) {
+			return 'Apps';
 		} else if (location.pathname.includes('/admin/tiers')) {
 			return 'Tiers';
 		} else if (location.pathname.includes('/admin/roles')) {
@@ -427,12 +435,16 @@ class AppWrapper extends React.Component {
 			return 'API keys';
 		} else if (location.pathname.includes('/admin/billing')) {
 			return 'Billing';
+		} else if (location.pathname.includes('/admin/audits')) {
+			return 'Operator Logs';
 		} else if (location.pathname.includes('/admin/collateral')) {
 			return 'Collateral';
 		} else if (location.pathname.includes('/admin/resources')) {
 			return 'Resources';
 		} else if (location.pathname.includes('/admin/chat')) {
 			return 'Chat';
+		} else if (location.pathname.includes('/admin/announcement')) {
+			return 'Announcements';
 		} else if (location.pathname.includes('/admin/plugin/adminView')) {
 			return this.renderCapitalize(router.params.name);
 		} else {
@@ -441,7 +453,7 @@ class AppWrapper extends React.Component {
 	};
 
 	renderItems = () => {
-		switch (checkRole()) {
+		switch (getRole()) {
 			case 'supervisor':
 				return (
 					<div className="role-section bg-black">
@@ -453,7 +465,7 @@ class AppWrapper extends React.Component {
 						</div>
 						<div>
 							<div className="main-label">Role:</div>
-							<div className="sub-label">SuperVisor</div>
+							<div className="sub-label">Supervisor</div>
 						</div>
 					</div>
 				);
@@ -483,7 +495,7 @@ class AppWrapper extends React.Component {
 						</div>
 						<div>
 							<div className="main-label">Role:</div>
-							<div className="sub-label">Support</div>
+							<div className="sub-label">Communicator</div>
 						</div>
 					</div>
 				);
@@ -519,7 +531,7 @@ class AppWrapper extends React.Component {
 					</div>
 				);
 			default:
-				return <div></div>
+				return <div></div>;
 		}
 	};
 
@@ -540,7 +552,12 @@ class AppWrapper extends React.Component {
 	};
 
 	render() {
-		const { children, router, user } = this.props;
+		const {
+			children,
+			router,
+			user,
+			constants: { features },
+		} = this.props;
 		const logout = () => {
 			removeToken();
 			router.replace('/login');
@@ -553,7 +570,50 @@ class AppWrapper extends React.Component {
 			myPlugins,
 			isConfigure,
 		} = this.state;
-		let pathNames = PATHS;
+		let pathNames = [];
+
+		const userPermissions = getPermissions();
+
+		pathNames = ADMIN_PATHS.filter((item) => {
+			if (item.path === '/admin') return true;
+			const requiredPrefixes = pathToPermissionMap[item.path] || [
+				`${item.path}:`,
+			];
+			return requiredPrefixes.some((prefix) =>
+				userPermissions.some((p) => p.startsWith(prefix))
+			);
+		});
+
+		// if (checkRole() === 'admin') {
+		// 	pathNames = ADMIN_PATHS;
+		// } else if (checkRole() === 'supervisor') {
+		// 	pathNames = [...PATHS, ...SUPERVISOR_PATH];
+		// } else {
+		// 	pathNames = PATHS;
+		// }
+
+		if (features.apps) {
+			pathNames = [
+				...pathNames,
+				{
+					path: '/admin/apps',
+					label: 'Apps',
+					routeKey: 'apps',
+				},
+			];
+		}
+
+		if (features.announcement) {
+			pathNames = [
+				...pathNames,
+				{
+					path: '/admin/announcement',
+					label: 'Announcements',
+					routeKey: 'adminView',
+				},
+			];
+		}
+
 		myPlugins.forEach((data) => {
 			if (data.enabled && data.enabled_admin_view) {
 				pathNames = [
@@ -615,29 +675,23 @@ class AppWrapper extends React.Component {
 				</Layout>
 			);
 		} else {
+			const prevPath = localStorage.getItem('prevPath');
 			return (
 				<Fragment>
 					<div className="admin-top-bar">
-						<Link to="/summary">
+						<Link to={prevPath}>
 							<div className="top-box-menu">
 								<CaretLeftOutlined />
-								Back to Exchange web
+								Back to Website
 							</div>
 						</Link>
 						<div className="admin-top-header">Operator Control Panel</div>
-						<div className="top-box-menu">
-							<img
-								src={STATIC_ICONS.BLUE_SCREEN_LINK}
-								className="link-icon"
-								alt="Link-icon"
-							/>{' '}
-							<a
-								href="https://dash.bitholla.com/"
-								target="_blank"
-								rel="noopener noreferrer"
-							>
-								Go to Holla Dash
-							</a>
+						<div className="mr-2 time-wrapper">
+							<Tooltip placement="bottom" title={<Timer isHover={true} />}>
+								<div className="ml-2">
+									<Timer isHover={false} />
+								</div>
+							</Tooltip>
 						</div>
 					</div>
 					<Layout>
@@ -713,7 +767,6 @@ const mapDispatchToProps = (dispatch) => ({
 	setMe: bindActionCreators(setMe, dispatch),
 	changeLanguage: bindActionCreators(setLanguage, dispatch),
 	changeTheme: bindActionCreators(changeTheme, dispatch),
-	// requestAvailPlugins: bindActionCreators(requestAvailPlugins, dispatch),
 	logout: bindActionCreators(logout, dispatch),
 	setCoins: bindActionCreators(setCoins, dispatch),
 	setAllPairs: bindActionCreators(setAllPairs, dispatch),

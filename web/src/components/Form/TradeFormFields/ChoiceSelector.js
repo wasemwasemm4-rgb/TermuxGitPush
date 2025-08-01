@@ -1,5 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
+import { EditWrapper } from 'components';
 
 const ChoiceSelector = (props) => {
 	const { input, options } = props;
@@ -15,12 +16,13 @@ const ChoiceSelector = (props) => {
 						'justify-content-center',
 						'align-items-center',
 						'pointer',
+						option.value !== input.value ? option.className : '',
 						'holla-button-font',
 						{ active: option.value === input.value }
 					)}
 					onClick={() => input.onChange(option.value)}
 				>
-					{option.label}
+					<EditWrapper>{option.label}</EditWrapper>
 				</div>
 			))}
 		</div>

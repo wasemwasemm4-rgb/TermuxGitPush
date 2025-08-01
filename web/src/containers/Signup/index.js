@@ -5,15 +5,19 @@ import { connect } from 'react-redux';
 import { isMobile } from 'react-device-detect';
 import { SubmissionError, change } from 'redux-form';
 import { bindActionCreators } from 'redux';
-import { performSignup } from '../../actions/authAction';
+import { performSignup } from 'actions/authAction';
 import SignupForm, { generateFormFields, FORM_NAME } from './SignupForm';
 import SignupSuccess from './SignupSuccess';
-import { ContactForm } from '../';
-import { IconTitle, Dialog, MobileBarBack } from '../../components';
+import { ContactForm } from 'containers';
+import { IconTitle, Dialog, MobileBarBack } from 'components';
 import { FLEX_CENTER_CLASSES } from 'config/constants';
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
-import { openContactForm } from 'actions/appActions';
+import {
+	openContactForm,
+	setEmailDetail,
+	setSignupEmail,
+} from 'actions/appActions';
 
 let errorTimeOut = null;
 
@@ -63,9 +67,12 @@ class Signup extends Component {
 	}
 
 	componentWillUnmount() {
+		const { setEmailDetail, setSignupEmail } = this.props;
 		if (errorTimeOut) {
 			clearTimeout(errorTimeOut);
 		}
+		setEmailDetail(null);
+		setSignupEmail(null);
 	}
 
 	getReferralCode = () => {
@@ -99,6 +106,8 @@ class Signup extends Component {
 			window.location.search.includes('email')
 		) {
 			email = window.location.search.split('?email')[1];
+		} else {
+			email = this.props.signupEmail || this.props.emailDetail || '';
 		}
 		return email;
 	};
@@ -114,10 +123,6 @@ class Signup extends Component {
 			})
 			.catch((error) => {
 				const errors = {};
-				errorTimeOut = setTimeout(() => {
-					this.props.change(FORM_NAME, 'captcha', '');
-				}, 5000);
-
 				if (error.response && error.response.status === 409) {
 					errors.email = STRINGS['VALIDATIONS.USER_EXIST'];
 				} else if (error.response) {
@@ -154,6 +159,8 @@ class Signup extends Component {
 			constants = {},
 			icons: ICONS,
 			openContactForm,
+			signupEmail,
+			emailDetail,
 		} = this.props;
 		const { success, showContactForm, isReferral } = this.state;
 
@@ -161,7 +168,7 @@ class Signup extends Component {
 			return (
 				<div>
 					{isMobile && <MobileBarBack onBackClick={this.onBackActiveEmail} />}
-					<SignupSuccess activeTheme={activeTheme} />
+					<SignupSuccess onCreateAccount={this.onBackActiveEmail} />
 				</div>
 			);
 		}
@@ -170,7 +177,9 @@ class Signup extends Component {
 			STRINGS,
 			activeTheme,
 			constants.links,
-			isReferral
+			isReferral,
+			signupEmail,
+			emailDetail
 		);
 
 		return (
@@ -230,7 +239,6 @@ class Signup extends Component {
 					style={{ 'z-index': 100 }}
 					className={classnames(languageClasses)}
 					showCloseText={false}
-					theme={activeTheme}
 				>
 					<ContactForm
 						onSubmitSuccess={this.onCloseDialog}
@@ -245,11 +253,15 @@ class Signup extends Component {
 const mapStateToProps = (store) => ({
 	activeTheme: store.app.theme,
 	constants: store.app.constants,
+	signupEmail: store.app.signupEmail,
+	emailDetail: store.app.emailDetail,
 });
 
 const mapDispatchToProps = (dispatch) => ({
 	change: bindActionCreators(change, dispatch),
 	openContactForm: bindActionCreators(openContactForm, dispatch),
+	setEmailDetail: bindActionCreators(setEmailDetail, dispatch),
+	setSignupEmail: bindActionCreators(setSignupEmail, dispatch),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(withConfig(Signup));

@@ -1,6 +1,6 @@
 import axios from 'axios';
+import moment from 'moment';
 import querystring from 'query-string';
-// import { all } from 'bluebird';
 
 export const ACTION_KEYS = {
 	ADD_USER_TRADES: 'ADD_USER_TRADES',
@@ -28,6 +28,7 @@ export const ACTION_KEYS = {
 	WITHDRAWAL_CANCEL_PENDING: 'WITHDRAWAL_CANCEL_PENDING',
 	WITHDRAWAL_CANCEL_FULFILLED: 'WITHDRAWAL_CANCEL_FULFILLED',
 	WITHDRAWAL_CANCEL_REJECTED: 'WITHDRAWAL_CANCEL_REJECTED',
+	SETACTIVEBALANCEHISTORY: 'SETACTIVEBALANCEHISTORY',
 };
 
 const ENDPOINTS = {
@@ -42,6 +43,18 @@ const ENDPOINTS = {
 	CANCEL_WITHDRAWAL: '/user/withdrawal',
 	CONFIRM_WITHDRAWAL: '/user/confirm-withdrawal',
 	CHECK_TRANSACTION: '/user/check-transaction',
+	FIAT_DEPOSIT: '/fiat/deposit',
+	FIAT_WITHDRAW: '/fiat/withdrawal',
+	DUST: '/order/dust',
+	DUST_ESTIMATION: '/order/dust/estimate',
+};
+
+export const depositFiat = (values) => {
+	return axios.post(ENDPOINTS.FIAT_DEPOSIT, values);
+};
+
+export const withdrawFiat = (values) => {
+	return axios.post(ENDPOINTS.FIAT_WITHDRAW, values);
 };
 
 export const performWithdraw = (currency, values) => {
@@ -211,7 +224,6 @@ export const getOrdersHistory = ({
 		dataParams.open = open;
 	}
 	const query = querystring.stringify(dataParams);
-
 	return (dispatch) => {
 		dispatch({ type: ACTION_KEYS.ORDER_HISTORY_PENDING, payload: { page } });
 		axios
@@ -238,10 +250,10 @@ export const getOrdersHistory = ({
 	};
 };
 
-export const downloadUserTrades = (key) => {
-	const query = querystring.stringify({
+export const downloadUserTrades = (key, params = {}) => {
+	const queryData = {
 		format: 'csv',
-	});
+	};
 	let path = ENDPOINTS.TRADES;
 	if (key === 'orders') {
 		path = ENDPOINTS.ORDERS;
@@ -251,7 +263,37 @@ export const downloadUserTrades = (key) => {
 	} else if (key === 'withdrawal') {
 		path = ENDPOINTS.WITHDRAWALS;
 	}
+	if (params && params.symbol) {
+		queryData.symbol = params.symbol;
+	}
 
+	if (params && params.start_date) {
+		queryData.start_date = params.start_date;
+	}
+
+	if (params && params.end_date) {
+		queryData.end_date = params.end_date;
+	}
+
+	if (params && params.status) {
+		if (params.status === 'dismissed') {
+			queryData.dismissed = true;
+		} else if (params.status === 'pending') {
+			queryData.dismissed = false;
+			queryData.processing = false;
+			queryData.rejected = false;
+			queryData.status = false;
+			queryData.waiting = false;
+		} else if (params.status === 'completed') {
+			queryData.status = true;
+		}
+	}
+
+	if (params && params.currency) {
+		queryData.currency = params.currency;
+	}
+
+	const query = querystring.stringify(queryData);
 	return (dispatch) => {
 		axios
 			.get(`${path}?${query}`)
@@ -259,7 +301,10 @@ export const downloadUserTrades = (key) => {
 				const url = window.URL.createObjectURL(new Blob([res.data]));
 				const link = document.createElement('a');
 				link.href = url;
-				link.setAttribute('download', `user_${key}.csv`);
+				link.setAttribute(
+					'download',
+					`user_${key}_${moment().format('YYYY-MM-DD')}.csv`
+				);
 				document.body.appendChild(link);
 				link.click();
 			})
@@ -281,7 +326,13 @@ const getParamsByStatus = (status) => {
 		case 'completed':
 			return { status: true };
 		case 'pending':
-			return { waiting: true };
+			return {
+				status: false,
+				dismissed: false,
+				processing: false,
+				rejected: false,
+				waiting: false,
+			};
 		default:
 			return {};
 	}
@@ -292,15 +343,27 @@ export const getUserDeposits = ({
 	page = 1,
 	status,
 	currency,
+	start_date,
+	end_date,
 	...rest
 }) => {
 	const statusParams = getParamsByStatus(status);
-	const query = querystring.stringify({
+	const queryData = {
 		page,
 		limit,
 		...statusParams,
 		...(currency ? { currency } : {}),
-	});
+	};
+
+	if (start_date) {
+		queryData.start_date = start_date;
+	}
+
+	if (end_date) {
+		queryData.end_date = end_date;
+	}
+
+	const query = querystring.stringify(queryData);
 
 	return (dispatch) => {
 		dispatch({ type: ACTION_KEYS.USER_DEPOSITS_PENDING, payload: { page } });
@@ -333,15 +396,27 @@ export const getUserWithdrawals = ({
 	page = 1,
 	status,
 	currency,
+	start_date,
+	end_date,
 	...rest
 }) => {
 	const statusParams = getParamsByStatus(status);
-	const query = querystring.stringify({
+	const queryData = {
 		page,
 		limit,
 		...statusParams,
 		...(currency ? { currency } : {}),
-	});
+	};
+
+	if (start_date) {
+		queryData.start_date = start_date;
+	}
+
+	if (end_date) {
+		queryData.end_date = end_date;
+	}
+
+	const query = querystring.stringify(queryData);
 
 	return (dispatch) => {
 		dispatch({ type: ACTION_KEYS.USER_WITHDRAWALS_PENDING, payload: { page } });
@@ -377,3 +452,32 @@ export const searchTransaction = (params) => {
 	const query = querystring.stringify(params);
 	return axios.get(`${ENDPOINTS.CHECK_TRANSACTION}?${query}`);
 };
+
+export const convertDust = (assets = []) => {
+	const data = { assets };
+	return axios.post(ENDPOINTS.DUST, data);
+};
+
+export const getEstimatedDust = (assets = []) => {
+	const data = { assets };
+	return axios.post(ENDPOINTS.DUST_ESTIMATION, data);
+};
+
+export const activeTabFromWallet = (tab) => ({
+	type: 'ACTIVE_TAB_FROM_WALLET',
+	payload: {
+		tab,
+	},
+});
+
+export const setActiveBalanceHistory = (activeBalanceHistory) => ({
+	type: ACTION_KEYS.SETACTIVEBALANCEHISTORY,
+	payload: {
+		activeBalanceHistory,
+	},
+});
+
+export const setScannedAddress = (address) => ({
+	type: 'SETSCANNEDADDRESS',
+	payload: address,
+});

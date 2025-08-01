@@ -4,13 +4,10 @@ import { bindActionCreators } from 'redux';
 import { isMobile } from 'react-device-detect';
 import { setWsHeartbeat } from 'ws-heartbeat/client';
 
-import { ChatWrapper } from '../../components';
-import { WS_URL } from '../../config/constants';
-import {
-	setAnnouncements,
-	setChatUnreadMessages,
-} from '../../actions/appActions';
-import { getToken } from '../../utils/token';
+import { ChatWrapper } from 'components';
+import { WS_URL } from 'config/constants';
+import { setAnnouncements, setChatUnreadMessages } from 'actions/appActions';
+import { getToken } from 'utils/token';
 import { NORMAL_CLOSURE_CODE, isIntentionalClosure } from 'utils/webSocket';
 
 const ENTER_KEY = 'Enter';
@@ -26,7 +23,7 @@ class Chat extends Component {
 		unreadMessages: 0,
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		// if (!this.props.fetchingAuth && isLoggedIn()) {
 		if (!this.props.fetchingAuth) {
 			this.initializeChatWs(getToken());

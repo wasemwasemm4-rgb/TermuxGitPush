@@ -5,7 +5,7 @@ const toolsLib = require('hollaex-tools-lib');
 const { sendEmail } = require('../../mail');
 const { MAILTYPE } = require('../../mail/strings');
 const { publisher } = require('../../db/pubsub');
-const { INIT_CHANNEL, WS_PUBSUB_DEPOSIT_CHANNEL, EVENTS_CHANNEL } = require('../../constants');
+const { INIT_CHANNEL, WS_PUBSUB_DEPOSIT_CHANNEL, EVENTS_CHANNEL, WS_PUBSUB_WITHDRAWAL_CHANNEL } = require('../../constants');
 const moment = require('moment');
 const { errorMessageConverter } = require('../../utils/conversion');
 
@@ -23,7 +23,8 @@ const applyKitChanges = (req, res) => {
 		})
 		.catch((err) => {
 			loggerNotification.verbose('controller/notification/applyKitChanges', err.message);
-			return res.status(err.statusCode || 400).json({ message: errorMessageConverter(err) });
+			const messageObj = errorMessageConverter(err, req?.auth?.sub?.lang);
+			return res.status(err.statusCode || 400).json({ message: messageObj?.message, lang: messageObj?.lang, code: messageObj?.code });
 		});
 };
 
@@ -55,6 +56,10 @@ const handleCurrencyDeposit = (req, res) => {
 			return toolsLib.user.getUserByNetworkId(user_id);
 		})
 		.then((user) => {
+			let coinName = currency;
+			if (toolsLib.getKitCoin(currency).display_name) {
+				coinName = toolsLib.getKitCoin(currency).display_name;
+			}
 			if (rejected) {
 				sendEmail(
 					MAILTYPE.DEPOSIT_CANCEL,
@@ -62,7 +67,7 @@ const handleCurrencyDeposit = (req, res) => {
 					{
 						type: 'deposit',
 						amount,
-						currency,
+						currency: coinName,
 						transaction_id: txid,
 						date: created_at
 					},
@@ -72,7 +77,7 @@ const handleCurrencyDeposit = (req, res) => {
 			} else {
 				const depositData = {
 					amount,
-					currency,
+					currency: coinName,
 					status: is_confirmed ? 'COMPLETED' : 'PENDING',
 					address,
 					transaction_id: txid,
@@ -82,15 +87,15 @@ const handleCurrencyDeposit = (req, res) => {
 					description
 				};
 
-				if (is_confirmed) {
-					publisher.publish(WS_PUBSUB_DEPOSIT_CHANNEL, JSON.stringify({
-						topic: 'deposit',
-						action: 'insert',
-						user_id: user.network_id,
-						data: depositData,
-						time: moment().unix()
-					}));
-				}
+				publisher.publish(WS_PUBSUB_DEPOSIT_CHANNEL, JSON.stringify({
+					topic: 'deposit',
+					action: 'insert',
+					user_id: user.id,
+					user_network_id: user.network_id,
+					data: depositData,
+					time: moment().unix()
+				}));
+				
 
 				publisher.publish(EVENTS_CHANNEL, JSON.stringify({
 					type: 'deposit',
@@ -116,7 +121,7 @@ const handleCurrencyDeposit = (req, res) => {
 				'controller/notification/handleCurrencyDeposit',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err)}` });
+			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err, req?.auth?.sub?.lang)?.message}` });
 		});
 };
 
@@ -148,6 +153,10 @@ const handleCurrencyWithdrawal = (req, res) => {
 			return toolsLib.user.getUserByNetworkId(user_id);
 		})
 		.then((user) => {
+			let coinName = currency;
+			if (toolsLib.getKitCoin(currency).display_name) {
+				coinName = toolsLib.getKitCoin(currency).display_name;
+			}
 			if (rejected) {
 				sendEmail(
 					MAILTYPE.DEPOSIT_CANCEL,
@@ -155,7 +164,7 @@ const handleCurrencyWithdrawal = (req, res) => {
 					{
 						type: 'withdrawal',
 						amount,
-						currency,
+						currency: coinName,
 						transaction_id: txid,
 						date: created_at
 					},
@@ -165,7 +174,7 @@ const handleCurrencyWithdrawal = (req, res) => {
 			} else {
 				const data = {
 					amount,
-					currency,
+					currency: coinName,
 					status: is_confirmed ? 'COMPLETED' : 'PENDING',
 					address,
 					fee,
@@ -174,6 +183,15 @@ const handleCurrencyWithdrawal = (req, res) => {
 					network,
 					description
 				};
+
+				publisher.publish(WS_PUBSUB_WITHDRAWAL_CHANNEL, JSON.stringify({
+					topic: 'withdrawal',
+					action: 'insert',
+					user_id: user.id,
+					user_network_id: user.network_id,
+					data: data,
+					time: moment().unix()
+				}));
 
 				publisher.publish(EVENTS_CHANNEL, JSON.stringify({
 					type: 'withdrawal',
@@ -200,7 +218,7 @@ const handleCurrencyWithdrawal = (req, res) => {
 				'controller/notification/handleCurrencyWithdrawal',
 				err.message
 			);
-			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err)}` });
+			return res.status(err.statusCode || 400).json({ message: `Fail - ${errorMessageConverter(err, req?.auth?.sub?.lang)?.message}` });
 		});
 };
 

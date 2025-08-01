@@ -1,4 +1,4 @@
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
 	const Affiliation = sequelize.define(
 		'Affiliation',
 		{
@@ -26,20 +26,20 @@ module.exports = function(sequelize, DataTypes) {
 					key: 'id'
 				}
 			},
-			updated_at: {
-				allowNull: false,
-				type: DataTypes.DATE,
-				defaultValue: sequelize.literal('NOW()')
+			earning_rate: {
+				type: DataTypes.DOUBLE,
+				allowNull: true
 			},
-			created_at: {
-				allowNull: false,
-				type: DataTypes.DATE,
-				defaultValue: sequelize.literal('NOW()')
+			code: {
+				type: DataTypes.STRING,
+				allowNull: true,
+				unique: true
 			}
 		},
 		{
 			timestamps: true,
-			underscored: true
+			underscored: true,
+			tableName: 'Affiliations'
 		}
 	);
 
@@ -48,13 +48,13 @@ module.exports = function(sequelize, DataTypes) {
 			as: 'user',
 			foreignKey: 'user_id',
 			targetKey: 'id',
-			onDelete: 'CASCADE',
+			onDelete: 'CASCADE'
 		});
 		Affiliation.belongsTo(models.User, {
 			as: 'referer',
 			foreignKey: 'referer_id',
 			targetKey: 'id',
-			onDelete: 'CASCADE',
+			onDelete: 'CASCADE'
 		});
 	};
 

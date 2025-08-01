@@ -117,7 +117,7 @@
 	padding: 3px 8px;
 }
 .admin-roles-wrapper .ant-input:focus,
-.ant-input:active {
+.admin-roles-wrapper .ant-input:active {
 	border: 1px solid #c4c4c4;
 }
 .admin-roles-wrapper .ant-form-item {
@@ -157,4 +157,24 @@
 }
 .admin-roles-wrapper .green-btn {
 	background-color: #288500 !important;
+}
+
+.custom-tree {
+	background-color: lightblue !important;
+	padding: 10px;
+	border-radius: 5px;
+}
+
+.ant-collapse-content {
+	background-color: #202980;
+	color: white;
+}
+
+.ant-card-actions {
+	background-color: #202980;
+	color: white;
+}
+
+.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-arrow {
+	color: white !important;
 }

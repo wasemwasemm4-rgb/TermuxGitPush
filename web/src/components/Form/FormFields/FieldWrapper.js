@@ -4,9 +4,35 @@ import classnames from 'classnames';
 import { ReactSVG } from 'react-svg';
 
 import { STATIC_ICONS } from 'config/icons';
-import { ActionNotification } from '../../';
-import { getErrorLocalized } from '../../../utils/errors';
-import { EditWrapper } from 'components';
+import { ActionNotification, EditWrapper } from 'components';
+import { getErrorLocalized } from 'utils/errors';
+
+const Warning = ({ text, className = '' }) => (
+	<div className={classnames('d-flex', 'align-items-baseline', className)}>
+		<ExclamationCircleFilled className="field_warning_icon" />
+		<div className="field_warning_text">{text}</div>
+	</div>
+);
+
+const WarningContainer = ({ warning, warnings }) => {
+	if (warnings && Array.isArray(warnings)) {
+		return (
+			<div className="field_warning_wrapper">
+				{warnings.map((msg, index) => (
+					<Warning
+						key={index}
+						text={msg}
+						className={classnames({ 'mt-2': index !== 0 })}
+					/>
+				))}
+			</div>
+		);
+	} else if (warning) {
+		return <Warning text={warning} className="field_warning_wrapper" />;
+	} else {
+		return null;
+	}
+};
 
 export const FieldContent = ({
 	stringId,
@@ -18,12 +44,18 @@ export const FieldContent = ({
 	hideUnderline = false,
 	contentClassName = '',
 	hideCheck = false,
+	showCross = false,
+	onCrossClick = () => {},
 	outlineClassName = '',
 	displayError,
 	error,
 	ishorizontalfield = false,
 	dateFieldClassName,
 	warning,
+	warnings,
+	preview,
+	isEmail,
+	emailMsg,
 }) => {
 	return (
 		<div>
@@ -31,16 +63,19 @@ export const FieldContent = ({
 				<div className="d-flex">
 					{label && (
 						<div className="field-label">
-							{label}
-							{warning && (
-								<div className="d-flex align-items-baseline field_warning_wrapper">
-									<ExclamationCircleFilled className="field_warning_icon" />
-									<div className="field_warning_text">{warning}</div>
-								</div>
+							{typeof label === 'string' ? (
+								<EditWrapper>{label}</EditWrapper>
+							) : (
+								label
 							)}
+							<WarningContainer warning={warning} warnings={warnings} />
 						</div>
 					)}
-					<EditWrapper stringId={stringId} />
+					<EditWrapper
+						stringId={stringId}
+						warning={warning}
+						warnings={warnings}
+					/>
 				</div>
 				<div className={classnames('field-content')}>
 					<div
@@ -61,6 +96,13 @@ export const FieldContent = ({
 								className="field-valid"
 							/>
 						)}
+						{showCross && hasValue && (
+							<ReactSVG
+								onClick={onCrossClick}
+								src={STATIC_ICONS.CANCEL_CROSS_ACTIVE}
+								className="clear-field"
+							/>
+						)}
 					</div>
 					{!hideUnderline && (
 						<span
@@ -71,11 +113,32 @@ export const FieldContent = ({
 					)}
 				</div>
 			</div>
+			{isEmail ? (
+				<div className="field-label-wrapper">
+					<Fragment>
+						<div className="field-label"></div>
+						<div>
+							<EditWrapper
+								stringId={stringId}
+								render={(string) => (
+									<span className="field-error-text">{string}</span>
+								)}
+							>
+								{emailMsg}
+							</EditWrapper>
+						</div>
+					</Fragment>
+				</div>
+			) : null}
 			<div className="field-label-wrapper">
 				{ishorizontalfield ? (
 					<Fragment>
 						<div className="field-label"></div>
-						<FieldError displayError={displayError} error={error} />
+						<FieldError
+							displayError={displayError}
+							error={error}
+							preview={preview}
+						/>
 					</Fragment>
 				) : null}
 			</div>
@@ -83,11 +146,18 @@ export const FieldContent = ({
 	);
 };
 
-export const FieldError = ({ error, displayError, className, stringId }) => (
+export const FieldError = ({
+	error,
+	displayError,
+	className,
+	stringId,
+	preview,
+}) => (
 	<div
 		className={classnames('field-error-content', className, {
-			'field-error-hidden': !displayError,
+			'field-error-hidden': !displayError && !preview,
 		})}
+		style={preview ? { height: 'auto' } : {}}
 	>
 		{error && (
 			<img
@@ -97,10 +167,14 @@ export const FieldError = ({ error, displayError, className, stringId }) => (
 			/>
 		)}
 		{error && (
-			<EditWrapper stringId={stringId}>
-				<span className="field-error-text">{getErrorLocalized(error)}</span>
+			<EditWrapper
+				stringId={stringId}
+				render={(string) => <span className="field-error-text">{string}</span>}
+			>
+				{getErrorLocalized(error)}
 			</EditWrapper>
 		)}
+		{preview && <Fragment>{preview}</Fragment>}
 	</div>
 );
 
@@ -110,6 +184,7 @@ class FieldWrapper extends Component {
 			children,
 			label,
 			warning,
+			warnings,
 			stringId,
 			input: { value },
 			meta: { active = false, error = '', touched = false, invalid = false },
@@ -123,10 +198,20 @@ class FieldWrapper extends Component {
 			hideCheck = false,
 			outlineClassName = '',
 			ishorizontalfield,
+			preview,
+			isEmail = false,
+			emailMsg = '',
+			showCross,
+			onCrossClick = () => {},
 		} = this.props;
 
 		const displayError = !(active || focused) && (visited || touched) && error;
 		const hasValue = value || value === false;
+		const singleAction =
+			notification &&
+			typeof notification === 'object' &&
+			!Array.isArray(notification);
+		const multipleNotification = notification && Array.isArray(notification);
 		return (
 			<div
 				className={classnames('field-wrapper', className, {
@@ -140,6 +225,7 @@ class FieldWrapper extends Component {
 					stringId={stringId}
 					label={label}
 					warning={warning}
+					warnings={warnings}
 					valid={!invalid}
 					hasValue={hasValue}
 					focused={active || focused}
@@ -151,9 +237,15 @@ class FieldWrapper extends Component {
 					error={error}
 					ishorizontalfield={ishorizontalfield}
 					dateFieldClassName={className}
+					preview={preview}
+					isEmail={isEmail}
+					emailMsg={emailMsg}
+					onCrossClick={onCrossClick}
+					showCross={showCross}
+					contentClassName={classnames({ padding_zero: multipleNotification })}
 				>
 					{children}
-					{notification && typeof notification === 'object' && (
+					{singleAction && (
 						<ActionNotification
 							{...notification}
 							className={classnames('pr-0 pl-0 no_bottom', {
@@ -162,9 +254,41 @@ class FieldWrapper extends Component {
 							showActionText={true}
 						/>
 					)}
+					{multipleNotification && (
+						<div className="multiple-actions-wrapper">
+							{notification.map(
+								(
+									{
+										renderWrapper = (children) => (
+											<Fragment>{children}</Fragment>
+										),
+										...item
+									},
+									index
+								) => (
+									<Fragment key={index}>
+										{renderWrapper(
+											<ActionNotification
+												key={index}
+												showActionText={true}
+												{...item}
+												className={classnames('pr-0 pl-0 no_bottom', {
+													'with-tick-icon': fullWidth && !invalid && !hideCheck,
+												})}
+											/>
+										)}
+									</Fragment>
+								)
+							)}
+						</div>
+					)}
 				</FieldContent>
 				{!ishorizontalfield ? (
-					<FieldError displayError={displayError} error={error} />
+					<FieldError
+						displayError={displayError}
+						error={error}
+						preview={preview}
+					/>
 				) : null}
 			</div>
 		);

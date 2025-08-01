@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
-import { Tabs, Button, Breadcrumb, message, Modal } from 'antd';
 import { Link } from 'react-router';
 import { ReactSVG } from 'react-svg';
+import { Tabs, Button, Breadcrumb, message, Modal } from 'antd';
 
 import {
 	// Balance,
@@ -19,7 +19,9 @@ import {
 // import UserData from './UserData';
 import BankData from './BankData';
 import AboutData from './AboutData';
+import Referrals from './Referrals';
 import VerifyEmailConfirmation from './VerifyEmailConfirmation';
+import ActivationConfirmation from './ActivationConfirmation';
 import { isSupport, isKYC } from '../../../utils/token';
 import { STATIC_ICONS } from 'config/icons';
 import {
@@ -27,9 +29,13 @@ import {
 	flagUser,
 	activateUser,
 	verifyUser,
+	recoverUser,
+	deleteUser,
 	requestTiers,
 } from './actions';
 import UserMetaForm from './UserMetaForm';
+import PaymentMethods from './PaymentMethods';
+import DeletionConfirmation from './DeleteConfirmation';
 
 // import Flagger from '../Flaguser';
 // import Notes from './Notes';
@@ -40,6 +46,8 @@ const { Item } = Breadcrumb;
 class UserContent extends Component {
 	state = {
 		showVerifyEmailModal: false,
+		showRecoverModal: false,
+		showDeleteModal: false,
 		userTiers: {},
 	};
 
@@ -185,7 +193,7 @@ class UserContent extends Component {
 
 		verifyUser(postValues)
 			.then((res) => {
-				refreshData(postValues);
+				refreshData({ ...postValues, email_verified: true });
 				this.setState({ showVerifyEmailModal: false });
 			})
 			.catch((err) => {
@@ -195,9 +203,57 @@ class UserContent extends Component {
 			});
 	};
 
+	handleRecoverUser = () => {
+		const { userInformation = {}, refreshData } = this.props;
+		const postValues = {
+			user_id: parseInt(userInformation.id, 10),
+		};
+
+		recoverUser(postValues)
+			.then((res) => {
+				refreshData({ ...postValues, activated: true });
+				this.setState({ showRecoverModal: false });
+			})
+			.catch((err) => {
+				const _error =
+					err.data && err.data.message ? err.data.message : err.message;
+				message.error(_error);
+			});
+	};
+
+	handleDeleteUser = () => {
+		const { userInformation = {}, refreshData } = this.props;
+		const postValues = {
+			user_id: parseInt(userInformation.id, 10),
+		};
+
+		deleteUser(postValues)
+			.then((res) => {
+				refreshData({ ...postValues, activated: false });
+			})
+			.catch((err) => {
+				const _error =
+					err.data && err.data.message ? err.data.message : err.message;
+				message.error(_error);
+			});
+		this.setState({ showDeleteModal: false });
+	};
+
 	openVerifyEmailModal = () => {
 		this.setState({
 			showVerifyEmailModal: true,
+		});
+	};
+
+	openRecoverUserModel = () => {
+		this.setState({
+			showRecoverModal: true,
+		});
+	};
+
+	openDeleteUserModel = () => {
+		this.setState({
+			showDeleteModal: true,
 		});
 	};
 
@@ -219,9 +275,16 @@ class UserContent extends Component {
 			isConfigure,
 			showConfigure,
 			kycPluginName,
+			requestUserData,
+			referral_history_config,
 		} = this.props;
 
-		const { showVerifyEmailModal, userTiers } = this.state;
+		const {
+			showVerifyEmailModal,
+			showRecoverModal,
+			showDeleteModal,
+			userTiers,
+		} = this.state;
 
 		const {
 			id,
@@ -322,7 +385,11 @@ class UserContent extends Component {
 								flagUser={this.flagUser}
 								freezeAccount={this.freezeAccount}
 								verifyEmail={this.openVerifyEmailModal}
+								recoverUser={this.openRecoverUserModel}
+								deleteUser={this.openDeleteUserModel}
 								kycPluginName={kycPluginName}
+								requestUserData={requestUserData}
+								refreshAllData={refreshAllData}
 							/>
 						</div>
 					</TabPane>
@@ -343,27 +410,32 @@ class UserContent extends Component {
 							/>
 						</div>
 					</TabPane>
+					<TabPane tab="Payment Methods" key="payment_methods">
+						<div>
+							<PaymentMethods user={userInformation} />
+						</div>
+					</TabPane>
 					{!isSupportUser && !isKYC() && (
 						<TabPane tab="Balance" key="balance">
 							<UserBalance coins={coins} userData={userInformation} />
 						</TabPane>
 					)}
-					{!isSupportUser && !isKYC() && (
+					{
 						<TabPane tab="Orders" key="orders">
 							<ActiveOrders userId={userInformation.id} />
 						</TabPane>
-					)}
-					{!isSupportUser && !isKYC() && (
+					}
+					{
 						<TabPane tab="Trade history" key="trade">
 							<TradeHistory userId={userInformation.id} />
 						</TabPane>
-					)}
+					}
 					{/* {isAdmin() && (
 						<TabPane tab="Funding" key="deposit">
 							<Balance user_id={id} pairs={pairs} />
 						</TabPane>
 					)} */}
-					{!isSupportUser && !isKYC() && (
+					{
 						<TabPane tab="Deposits" key="deposits">
 							{/*<Deposits*/}
 							{/*initialData={{*/}
@@ -385,8 +457,8 @@ class UserContent extends Component {
 								showFilters={true}
 							/>
 						</TabPane>
-					)}
-					{!isSupportUser && !isKYC() && (
+					}
+					{
 						<TabPane tab="Withdrawal" key="withdrawals">
 							<Transactions
 								initialData={{
@@ -399,8 +471,16 @@ class UserContent extends Component {
 								showFilters={true}
 							/>
 						</TabPane>
-					)}
-					{!isSupportUser && !isKYC() && (
+					}
+					{
+						<TabPane tab="Referrals" key="referrals">
+							<Referrals
+								userInformation={userInformation}
+								referral_history_config={referral_history_config}
+							/>
+						</TabPane>
+					}
+					{
 						<TabPane tab="Meta" key="meta">
 							<UserMetaForm
 								constants={constants}
@@ -409,12 +489,24 @@ class UserContent extends Component {
 								isConfigure={isConfigure}
 							/>
 						</TabPane>
-					)}
+					}
 				</Tabs>
 				<VerifyEmailConfirmation
 					visible={showVerifyEmailModal}
 					onCancel={() => this.setState({ showVerifyEmailModal: false })}
 					onConfirm={this.verifyUserEmail}
+					userData={userInformation}
+				/>
+				<ActivationConfirmation
+					visible={showRecoverModal}
+					onCancel={() => this.setState({ showRecoverModal: false })}
+					onConfirm={this.handleRecoverUser}
+					userData={userInformation}
+				/>
+				<DeletionConfirmation
+					visible={showDeleteModal}
+					onCancel={() => this.setState({ showDeleteModal: false })}
+					onConfirm={this.handleDeleteUser}
 					userData={userInformation}
 				/>
 			</div>

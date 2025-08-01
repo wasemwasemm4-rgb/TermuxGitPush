@@ -2,7 +2,7 @@
 
 const { ROLES, TOKEN_TYPES } = require('../../constants');
 
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
 	const Token = sequelize.define('Token', {
 		key: {
 			type: DataTypes.STRING,
@@ -28,19 +28,40 @@ module.exports = function(sequelize, DataTypes) {
 			defaultValue: TOKEN_TYPES.HMAC
 		},
 		name: {
-			type: DataTypes.STRING,
+			type: DataTypes.STRING
 		},
 		active: {
 			type: DataTypes.BOOLEAN,
-			defaultValue: false,
+			defaultValue: false
 		},
 		revoked: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false
+		},
+		can_read: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: true
+		},
+		can_trade: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false
+		},
+		can_withdraw: {
+			type: DataTypes.BOOLEAN,
+			defaultValue: false
+		},
+		whitelisted_ips: {
+			type: DataTypes.JSONB,
+			defaultValue: []
+		},
+		whitelisting_enabled: {
 			type: DataTypes.BOOLEAN,
 			defaultValue: false
 		}
 	}, {
 		timestamps: true,
-		underscored: true
+		underscored: true,
+		tableName: 'Tokens'
 	});
 
 	Token.associate = (models) => {

@@ -1,173 +1,176 @@
 import React, { Component } from 'react';
 import { connect } from 'react-redux';
-import { formatPercentage } from 'utils/currency';
+import { Link } from 'react-router';
 import { isMobile } from 'react-device-detect';
 import { withRouter } from 'react-router';
-import math from 'mathjs';
+import { bindActionCreators } from 'redux';
 
-import { SearchBox } from 'components';
-import MarketList from '../../TradeTabs/components/MarketList';
+import { ActionNotification, SearchBox } from 'components';
 import withConfig from 'components/ConfigProvider/withConfig';
 import STRINGS from 'config/localizedStrings';
-import { BASE_CURRENCY, DEFAULT_COIN_DATA } from 'config/constants';
+import { DEFAULT_COIN_DATA } from 'config/constants';
 import { getSparklines } from 'actions/chartAction';
 import { EditWrapper } from 'components';
+import { MarketsSelector } from 'containers/Trade/utils';
+import MarketList from 'containers/TradeTabs/components/MarketList';
+import { changeSparkLineChartData } from 'actions/appActions';
+import { STATIC_ICONS } from 'config/icons';
 
 class Markets extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
 			data: [],
-			chartData: {},
+			// chartData: {},
 			pageSize: 10,
 			page: 0,
+			count: 0,
 			searchValue: '',
+			isLoading: true,
 		};
 	}
 
 	componentDidMount() {
-		this.constructData(
-			this.props.pairs,
-			this.state.page,
-			this.state.searchValue
-		);
-		getSparklines(Object.keys(this.props.pairs)).then((chartData) =>
-			this.setState({ chartData })
-		);
+		this.getMarketsList();
 	}
 
-	componentDidUpdate(prevProps, prevState) {
-		if (
-			JSON.stringify(this.props.pairs) !== JSON.stringify(prevProps.pairs) ||
-			JSON.stringify(this.props.tickers) !== JSON.stringify(prevProps.tickers)
-		) {
-			this.constructData(
-				this.props.pairs,
-				this.state.page,
-				this.state.searchValue
-			);
+	componentDidUpdate(prevProps) {
+		const { markets } = this.props;
+		const { page, searchValue } = this.state;
+
+		if (JSON.stringify(markets) !== JSON.stringify(prevProps.markets)) {
+			this.constructData(page, searchValue);
 		}
 	}
 
-	constructData = (pairData, page, searchValue) => {
-		const { tickers } = this.props;
-		const { pageSize } = this.state;
-		const pairs = searchValue ? this.getSearchPairs(searchValue) : pairData;
-		const pairKeys = Object.keys(pairs).sort((a, b) => {
-			const { volume: volumeA = 0, close: closeA = 0 } = tickers[a] || {};
-			const { volume: volumeB = 0, close: closeB = 0 } = tickers[b] || {};
-			const marketCapA = math.multiply(volumeA, closeA);
-			const marketCapB = math.multiply(volumeB, closeB);
-			return marketCapB - marketCapA;
-		});
-		const count = pairKeys.length;
-		const initItem = page * pageSize;
-		if (initItem < count) {
-			const data = pairKeys.slice(0, initItem + pageSize);
-			this.setState({ data, page, count });
-		} else {
-			this.setState({ data: pairKeys, page, count });
+	getMarketsList = async () => {
+		const { pairs } = this.props;
+		const { page, searchValue } = this.state;
+		try {
+			this.setState({ isLoading: true });
+			this.constructData(page, searchValue);
+			await getSparklines(Object.keys(pairs)).then((chartData) =>
+				this.props.changeSparkLineChartData(chartData)
+			);
+			this.setState({ isLoading: false });
+		} catch (error) {
+			console.error(error);
 		}
 	};
 
-	getSearchPairs = (value) => {
+	constructData = (page, searchValue) => {
+		const { pageSize } = this.state;
+		const { markets } = this.props;
+
+		const pairs = this.getSearchPairs(searchValue);
+
+		const searchResults = markets.filter(({ key }) => pairs.includes(key));
+
+		const count = searchResults.length;
+
+		const initItem = page * pageSize;
+		if (initItem < count) {
+			const data = searchResults.slice(0, initItem + pageSize);
+			this.setState({ data, page, count });
+		} else {
+			this.setState({ data: searchResults, page, count });
+		}
+	};
+
+	getSearchPairs = (value = '') => {
 		const { pairs, coins } = this.props;
-		let result = {};
-		let searchValue = value.toLowerCase().trim();
-		Object.keys(pairs).map((key) => {
-			let temp = pairs[key];
-			const { fullname } = coins[temp.pair_base] || DEFAULT_COIN_DATA;
-			let cashName = fullname ? fullname.toLowerCase() : '';
-			if (
-				key.indexOf(searchValue) !== -1 ||
-				temp.pair_base.indexOf(searchValue) !== -1 ||
-				temp.pair_2.indexOf(searchValue) !== -1 ||
-				cashName.indexOf(searchValue) !== -1
-			) {
-				result[key] = temp;
-			}
-			return key;
-		});
-		return result;
+		const result = [];
+		const searchValue = value ? value.toLowerCase().trim() : '';
+
+		if (!value) {
+			return Object.keys(pairs);
+		} else {
+			Object.entries(pairs).forEach(([key, pair]) => {
+				const { pair_base, pair_2 } = pair;
+				const { fullname = '' } = coins[pair_base] || DEFAULT_COIN_DATA;
+
+				if (
+					key.indexOf(searchValue) !== -1 ||
+					pair_base.indexOf(searchValue) !== -1 ||
+					pair_2.indexOf(searchValue) !== -1 ||
+					fullname.toLowerCase().indexOf(searchValue) !== -1
+				) {
+					result.push(key);
+				}
+			});
+
+			return result;
+		}
 	};
 
 	handleTabSearch = (_, value) => {
+		const { page } = this.state;
 		if (value) {
-			const result = this.getSearchPairs(value);
-			this.constructData(result, 0, value);
+			this.constructData(0, value);
 		} else {
-			this.constructData(this.props.pairs, this.state.page, value);
+			this.constructData(page, value);
 		}
 		this.setState({ searchValue: value });
 	};
 
 	handleLoadMore = () => {
-		this.constructData(
-			this.props.pairs,
-			this.state.page + 1,
-			this.state.searchValue
-		);
+		const { page, searchValue } = this.state;
+		this.constructData(page + 1, searchValue);
 	};
 
 	handleClick = (pair) => {
-		const { router } = this.props;
+		const {
+			router,
+			constants: { features: { pro_trade, quick_trade } = {} },
+		} = this.props;
 		if (pair && router) {
-			router.push(`/trade/${pair}`);
+			if (pro_trade) {
+				router.push(`/trade/${pair}`);
+			} else if (quick_trade) {
+				router.push(`/quick-trade/${pair}`);
+			}
 		}
 	};
 
-	renderMarket = (data) => {
-		const {
-			pairs,
-			tickers,
-			coins,
-			isHome = false
-		} = this.props;
-		const marketData = data.map((key) => {
-			let pair = pairs[key] || {};
-			let { fullname, symbol = '' } =
-				coins[pair.pair_base || BASE_CURRENCY] || DEFAULT_COIN_DATA;
-			const pairTwo = coins[pair.pair_2] || DEFAULT_COIN_DATA;
-			const { increment_price } = pair;
-			let ticker = tickers[key] || {};
-			const priceDifference =
-				ticker.open === 0 ? 0 : (ticker.close || 0) - (ticker.open || 0);
-			const tickerPercent =
-				priceDifference === 0 || ticker.open === 0
-					? 0
-					: (priceDifference / ticker.open) * 100;
-			const priceDifferencePercent = isNaN(tickerPercent)
-				? formatPercentage(0)
-				: formatPercentage(tickerPercent);
-			return {
-				key,
-				pair,
-				symbol,
-				pairTwo,
-				fullname,
-				ticker,
-				increment_price,
-				priceDifference,
-				priceDifferencePercent,
-			};
-		});
-		if (isHome) {
-			this.props.renderContent(marketData);
-		}
-		return marketData;
-	}
-
 	render() {
+		const { data, page, pageSize, count } = this.state;
 		const {
 			showSearch = true,
 			showMarkets = false,
 			router,
+			isHome = false,
+			showContent = false,
+			renderContent,
+			sparkLineChartData,
 		} = this.props;
-		const { data, chartData, page, pageSize, count } = this.state;
-		const processedData = this.renderMarket(data);
+
+		if (isHome) {
+			renderContent(data);
+		}
 
 		return (
 			<div>
+				{showContent && (
+					<div className="d-flex justify-content-between">
+						<EditWrapper stringId="SUMMARY_MARKETS.VISIT_COIN_INFO_PAGE">
+							{STRINGS.formatString(
+								STRINGS['SUMMARY_MARKETS.VISIT_COIN_INFO_PAGE'],
+								<Link to="prices" className="link-text">
+									{STRINGS['SUMMARY_MARKETS.HERE']}
+								</Link>
+							)}
+						</EditWrapper>
+						<ActionNotification
+							stringId="REFRESH"
+							text={STRINGS['REFRESH']}
+							iconId="REFRESH"
+							iconPath={STATIC_ICONS['REFRESH']}
+							className="blue-icon refresh-link mr-3"
+							onClick={() => this.getMarketsList()}
+							disable={this.state.isLoading}
+						/>
+					</div>
+				)}
 				{showSearch && (
 					<div className="d-flex justify-content-end">
 						<div className={isMobile ? '' : 'w-25 pb-4'}>
@@ -177,36 +180,53 @@ class Markets extends Component {
 								outlineClassName="trade_tabs-search-outline"
 								placeHolder={`${STRINGS['SEARCH_ASSETS']}...`}
 								handleSearch={this.handleTabSearch}
+								showCross
 							/>
 						</div>
 					</div>
 				)}
+
 				<MarketList
-					markets={processedData}
-					chartData={chartData}
+					loading={this.state.isLoading}
+					markets={data}
+					chartData={sparkLineChartData}
 					handleClick={this.handleClick}
 				/>
+
 				{!showMarkets && page * pageSize + pageSize < count && (
 					<div className="text-right">
-						<span
-							className="trade-account-link pointer"
-							onClick={this.handleLoadMore}
+						<EditWrapper
+							stringId="STAKE_DETAILS.VIEW_MORE"
+							renderWrapper={(children) => (
+								<span
+									className="trade-account-link pointer d-flex justify-content-center"
+									onClick={this.handleLoadMore}
+								>
+									{children}
+								</span>
+							)}
 						>
-							{STRINGS['SUMMARY.VIEW_MORE_MARKETS']}
-						</span>
+							{STRINGS['STAKE_DETAILS.VIEW_MORE']}
+						</EditWrapper>
 					</div>
 				)}
 				{showMarkets && (
 					<div className="d-flex justify-content-center app_bar-link blue-link pointer py-2 underline-text market-list__footer">
-						<EditWrapper stringId="MARKETS_TABLE.VIEW_MARKETS" />
-						<div
-							onClick={() => {
-								router.push('/trade/add/tabs');
-							}}
-							className="pt-1"
+						<EditWrapper
+							stringId="MARKETS_TABLE.VIEW_MARKETS"
+							renderWrapper={(children) => (
+								<div
+									onClick={() => {
+										router.push('/markets');
+									}}
+									className="pt-1"
+								>
+									{children}
+								</div>
+							)}
 						>
 							{STRINGS['MARKETS_TABLE.VIEW_MARKETS']}
-						</div>
+						</EditWrapper>
 					</div>
 				)}
 			</div>
@@ -217,8 +237,19 @@ class Markets extends Component {
 const mapStateToProps = (state) => ({
 	pairs: state.app.pairs,
 	tickers: state.app.tickers,
+	constants: state.app.constants,
+	markets: MarketsSelector(state),
+	sparkLineChartData: state.app.sparkLineChartData,
 });
 
-const MarketWrapper = withConfig(Markets);
+const mapDispatchToProps = (dispatch) => ({
+	changeSparkLineChartData: bindActionCreators(
+		changeSparkLineChartData,
+		dispatch
+	),
+});
 
-export default connect(mapStateToProps)(withRouter(MarketWrapper));
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(withRouter(withConfig(Markets)));

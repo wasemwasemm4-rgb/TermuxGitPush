@@ -36,7 +36,7 @@ $padding: 0.25rem;
 	}
 
 	.trade_input-input-currency {
-		@include size($input--height);
+		height: $input--height;
 		position: absolute;
 		top: 0;
 		font-weight: bold;
@@ -97,6 +97,11 @@ $padding: 0.25rem;
 }
 
 .size-slider {
+	.ant-slider {
+		* {
+			transition: 0.1s;
+		}
+	}
 	.ant-slider-with-marks {
 		margin-bottom: 10px;
 	}
@@ -129,4 +134,13 @@ $padding: 0.25rem;
 .ant-slider-mark-text-active {
 	color: $colors-main-black;
 	font-weight: bold;
+}
+
+.layout-mobile {
+	.trade-form-select {
+		font-size: 12px !important;
+		.ant-select-selection-item {
+			font-size: 1.2rem !important;
+		}
+	}
 }

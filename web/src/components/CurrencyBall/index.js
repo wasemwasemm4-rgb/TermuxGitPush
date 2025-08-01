@@ -1,6 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
-import { FLEX_CENTER_CLASSES } from '../../config/constants';
+import { FLEX_CENTER_CLASSES } from 'config/constants';
 
 const getSizeClass = (size) => {
 	switch (size) {
@@ -25,7 +25,7 @@ const CurrencyBall = ({ name, symbol, size, className }) => (
 			...FLEX_CENTER_CLASSES,
 			'currency_ball-wrapper',
 			'default-coin',
-			symbol,
+			`currency_ball-${symbol}`,
 			getSizeClass(size),
 			className
 		)}

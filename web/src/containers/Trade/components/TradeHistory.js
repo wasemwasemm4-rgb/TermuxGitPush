@@ -2,11 +2,10 @@ import React, { Component } from 'react';
 import classnames from 'classnames';
 import { connect } from 'react-redux';
 import { ReactSVG } from 'react-svg';
-import { DisplayTable } from '../../../components';
-import { getFormatTimestamp } from '../../../utils/utils';
-import STRINGS from '../../../config/localizedStrings';
+import { DisplayTable, EditWrapper } from 'components';
+import { getFormatTimestamp } from 'utils/utils';
+import STRINGS from 'config/localizedStrings';
 import { formatToCurrency } from '../../../utils/currency';
-import { DEFAULT_COIN_DATA } from 'config/constants';
 // import { roundNumber } from '../../../utils/currency';
 // import { getDecimals } from '../../../utils/utils';
 import { tradeHistorySelector } from '../utils';
@@ -15,6 +14,8 @@ import { calcPercentage } from 'utils/math';
 import { Select } from 'antd';
 import { CaretDownOutlined } from '@ant-design/icons';
 import math from 'mathjs';
+import { opacifyNumber } from 'helpers/opacify';
+import debounce from 'lodash.debounce';
 
 const { Option } = Select;
 
@@ -25,9 +26,10 @@ class TradeHistory extends Component {
 		isprevious: false,
 		isBase: true,
 		isOpen: false,
+		isLoading: true,
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		this.calculateHeaders();
 		if (this.props.data.length) {
 			this.generateData(this.props.data);
@@ -58,7 +60,10 @@ class TradeHistory extends Component {
 		this.setState({ headers });
 	};
 
+	setIsLoading = debounce(() => this.setState({ isLoading: false }), 250);
+
 	generateData = (data) => {
+		this.setState({ isLoading: true });
 		let pairData = this.props.pairs[this.props.pair] || {};
 		let constructedData = data.map((value, index) => {
 			// let temp = data[index - 1] ? data[index - 1] : {};
@@ -73,6 +78,7 @@ class TradeHistory extends Component {
 			return { ...value, isSameBefore, upDownRate, price, sizePrice };
 		});
 		this.setState({ data: constructedData });
+		this.setIsLoading();
 	};
 
 	onSelect = (isBase) => this.setState({ isBase });
@@ -84,15 +90,16 @@ class TradeHistory extends Component {
 	generateHeaders = (pairs) => {
 		const { icons: ICONS, maxAmount } = this.props;
 		const { isBase, isOpen } = this.state;
-		const { coins, pairData } = this.props;
-		const pairBase = pairData.pair_base.toUpperCase();
-		const { symbol } = coins[pairData.pair_2] || DEFAULT_COIN_DATA;
+		const { pairData } = this.props;
+		const { pair_base_display, pair_2_display } = pairData;
 
 		return [
 			{
 				key: 'price',
 				label: (
-					<div className="d-flex justify-content-start">{STRINGS['PRICE']}</div>
+					<div className="d-flex justify-content-start">
+						<EditWrapper stringId="PRICE">{STRINGS['PRICE']}</EditWrapper>
+					</div>
 				),
 				renderCell: (
 					{ side, price = 0, isSameBefore, upDownRate, timestamp },
@@ -121,7 +128,7 @@ class TradeHistory extends Component {
 				key: 'size',
 				label: (
 					<div className="d-flex align-items-baseline content-center public-history__header">
-						<div>{STRINGS['SIZE']}</div>
+						<EditWrapper stringId="SIZE">{STRINGS['SIZE']}</EditWrapper>
 						<div>
 							<Select
 								bordered={false}
@@ -140,8 +147,8 @@ class TradeHistory extends Component {
 								dropdownClassName="custom-select-style trade-select-option-wrapper"
 								dropdownStyle={{ minWidth: '7rem' }}
 							>
-								<Option value={false}>{symbol.toUpperCase()}</Option>
-								<Option value={true}>{pairBase}</Option>
+								<Option value={false}>{pair_2_display}</Option>
+								<Option value={true}>{pair_base_display}</Option>
 							</Select>
 						</div>
 					</div>
@@ -158,7 +165,10 @@ class TradeHistory extends Component {
 							style={fillStyle}
 							key={`size-${index}`}
 						>
-							{isBase ? size : sizePrice}
+							{opacifyNumber(isBase ? size : sizePrice, {
+								zerosClassName: 'public-sale_zeros',
+								digitsClassName: 'public-sale_digits',
+							})}
 						</div>
 					);
 				},
@@ -166,7 +176,9 @@ class TradeHistory extends Component {
 			{
 				key: 'timestamp',
 				label: (
-					<div className="d-flex justify-content-end">{STRINGS['TIME']}</div>
+					<div className="d-flex justify-content-end">
+						<EditWrapper stringId="TIME">{STRINGS['TIME']}</EditWrapper>
+					</div>
 				),
 				renderCell: ({ timestamp, side }, index) => (
 					<div
@@ -188,6 +200,8 @@ class TradeHistory extends Component {
 					headers={this.state.headers}
 					data={data}
 					// rowClassName="trade_history-row-wrapper"
+					cssTransitionClassName="trade-history-record"
+					loading={this.state.isLoading}
 				/>
 			</div>
 		);
@@ -205,7 +219,6 @@ const mapStateToProps = (store) => {
 		pairs: store.app.pairs,
 		data,
 		maxAmount,
-		coins: store.app.coins,
 	};
 };
 

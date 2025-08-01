@@ -25,6 +25,8 @@ $order_entry-column--width-lg: 20rem;
 @import './components/_TradeBlock.scss';
 @import './components/_OrderEntry.scss';
 @import './components/Orderbook.scss';
+@import './components/DepthChart.scss';
+@import './components/TradeHistory.scss';
 
 .ask,
 .buy {
@@ -100,7 +102,12 @@ $order_entry-column--width-lg: 20rem;
 .trade_active_orders-wrapper {
 	overflow-y: auto;
 	flex: 1;
-
+	.loading-anime {
+		height: 20px;
+		width: 100%;
+		border-radius: 7px;
+		animation: mymove 3s infinite;
+	}
 	.cell_box-type {
 		padding: 0.1rem;
 
@@ -143,7 +150,6 @@ $order_entry-column--width-lg: 20rem;
 	}
 	.recent-trades {
 		&.cell_box-type {
-			display: flex;
 			.buy {
 				min-width: 3rem;
 				padding-left: 0.5rem;
@@ -154,6 +160,17 @@ $order_entry-column--width-lg: 20rem;
 				padding-left: 0.5rem;
 				padding-right: 0.5rem;
 			}
+		}
+	}
+	.active-icon {
+		svg {
+			fill: $colors-main-black;
+		}
+	}
+	.inactive-icon {
+		opacity: 0.6;
+		svg {
+			fill: $colors-black;
 		}
 	}
 }
@@ -242,25 +259,6 @@ $order_entry-column--width-lg: 20rem;
 	margin: 0.3rem 0.3rem 0 0.3rem;
 
 	svg {
-		.btc0,
-		.btc1,
-		.eth0,
-		.eth1,
-		.bch-icon,
-		.xrp-icon,
-		.xht-icon,
-		.xmr-icon,
-		.xlm-icon,
-		.eos-icon,
-		.trx-icon,
-		.ada-icon,
-		.bnb-icon,
-		.tusd-icon,
-		.dai-icon,
-		.ltc-icon,
-		.default-icon {
-			fill: $app-bar-menu-list-color !important;
-		}
 		.plus,
 		.minus {
 			stroke: $app-bar-menu-list-color !important;
@@ -273,8 +271,42 @@ $order_entry-column--width-lg: 20rem;
 		.icon-check-1 {
 			stroke: $base_top-bar-navigation_text;
 		}
-		.xht-icon-1 {
-			fill: $dark-app-background-color !important;
+	}
+}
+
+.general-record-enter {
+	opacity: 0;
+}
+.general-record-enter-active {
+	opacity: 1;
+	transition: opacity 1s ease-in;
+}
+
+.open-order-wrapper {
+	.trade__active-orders_cancel-All {
+		.action_notification-wrapper {
+			position: relative;
 		}
+	}
+	.table_body-row {
+		td:nth-child(even) {
+			.action_notification-wrapper {
+				margin-top: 0.75rem;
+				padding-left: 0.25rem;
+			}
+		}
+	}
+}
+
+.markets-select-input {
+	width: 10rem !important;
+	.market-option {
+		gap: 5%;
+	}
+}
+
+.markets-select-dropdown {
+	.market-option {
+		gap: 5%;
 	}
 }

@@ -36,6 +36,8 @@
 		background-color: $app-sidebar-background;
 		padding-bottom: 20px;
 		.custom-tab-wrapper {
+			margin: 0 0.5rem;
+			overflow-x: auto;
 			.tab_item {
 				min-width: 9rem;
 			}
@@ -111,6 +113,7 @@
 
 .layout-mobile {
 	.verification_container {
+		padding: unset !important;
 		.verification-info-txt {
 			width: 100%;
 			font-size: $font-size-mobile-txt !important;

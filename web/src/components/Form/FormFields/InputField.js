@@ -24,6 +24,12 @@ const InputField = (props) => {
 		hideCheck,
 		outlineClassName,
 		stringId,
+		isEmail,
+		emailMsg,
+		onCrossClick,
+		showCross,
+		ishorizontalfield,
+		isFocus,
 		...rest
 	} = props;
 	const displayError = touched && error && !active;
@@ -40,6 +46,13 @@ const InputField = (props) => {
 					type={type}
 					{...input}
 					{...rest}
+					onFocus={(e) => {
+						if (input.onFocus) input.onFocus(e);
+					}}
+					onBlur={(e) => {
+						if (input.onBlur) input.onBlur(e);
+					}}
+					autoFocus={isFocus}
 				/>
 			</div>
 		</FieldWrapper>

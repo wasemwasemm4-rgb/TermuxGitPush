@@ -20,10 +20,16 @@
 		padding: 20px 16px 0 15px;
 		.app-menu-bar-icon {
 			width: 20px;
+			svg {
+				path {
+					fill: $colors-black;
+				}
+			}
 		}
 	}
 	.app-menu-bar-side_list {
-		height: 60px;
+		transition: 0.3s;
+		height: 45px;
 		padding: 18px 17px;
 		cursor: pointer;
 		color: $colors-black !important;
@@ -31,7 +37,7 @@
 		.side-bar-txt {
 			height: 24px;
 			margin: 0 0 0 14px;
-			font-size: 16px;
+			font-size: 1.2rem;
 		}
 	}
 	.list_active,
@@ -41,15 +47,7 @@
 		.side-bar-txt {
 			color: $base_top-bar-navigation_text !important;
 		}
-		.tab-summary0,
-		.tab-wallet0,
-		.tab-security0,
-		.tab-history0,
-		.tab-verify0,
-		.tab-setting0,
-		.help-question,
-		.tab-signout,
-		.tab-history-st {
+		.fill_secondary-color {
 			fill: $base_top-bar-navigation_text !important;
 		}
 	}

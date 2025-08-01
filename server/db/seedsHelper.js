@@ -20,7 +20,10 @@ const SETTINGS_DATA_DEFAULT = {
 	notification: {
 		popup_order_confirmation: true,
 		popup_order_completed: true,
-		popup_order_partially_filled: true
+		popup_order_partially_filled: true,
+		popup_order_new: true,
+		popup_order_canceled: true
+
 	},
 	interface: {
 		order_book_levels: 10,
@@ -82,10 +85,10 @@ const generateUserObject = (
 		affiliation_code: generateAffiliationCode(),
 		created_at: now,
 		updated_at: now,
-		settings: JSON.stringify(SETTINGS_DATA_DEFAULT),
-		bank_account: JSON.stringify(BANK_DATA_DEFAULT),
-		id_data: JSON.stringify(ID_DATA_DEFAULT),
-		address: JSON.stringify(ADDRESS_DATA_DEFAULT),
+		settings: SETTINGS_DATA_DEFAULT,
+		bank_account: BANK_DATA_DEFAULT,
+		id_data: ID_DATA_DEFAULT,
+		address: ADDRESS_DATA_DEFAULT,
 		...opts
 	};
 };

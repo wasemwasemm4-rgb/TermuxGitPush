@@ -3,26 +3,36 @@ import { oneOfType, array, string, func, number, object } from 'prop-types';
 import { Select, Input } from 'antd';
 import math from 'mathjs';
 import { isNumeric, isFloat } from 'validator';
-import { CaretDownOutlined } from '@ant-design/icons';
-import { isMobile } from 'react-device-detect';
+import {
+	CaretDownOutlined,
+	CaretUpOutlined,
+	LoadingOutlined,
+	SyncOutlined,
+} from '@ant-design/icons';
+import { DEFAULT_COIN_DATA } from 'config/constants';
 
 import { minValue, maxValue } from 'components/Form/validations';
 import { FieldError } from 'components/Form/FormFields/FieldWrapper';
 import { translateError } from './utils';
-import withConfig from 'components/ConfigProvider/withConfig';
-import EditWrapper from 'components/EditWrapper';
-import STRINGS from 'config/localizedStrings';
-import { Image } from 'components';
-import { getDecimals } from '../../utils/utils';
+import { Coin } from 'components';
+import { getDecimals } from 'utils/utils';
 
 const { Option } = Select;
-const { Group } = Input;
-// const DECIMALS = 4;
 
 class InputGroup extends React.PureComponent {
 	state = {
 		isOpen: false,
 	};
+
+	onHandleSearch = React.createRef();
+
+	componentDidUpdate() {
+		const { isOpen } = this.state;
+		const { setIsOpenTopField, setIsOpenBottomField } = this.props;
+
+		setIsOpenTopField && setIsOpenTopField(isOpen);
+		setIsOpenBottomField && setIsOpenBottomField(isOpen);
+	}
 
 	onDropdownVisibleChange = (isOpen) => {
 		this.setState({ isOpen });
@@ -35,10 +45,14 @@ class InputGroup extends React.PureComponent {
 	onInputChange = (newValue) => {
 		const { onInputChange, decimal } = this.props;
 		const decimalPoint = getDecimals(decimal);
+		const decimalPointValue = Math.pow(10, decimalPoint);
 
 		if (isNumeric(newValue) || isFloat(newValue)) {
-			const value = math.round(newValue, decimalPoint);
-			if (value) {
+			const value =
+				math.floor(newValue * decimalPointValue) / decimalPointValue;
+			if (isFloat(newValue) && `${newValue}`.endsWith('0')) {
+				onInputChange(newValue);
+			} else if (value) {
 				onInputChange(value);
 			} else {
 				onInputChange(0);
@@ -49,12 +63,31 @@ class InputGroup extends React.PureComponent {
 	};
 
 	renderErrorMessage = (value) => {
-		const { limits, forwardError } = this.props;
+		const {
+			limits,
+			forwardError,
+			availableBalance,
+			selectValue,
+			pair,
+		} = this.props;
+		const keydata = pair.split('-');
 		let error = '';
-		if (!value) {
+		if (!value || (value && !parseFloat(value))) {
 			error = '';
-		} else {
-			error = minValue(limits.MIN)(value) || maxValue(limits.MAX)(value);
+		} else if (
+			keydata[0] === selectValue &&
+			limits &&
+			minValue(limits.MIN)(value)
+		) {
+			error = minValue(limits.MIN)(value);
+		} else if (
+			keydata[0] === selectValue &&
+			limits &&
+			maxValue(limits.MAX)(value)
+		) {
+			error = maxValue(limits.MAX)(value);
+		} else if (availableBalance) {
+			error = maxValue(availableBalance)(value);
 		}
 		forwardError(error);
 		return error;
@@ -63,101 +96,149 @@ class InputGroup extends React.PureComponent {
 	render() {
 		const { isOpen } = this.state;
 		const {
-			name,
 			options,
 			inputValue,
 			selectValue,
 			onSelect,
 			limits = {},
-			icons: ICONS,
 			autoFocus,
-			stringId,
+			coins,
+			loading,
+			expired,
+			disabled,
+			isMiniCalculator = false,
+			inputRef,
 		} = this.props;
 
+		const suffix = loading ? (
+			<LoadingOutlined className="secondary-text ml-1" />
+		) : expired ? (
+			<SyncOutlined className="secondary-text ml-1" />
+		) : null;
+
+		const error = translateError(this.renderErrorMessage(inputValue));
+
 		return (
-			<div className="py-2">
-				<label className="bold caps-first">
-					<EditWrapper stringId={stringId}>{name}</EditWrapper>
-				</label>
-				<div className={isMobile ? "w-100" : ""}>
-					<Group compact className="input-group__container">
-						<Select
-							open={isOpen}
-							size="default"
-							showSearch
-							filterOption={true}
-							className="input-group__select"
-							value={selectValue}
-							style={isOpen ? { width: '100%' } : { width: '33%' }}
-							onChange={onSelect}
-							onDropdownVisibleChange={this.onDropdownVisibleChange}
-							bordered={false}
-							listItemHeight={35}
-							listHeight={35 * 6}
-							dropdownClassName="custom-select-style"
-							suffixIcon={
-								<CaretDownOutlined
-									onClick={() => this.onDropdownVisibleChange(!isOpen)}
-								/>
-							}
-						>
-							{options.map((symbol, index) => (
-								<Option
-									name="selectedPairBase"
-									value={symbol}
-									key={index}
-									className="d-flex"
-								>
-									<div className="d-flex align-items-center quick-trade-select-wrapper">
-										<div className="input-group__coin-icons-wrap">
-											<Image
-												iconId={`${symbol.toUpperCase()}_ICON`}
-												icon={
-													ICONS[`${symbol.toUpperCase()}_ICON`]
-														? ICONS[`${symbol.toUpperCase()}_ICON`]
-														: ICONS['DEFAULT_ICON']
+			<div className="pt-2">
+				<div className="input-holder">
+					<div className="d-flex">
+						<div className="currency-dropdown">
+							<Select
+								open={isOpen}
+								size="default"
+								showSearch
+								filterOption={(input, option) => {
+									const coin = coins[option.value] || DEFAULT_COIN_DATA;
+									return (
+										option.value.toLowerCase().indexOf(input.toLowerCase()) >=
+											0 ||
+										coin.fullname.toLowerCase().indexOf(input.toLowerCase()) >=
+											0
+									);
+								}}
+								className={
+									isOpen
+										? 'input-group__select_disabled'
+										: 'input-group__select'
+								}
+								value={selectValue}
+								onChange={onSelect}
+								onDropdownVisibleChange={this.onDropdownVisibleChange}
+								bordered={false}
+								listItemHeight={35}
+								listHeight={35 * 6}
+								dropdownClassName="custom-select-style"
+								suffixIcon={
+									!isOpen ? (
+										<CaretDownOutlined
+											onClick={() => this.onDropdownVisibleChange(!isOpen)}
+										/>
+									) : (
+										<CaretUpOutlined
+											onClick={() => this.onDropdownVisibleChange(!isOpen)}
+										/>
+									)
+								}
+								onSelect={() => {
+									isMiniCalculator
+										? inputRef.current.focus()
+										: this.onHandleSearch.current.focus();
+								}}
+							>
+								{options.map((symbol, index) => {
+									const { display_name, icon_id } =
+										coins[symbol] || DEFAULT_COIN_DATA;
+									return (
+										<Option
+											name="selectedPairBase"
+											value={symbol}
+											key={index}
+											className="d-flex"
+										>
+											<div
+												className={
+													isOpen
+														? 'd-flex align-items-center quick-trade-select-wrapper ml-3'
+														: 'd-flex align-items-center quick-trade-select-wrapper'
 												}
-												wrapperClassName="input-group__coin-icons"
-												imageWrapperClassName="currency-ball-image-wrapper"
-											/>
-											{/* <img
-											src={
-												ICONS[`${symbol.toUpperCase()}_ICON`]
-													? ICONS[`${symbol.toUpperCase()}_ICON`]
-													: ICONS['DEFAULT_ICON']
-											}
-											className="input-group__coin-icons"
-											alt={`${symbol.toUpperCase()}_coin`}
-										/> */}
-										</div>
-										<span className="pl-1">{symbol.toUpperCase()}</span>
-									</div>
-								</Option>
-							))}
-						</Select>
-						<Input
-							type="number"
-							placeholder={STRINGS['AMOUNT']}
-							style={isOpen ? { display: 'none' } : { width: '67%' }}
-							className="input-group__input"
-							value={inputValue}
-							onChange={this.onChangeEvent}
-							bordered={false}
-							step={limits.MIN}
-							min={limits.MIN}
-							max={limits.MAX}
-							autoFocus={autoFocus}
-						/>
-					</Group>
-					{translateError(this.renderErrorMessage(inputValue))
-						?
+											>
+												<div
+													className={
+														window.innerWidth > 768
+															? 'input-group__coin-icons-wrap mb-1'
+															: 'input-group__coin-icons-wrap_mobile-view mt-2'
+													}
+												>
+													<Coin
+														iconId={icon_id}
+														type={
+															isMiniCalculator
+																? 'CS8'
+																: window.innerWidth > 768 && !isOpen
+																? 'CS8'
+																: isOpen
+																? 'CS6'
+																: 'CS11'
+														}
+													/>
+												</div>
+												<span className="ml-2 mr-4">{display_name}</span>
+											</div>
+										</Option>
+									);
+								})}
+							</Select>
+						</div>
+						<div>
+							<Input
+								ref={isMiniCalculator ? inputRef : this.onHandleSearch}
+								type="number"
+								placeholder={loading ? '' : '0'}
+								style={{}}
+								className={
+									inputValue > 0
+										? 'input-group__input active-input'
+										: 'input-group__input'
+								}
+								value={(!loading && inputValue) || ''}
+								onChange={this.onChangeEvent}
+								bordered={false}
+								step={limits.MIN}
+								min={limits.MIN}
+								max={limits.MAX}
+								autoFocus={autoFocus}
+								suffix={suffix}
+								disabled={disabled}
+							/>
+						</div>
+					</div>
+					{error && (
 						<FieldError
-							error={translateError(this.renderErrorMessage(inputValue))}
+							error={error}
 							displayError={true}
 							className="input-group__error-wrapper"
 						/>
-						: null
-					}
+					)}
 				</div>
 			</div>
 		);
@@ -174,4 +255,4 @@ InputGroup.propTypes = {
 	limits: object,
 };
 
-export default withConfig(InputGroup);
+export default InputGroup;

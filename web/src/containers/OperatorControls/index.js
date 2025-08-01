@@ -15,7 +15,7 @@ import {
 } from 'utils/string';
 import Modal from 'components/Dialog/DesktopDialog';
 import { Input, Button, Divider, Tabs, message } from 'antd';
-import { DeleteOutlined, SettingFilled, KeyOutlined } from '@ant-design/icons';
+import { SettingFilled, KeyOutlined } from '@ant-design/icons';
 import { initializeStrings, getValidLanguages } from 'utils/initialize';
 import { publish, updateInjectedHTML } from 'actions/operatorActions';
 import LANGUAGES from 'config/languages';
@@ -29,16 +29,30 @@ import AllIconsModal from './components/AllIconsModal';
 import UploadIcon from './components/UploadIcon';
 import SectionsModal from './components/Sections';
 import AddSection from './components/AddSection';
+import ConfigsModal from './components/ConfigsModal';
+import WalletConfigsModal from './components/WalletConfigsModal';
+import DigitalAssetsConfigsModal from './components/DigitalAssetsConfigsModal';
+import String from './components/String';
 import withConfig from 'components/ConfigProvider/withConfig';
-import { setLanguage } from 'actions/appActions';
+import {
+	setLanguage,
+	setAdminSortData,
+	setAdminWalletSortData,
+	setAdminDigitalAssetsSortData,
+} from 'actions/appActions';
 import {
 	pushTempContent,
 	getTempLanguageKey,
 	filterOverwrites,
+	countPlaceholders,
 } from 'utils/string';
 import { filterThemes } from 'utils/color';
 import { getIconByKey, getAllIconsArray } from 'utils/icon';
 import withEdit from 'components/EditProvider/withEdit';
+import { DASH_TOKEN_KEY } from 'config/constants';
+import { getDashToken } from 'containers/Admin/AdminFinancials/action';
+import { setDashToken } from 'actions/assetActions';
+import { checkRole } from 'utils/token';
 
 const { TabPane } = Tabs;
 const { TextArea } = Input;
@@ -90,6 +104,9 @@ class OperatorControls extends Component {
 			isAddThemeOpen: false,
 			isSectionsModalOpen: false,
 			isAddSectionOpen: false,
+			isConfigsModalOpen: false,
+			isWalletConfigModalOpen: false,
+			isDigitalAssetsConfigsModalOpen: false,
 			selectedTheme: '',
 			iconsOverwrites,
 			colorOverwrites,
@@ -98,6 +115,9 @@ class OperatorControls extends Component {
 			selectedThemes,
 			allIconsArray: [],
 			injected_html: { head: '', body: '', ...injected_html },
+			isUpload: false,
+			isRemove: false,
+			removedKeys: [],
 		};
 	}
 
@@ -115,6 +135,13 @@ class OperatorControls extends Component {
 		} else if (themeSettings) {
 			this.toggleEditMode();
 			this.openThemeSettings();
+		}
+		const role = checkRole();
+		if (role === 'admin') {
+			const DASH_TOKEN = localStorage.getItem(DASH_TOKEN_KEY);
+			if (!DASH_TOKEN) {
+				this.getDashToken();
+			}
 		}
 	}
 
@@ -139,6 +166,14 @@ class OperatorControls extends Component {
 			});
 		}
 	}
+
+	getDashToken = async () => {
+		const res = await getDashToken();
+		if (res && res.token) {
+			this.props.setDashToken(res.token);
+			localStorage.setItem(DASH_TOKEN_KEY, res.token);
+		}
+	};
 
 	getSelectedLanguages = (languageKeys) => {
 		const isENAvailable = !!languageKeys.find((lang) => lang === 'en');
@@ -204,7 +239,7 @@ class OperatorControls extends Component {
 	handleEditButton = ({ target: { dataset = {} } }, source) => {
 		const { isEditModalOpen, isUploadIconOpen } = this.state;
 		const { isEditMode } = this.props;
-		const { stringId, iconId, sectionId } = dataset;
+		const { stringId, iconId, sectionId, configId } = dataset;
 
 		if (isEditMode && !isEditModalOpen && !isUploadIconOpen) {
 			const string_ids_array = stringId ? stringId.split(',') : [];
@@ -227,6 +262,12 @@ class OperatorControls extends Component {
 						this.openUploadIcon();
 					} else if (sectionId) {
 						this.openSectionsModal();
+					} else if (configId === 'MARKET_LIST_CONFIGS') {
+						this.openConfigsModal();
+					} else if (configId === 'WALLET_LIST_CONFIGS') {
+						this.openWalletConfigsModal();
+					} else if (configId === 'DIGITAL_ASSETS_LIST_CONFIGS') {
+						this.openDigitalAssetsConfigsModal();
 					}
 				}
 			);
@@ -273,6 +314,15 @@ class OperatorControls extends Component {
 	handleInputChange = ({ target: { value, name } }) => {
 		const [key, lang] = name.split(EDITABLE_NAME_SEPARATOR);
 		this.updateEditData(value, key, lang);
+	};
+
+	handleAddLink = (value, name) => {
+		const [key, lang] = name.split(EDITABLE_NAME_SEPARATOR);
+		this.updateEditData(
+			value + ' <a href="https://example.com">link</a>',
+			key,
+			lang
+		);
 	};
 
 	updateEditData = (value, key, lang) => {
@@ -333,17 +383,12 @@ class OperatorControls extends Component {
 		);
 	};
 
-	countPlaceholders = (string = '') => {
-		const matches = string.match(/{(.*?)}/);
-		return matches ? matches.length : 0;
-	};
-
 	validateString = (string, key) => {
 		const benchmarkLanguage = 'en';
-		const benchmarkPlaceholders = this.countPlaceholders(
+		const benchmarkPlaceholders = countPlaceholders(
 			getStringByKey(key, benchmarkLanguage, CONTENT)
 		);
-		const placeholders = this.countPlaceholders(string);
+		const placeholders = countPlaceholders(string);
 
 		return placeholders === benchmarkPlaceholders;
 	};
@@ -359,7 +404,15 @@ class OperatorControls extends Component {
 				languageKeys,
 			} = this.state;
 
-			const { defaults, sections } = this.props;
+			const {
+				defaults,
+				sections,
+				pinned_markets,
+				default_sort,
+				pinned_assets,
+				default_wallet_sort,
+				default_digital_assets_sort,
+			} = this.props;
 
 			const valid_languages = languageKeys.join();
 			const strings = filterOverwrites(overwrites);
@@ -372,6 +425,11 @@ class OperatorControls extends Component {
 				icons,
 				valid_languages,
 				sections,
+				pinned_markets,
+				default_sort,
+				pinned_assets,
+				default_wallet_sort,
+				default_digital_assets_sort,
 			};
 
 			publish(configs)
@@ -389,6 +447,7 @@ class OperatorControls extends Component {
 					message.error(error);
 				});
 		}
+		localStorage.removeItem('removedBackgroundItems');
 	};
 
 	reload = () => window.location.reload(false);
@@ -715,18 +774,25 @@ class OperatorControls extends Component {
 		});
 	};
 
-	removeIcon = (key) => {
-		const { removeIcon } = this.props;
-		const { iconsOverwrites } = this.state;
-		const { [key]: iconKey, ...restIcons } = iconsOverwrites;
-		this.setState(
-			{
-				iconsOverwrites: restIcons,
-			},
-			() => {
-				removeIcon(key);
+	removeIcon = (themeKey, iconKey) => {
+		const icons = this.state.iconsOverwrites;
+		const selectedTheme = themeKey && icons?.[themeKey];
+		let data = {};
+		Object.keys(selectedTheme).forEach((item) => {
+			if (item !== iconKey) {
+				data = {
+					...data,
+					[item]: selectedTheme[item],
+				};
 			}
-		);
+		});
+		const iconsOverwrites = {
+			...icons,
+			[themeKey]: data,
+		};
+		const iconsEditData = { ...this.state.iconsEditData };
+		iconsEditData[themeKey] = { [iconKey]: undefined };
+		this.setState({ iconsEditData, iconsOverwrites });
 	};
 
 	openThemeSettings = () => {
@@ -852,6 +918,70 @@ class OperatorControls extends Component {
 		}));
 	};
 
+	handleRemoveOrUpload = (type, val) => {
+		if (type === 'remove') {
+			this.setState({ isRemove: val });
+		} else if (type === 'removedKeys') {
+			this.setState({ removedKeys: val });
+		} else {
+			this.setState({ isUpload: val });
+		}
+	};
+
+	openConfigsModal = () => {
+		this.setState({
+			isConfigsModalOpen: true,
+		});
+	};
+
+	closeConfigsModal = () => {
+		this.setState({
+			isConfigsModalOpen: false,
+		});
+	};
+
+	updateConfigs = (data) => {
+		const { setAdminSortData } = this.props;
+		setAdminSortData(data);
+		this.enablePublish();
+	};
+
+	openWalletConfigsModal = () => {
+		this.setState({
+			isWalletConfigsModalOpen: true,
+		});
+	};
+
+	closeWalletConfigsModal = () => {
+		this.setState({
+			isWalletConfigsModalOpen: false,
+		});
+	};
+
+	updateWalletConfigs = (data) => {
+		const { setAdminWalletSortData } = this.props;
+		setAdminWalletSortData(data);
+		this.enablePublish();
+	};
+
+	openDigitalAssetsConfigsModal = () => {
+		this.setState({
+			isDigitalAssetsConfigsModalOpen: true,
+		});
+	};
+
+	closeDigitalAssetsConfigsModal = () => {
+		this.setState({
+			isDigitalAssetsConfigsModalOpen: false,
+		});
+	};
+
+	updateDigitalAssetsConfigs = (data) => {
+		const { setAdminDigitalAssetsSortData } = this.props;
+		setAdminDigitalAssetsSortData(data);
+		this.enablePublish();
+	};
+
 	render() {
 		const {
 			isPublishEnabled,
@@ -881,8 +1011,14 @@ class OperatorControls extends Component {
 			iconSearchValue,
 			iconSearchResults,
 			isSectionsModalOpen,
+			isConfigsModalOpen,
+			isWalletConfigsModalOpen,
+			isDigitalAssetsConfigsModalOpen,
 			isAddSectionOpen,
 			injected_html,
+			isRemove,
+			isUpload,
+			removedKeys,
 		} = this.state;
 		const {
 			isEditMode,
@@ -896,6 +1032,7 @@ class OperatorControls extends Component {
 			<div
 				className={classnames('operator-controls__wrapper', {
 					open: isEditMode || isInjectMode,
+					'operator-controls__details': isEditMode || isInjectMode,
 				})}
 			>
 				<div className="operator-controls__buttons-wrapper">
@@ -997,7 +1134,7 @@ class OperatorControls extends Component {
 									const placeholder = `${'<'}!-- In this section you can insert any HTML code to the ${title} of your website --${'>'}`;
 									return (
 										<TabPane className="w-100 h-100" tab={title} key={key}>
-											<div className="w-100 h-100">
+											<div className="w-100 h-100 operator-console">
 												<TextArea
 													name={key}
 													placeholder={placeholder}
@@ -1019,7 +1156,6 @@ class OperatorControls extends Component {
 					isOpen={isEditMode && isEditModalOpen}
 					label="operator-controls-modal"
 					className="operator-controls__modal"
-					disableTheme={true}
 					onCloseDialog={this.closeEditModal}
 					shouldCloseOnOverlayClick={true}
 					showCloseText={true}
@@ -1038,27 +1174,15 @@ class OperatorControls extends Component {
 									</Divider>
 									{languageKeys.map((lang) => {
 										return (
-											<div className="p-1" key={lang}>
-												<label>{this.getLanguageLabel(lang)}:</label>
-												<div className="d-flex align-items-center">
-													<Input
-														type="text"
-														name={generateInputName(key, lang)}
-														placeholder="text"
-														className="operator-controls__input mr-2"
-														value={editData[lang][key]}
-														onChange={this.handleInputChange}
-													/>
-													<Button
-														ghost
-														shape="circle"
-														size="small"
-														className="operator-controls__all-strings-settings-button"
-														onClick={() => this.getDefaultString(key, lang)}
-														icon={<DeleteOutlined />}
-													/>
-												</div>
-											</div>
+											<String
+												key={lang}
+												label={this.getLanguageLabel(lang)}
+												onReset={() => this.getDefaultString(key, lang)}
+												name={generateInputName(key, lang)}
+												value={editData[lang][key]}
+												onChange={this.handleInputChange}
+												onAddLink={this.handleAddLink}
+											/>
 										);
 									})}
 								</div>
@@ -1141,7 +1265,11 @@ class OperatorControls extends Component {
 						isOpen={isUploadIconOpen}
 						onCloseDialog={this.closeUploadIcon}
 						onSave={this.addIcons}
-						onReset={this.removeIcon}
+						removeIcon={this.removeIcon}
+						isRemove={isRemove}
+						isUpload={isUpload}
+						removedKeys={removedKeys}
+						handleRemoveOrUpload={this.handleRemoveOrUpload}
 					/>
 				)}
 				{isThemeSettingsOpen && (
@@ -1183,11 +1311,34 @@ class OperatorControls extends Component {
 					/>
 				)}
 
+				{isConfigsModalOpen && (
+					<ConfigsModal
+						isOpen={isEditMode && isConfigsModalOpen}
+						onCloseDialog={this.closeConfigsModal}
+						onConfirm={this.updateConfigs}
+					/>
+				)}
+
+				{isWalletConfigsModalOpen && (
+					<WalletConfigsModal
+						isOpen={isEditMode && isWalletConfigsModalOpen}
+						onCloseDialog={this.closeWalletConfigsModal}
+						onConfirm={this.updateWalletConfigs}
+					/>
+				)}
+
+				{isDigitalAssetsConfigsModalOpen && (
+					<DigitalAssetsConfigsModal
+						isOpen={isEditMode && isDigitalAssetsConfigsModalOpen}
+						onCloseDialog={this.closeDigitalAssetsConfigsModal}
+						onConfirm={this.updateDigitalAssetsConfigs}
+					/>
+				)}
+
 				<Modal
 					isOpen={isExitConfirmationOpen}
 					label="operator-controls-modal"
 					className="operator-controls__modal"
-					disableTheme={true}
 					onCloseDialog={this.closeExitConfirmationModal}
 					shouldCloseOnOverlayClick={true}
 					showCloseText={true}
@@ -1221,7 +1372,6 @@ class OperatorControls extends Component {
 					isOpen={isExitConsoleConfirmationOpen}
 					label="operator-controls-modal"
 					className="operator-controls__modal"
-					disableTheme={true}
 					onCloseDialog={this.closeExitConsoleConfirmationModal}
 					shouldCloseOnOverlayClick={true}
 					showCloseText={true}
@@ -1254,7 +1404,6 @@ class OperatorControls extends Component {
 					isOpen={isPublishConfirmationOpen}
 					label="operator-controls-modal"
 					className="operator-controls__modal"
-					disableTheme={true}
 					onCloseDialog={this.closePublishConfirmationModal}
 					shouldCloseOnOverlayClick={true}
 					showCloseText={true}
@@ -1292,10 +1441,23 @@ class OperatorControls extends Component {
 const mapStateToProps = (state) => ({
 	activeLanguage: state.app.language,
 	injected_html: state.app.injected_html,
+	constants: state.app.constants,
+	pinned_markets: state.app.pinned_markets,
+	default_sort: state.app.default_sort,
+	pinned_assets: state.app.pinned_assets,
+	default_wallet_sort: state.app.default_wallet_sort,
+	default_digital_assets_sort: state.app.default_digital_assets_sort,
 });
 
 const mapDispatchToProps = (dispatch) => ({
 	changeLanguage: bindActionCreators(setLanguage, dispatch),
+	setAdminSortData: bindActionCreators(setAdminSortData, dispatch),
+	setAdminWalletSortData: bindActionCreators(setAdminWalletSortData, dispatch),
+	setAdminDigitalAssetsSortData: bindActionCreators(
+		setAdminDigitalAssetsSortData,
+		dispatch
+	),
+	setDashToken: bindActionCreators(setDashToken, dispatch),
 });
 
 export default connect(

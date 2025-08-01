@@ -1,5 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
+import { EditWrapper } from 'components';
 
 const TabSelector = (props) => {
 	const { input, options } = props;
@@ -9,12 +10,18 @@ const TabSelector = (props) => {
 			{options.map((option, index) => (
 				<div
 					key={`type-${index}`}
-					className={classnames('text-uppercase', 'text-center', 'pointer', {
-						active: input.value === option.value,
-					})}
+					className={classnames(
+						'text-uppercase',
+						'text-center',
+						'pointer',
+						input.value !== option.value ? option.className : '',
+						{
+							active: input.value === option.value,
+						}
+					)}
 					onClick={() => input.onChange(option.value)}
 				>
-					{option.label}
+					<EditWrapper>{option.label}</EditWrapper>
 				</div>
 			))}
 		</div>

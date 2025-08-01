@@ -6,26 +6,6 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 	background-color: $app-background-color;
 	color: $colors-main-black;
 
-	&.btc {
-		@include currency-color($coin-btc);
-	}
-
-	&.eur {
-		@include currency-color($coin-eur);
-	}
-
-	&.bch {
-		@include currency-color($coin-bch);
-	}
-
-	&.eth {
-		@include currency-color($coin-eth);
-	}
-
-	&.ltc {
-		@include currency-color($coin-ltc);
-	}
-
 	&.layout-desktop {
 		.app_container-content {
 			height: auto;
@@ -41,10 +21,15 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 
 	&.layout-mobile {
 		.app_container-content {
-			min-height: $max-content-height-mobile;
-			max-height: $max-content-height-mobile;
+			min-height: $max-mobile-height;
+			max-height: $max-mobile-height;
 			max-width: $max-content-width-mobile;
 			overflow-y: scroll;
+
+			&.chart-embed {
+				min-height: 100vh;
+				max-height: 100vh;
+			}
 
 			&.no_bottom_navigation {
 				height: auto;
@@ -56,14 +41,15 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 			}
 
 			.app_container-main {
+				transition: 0.3s;
 				&.no_bottom_navigation {
 					height: 100%;
 				}
 			}
 		}
 		.content-with-bar {
-			min-height: $max-content-height-double-bar-mobile;
-			max-height: $max-content-height-double-bar-mobile;
+			min-height: $max-content-height-trade-mobile;
+			max-height: $max-content-height-trade-mobile;
 			max-width: $max-content-width-mobile;
 			padding: $content-display-vertical-margin;
 			margin: 0;
@@ -75,14 +61,19 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 			width: 100%;
 			height: auto;
 			position: relative;
+			background-color: var(--base_background);
 			.presentation_container {
 				width: $app-content-display-width;
 				height: inherit;
 				// width: inherit;
 			}
 
+			.ant-tabs {
+				color: $colors-black;
+			}
+
 			.ant-tabs-ink-bar {
-				background: $colors-main-black;
+				background: $link;
 			}
 
 			.ant-tabs-top > .ant-tabs-nav::before {
@@ -91,11 +82,17 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 
 			.ant-tabs-tab {
 				color: $colors-black;
+
+				.ant-tabs-tab-btn {
+					color: $colors-black;
+				}
 			}
 
 			.ant-tabs-tab-active {
 				color: $colors-main-black;
+
 				.ant-tabs-tab-btn {
+					color: $colors-main-black;
 					font-weight: bold;
 				}
 			}
@@ -142,9 +139,6 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 			}
 			min-width: 0;
 			max-width: 0;
-			.sidebar-container {
-				overflow: hidden;
-			}
 		}
 	}
 	.exchange-warning {
@@ -153,8 +147,25 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 }
 
 .layout-mobile {
-	.presentation_container {
-		padding-top: 4rem !important;
+	.connectViaDesktop_wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		.w-100 {
+			.subtitleClass {
+				font-size: 15px;
+				text-align: center;
+				justify-content: center;
+				align-items: baseline;
+			}
+		}
+		.connect_desktop_img {
+			margin: 8rem 0;
+		}
+		.connect_desktop_footer {
+			font-size: 16px;
+			text-align: center;
+		}
 	}
 }
 
@@ -210,6 +221,7 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 	// bottom: 5rem;
 	align-self: flex-end;
 	z-index: 9999;
+	background-color: $app-background-color;
 }
 
 @media (min-width: 1920px) {
@@ -225,10 +237,7 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 	.wallet_section-title-amount,
 	.wallet_section-title,
 	.trade_tabs-container .trade_tabs-content,
-	.toogle_button-wrapper .toogle-content,
 	.trade_block-wrapper .trade_block-content,
-	.ohlc_data_wrapper .ohlc_label,
-	.ohlc_value,
 	.information_block-text_wrapper .text,
 	.qr-text,
 	.header_title-children,
@@ -238,6 +247,10 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 	.popup_info-wrapper .popup_info-text,
 	.otp_secret {
 		font-size: 1rem !important;
+	}
+
+	.action_notification-text {
+		line-height: 1rem !important;
 	}
 
 	.presentation_container,
@@ -278,10 +291,7 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 	.wallet_section-title-amount,
 	.wallet_section-title,
 	.trade_tabs-container .trade_tabs-content,
-	.toogle_button-wrapper .toogle-content,
 	.trade_block-wrapper .trade_block-content,
-	.ohlc_data_wrapper .ohlc_label,
-	.ohlc_value,
 	.information_block-text_wrapper .text,
 	.qr-text,
 	.header_title-children,
@@ -292,6 +302,12 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 	.otp_secret {
 		font-size: 0.9rem !important;
 	}
+
+	.action_notification-text {
+		line-height: 0.9rem !important;
+		font-size: 1.2rem !important;
+	}
+
 	.verification_container .header-content {
 		font-size: 1.2rem !important;
 	}
@@ -311,6 +327,260 @@ $inner_container-border: 1px solid $colors-super-pale-black;
 		}
 		.sidebar_hub-content {
 			margin: 1.3rem !important;
+		}
+	}
+}
+
+.react-grid-item > .react-resizable-handle::after {
+	border-color: $colors-black !important;
+	right: 5px;
+	bottom: 5px;
+}
+
+.background-color-layer {
+	box-shadow: inset 0 0 0 1000px $app-background-overlay;
+}
+
+.p2p-chat-notification-wrapper-mobile {
+	.ant-notification-notice-message,
+	.ant-notification-notice-description {
+		font-size: 11px !important;
+	}
+}
+
+.p2p-chat-notification-wrapper {
+	background-color: $app-light-background;
+	border-top: 2px solid $colors-notifications-blue;
+	box-shadow: 4px 4px 15px $app-bar-background-color;
+	padding: 10px 10px !important;
+	width: 27rem;
+
+	.ant-notification-notice-description,
+	.ant-notification-notice-message,
+	.ant-notification-notice-content,
+	.ant-notification-notice-close {
+		color: $colors-main-black !important;
+	}
+	.ant-notification-notice-message,
+	.ant-notification-notice-description {
+		margin-left: 40px;
+		font-size: 13px;
+		max-width: 85%;
+		.sender-name {
+			color: $chat-own-message--color;
+		}
+		.chat-message {
+			color: $chat-message-color;
+			display: inline-block;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+	}
+	.ant-notification-notice-close {
+		top: 10px;
+		right: 12px;
+	}
+	.p2p-fire-icon {
+		svg {
+			path {
+				fill: var(--specials_pending-waiting-caution);
+			}
+		}
+	}
+}
+
+.ant-notification-bottomLeft {
+	margin-left: 0px !important;
+	width: 100% !important;
+	max-width: unset !important;
+	.p2p-chat-notification-wrapper {
+		width: 100% !important;
+	}
+}
+
+.signout-confirmation-popup-wrapper {
+	.ReactModal__Content {
+		width: 32rem;
+
+		.signout-confirmation-popup-description {
+			.signout-confirmation-content {
+				margin-top: 5%;
+				display: flex;
+				flex-direction: column;
+				align-items: center;
+
+				.sign-out-icon {
+					margin: 1.5rem 0;
+					svg {
+						width: 3.5rem;
+						height: 3.5rem;
+					}
+				}
+				.signout-title {
+					.edit-wrapper__container {
+						font-size: 24px;
+					}
+				}
+				.signout-description-content {
+					font-size: 12px;
+				}
+			}
+
+			.signout-confirmation-button-wrapper {
+				margin-top: 3rem;
+				display: flex;
+				justify-content: space-between;
+				gap: 10%;
+			}
+		}
+	}
+}
+
+.layout-mobile.signout-confirmation-popup-wrapper {
+	.signout-confirmation-popup-description {
+		.signout-confirmation-content {
+			justify-content: center;
+			min-height: $market-menu-height-dialog-mobile;
+			max-height: $market-menu-height-dialog-mobile;
+		}
+	}
+}
+
+.layout-mobile {
+	.footer-bar-more-options-container {
+		display: flex;
+		flex-direction: column;
+		background-color: $app-sidebar-background;
+
+		.title-wrapper {
+			margin-top: 5%;
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			.search-title {
+				font-size: 22px;
+				margin-left: 4%;
+			}
+		}
+
+		.field-wrapper {
+			flex-direction: column;
+			align-items: center !important;
+			margin: unset !important;
+			background-color: $app-sidebar-background;
+			padding: 2%;
+
+			.search-field,
+			.input_icon {
+				width: 100%;
+				color: $colors-main-black !important;
+			}
+
+			.clear-field {
+				svg {
+					width: 2rem !important;
+					height: 2rem !important;
+				}
+			}
+			.input_icon {
+				width: 2rem !important;
+			}
+
+			.field-content-outline:after,
+			.field-content-outline:before {
+				background-color: transparent !important;
+			}
+
+			.field-error-content {
+				display: none;
+			}
+		}
+
+		.field-wrapper > div:nth-child(1) {
+			width: 90%;
+			background-color: $app-background-color;
+			padding: 1%;
+			border: 1px solid $colors-main-black;
+			border-radius: 5px;
+		}
+
+		.custom-connection-circle,
+		.custom-connection-error-circle {
+			height: 15px;
+			width: 15px;
+			border-radius: 12px;
+			background-color: var(--specials_checks-okay-done);
+		}
+		.custom-connection-error-circle {
+			background-color: var(
+				--specials_notifications-alerts-warnings
+			) !important;
+		}
+
+		.options-container {
+			padding: 4%;
+			font-size: 14px;
+			padding-bottom: 10%;
+
+			.hot-options-container {
+				height: max-content;
+
+				.hot-function-title {
+					font-size: 18px;
+				}
+
+				.options-field {
+					display: grid;
+					grid-template-columns: repeat(4, 1fr);
+					gap: 15px;
+					padding: 10% 2%;
+
+					.icon-logo {
+						width: 25px;
+						path {
+							fill: $colors-main-black;
+						}
+					}
+					.image-wrapper {
+						margin-left: 15%;
+					}
+					.plugins-icon {
+						svg {
+							path {
+								fill: $colors-main-black;
+							}
+						}
+					}
+					.icon-field {
+						padding: 5%;
+						text-align: center;
+						display: flex;
+						flex-direction: column;
+						justify-content: center;
+						gap: 3%;
+
+						svg {
+							width: 100%;
+							height: 100%;
+						}
+						.assets-icon {
+							position: relative;
+							bottom: 10px;
+							margin-left: 5%;
+						}
+					}
+
+					.option-title {
+						.edit-wrapper__container {
+							font-size: 12px;
+						}
+					}
+				}
+				.secondary-text {
+					font-size: 12px;
+				}
+			}
 		}
 	}
 }

@@ -18,11 +18,14 @@ const SETTINGS_DATA_DEFAULT = {
 	notification: {
 		popup_order_confirmation: true,
 		popup_order_completed: true,
-		popup_order_partially_filled: true
+		popup_order_partially_filled: true,
+		popup_order_new: true,
+		popup_order_canceled: true
 	},
 	interface: {
 		order_book_levels: 10,
-		theme: process.env.DEFAULT_THEME || 'white'
+		theme: process.env.DEFAULT_THEME || 'white',
+		display_currency: process.env.NATIVE_CURRENCY || 'usdt',
 	},
 	language: process.env.DEFAULT_LANGUAGE || 'en',
 	audio: {
@@ -43,7 +46,7 @@ const BANK_DATA_DEFAULT = [];
 exports.BANK_DATA_DEFAULT = BANK_DATA_DEFAULT;
 exports.ID_DATA_DEFAULT = ID_DATA_DEFAULT;
 
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
 	const User = sequelize.define(
 		'User',
 		{
@@ -112,6 +115,10 @@ module.exports = function(sequelize, DataTypes) {
 				type: DataTypes.BOOLEAN,
 				defaultValue: true
 			},
+			withdrawal_blocked: {
+				type: DataTypes.DATE,
+				allowNull: true
+			},
 			note: {
 				type: DataTypes.STRING,
 				defaultValue: ''
@@ -168,10 +175,15 @@ module.exports = function(sequelize, DataTypes) {
 			meta: {
 				type: DataTypes.JSONB,
 				defaultValue: {}
-			}
+			},
+			role: {
+				type: DataTypes.STRING,
+				allowNull: true,
+			},
 		},
 		{
-			underscored: true
+			underscored: true,
+			tableName: 'Users'
 		}
 	);
 
@@ -188,7 +200,8 @@ module.exports = function(sequelize, DataTypes) {
 		if (user.email) {
 			user.email = user.email.toLowerCase();
 		}
-		if (user._changed.password)
+		const updatedFields = user.changed();
+		if (Array.isArray(updatedFields) && updatedFields.includes('password'))
 			return generateHash(user.password).then((hash) => {
 				user.password = hash;
 			});
@@ -196,7 +209,7 @@ module.exports = function(sequelize, DataTypes) {
 
 	User.associate = (models) => {
 		User.hasMany(models.Token);
-		User.hasMany(models.VerificationCode);
+		User.hasMany(models.Broker);
 		// User.hasMany(models.VerificationImage);
 		User.hasMany(models.VerificationImage, {
 			foreignKey: 'user_id',

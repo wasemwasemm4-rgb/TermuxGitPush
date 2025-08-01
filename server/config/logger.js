@@ -38,7 +38,7 @@ const all = format((info) => {
 });
 
 // used for filtering specific logs. currently not used.
-const filterOnly = level => {
+const filterOnly = (level) => {
 	return format((info) => {
 		if (info[LEVEL] === level) {
 			return info;
@@ -49,7 +49,7 @@ const filterOnly = level => {
 
 const generateLoggerConfiguration = (name) => {
 	const transportsConfig = [
-		new transports.Console({ level: LOG_LEVEL} )
+		new transports.Console({ level: LOG_LEVEL } )
 	];
 
 	if (APM_ENABLED) {
@@ -64,18 +64,18 @@ const generateLoggerConfiguration = (name) => {
 			align(),
 			printf(
 				(info) =>
-					`${info.timestamp} ${info.level}: ${formatObject(info.message)}`
+					`${info.level}: ${formatObject(info.message)}`
 			)
 		),
 		transports: transportsConfig
 	};
-	if (isMainnet) {
-		config.format = combine(
-			all(),
-			timestamp(),
-			json()
-		);
-	}
+	// if (isMainnet) {
+	// 	config.format = combine(
+	// 		all(),
+	// 		timestamp(),
+	// 		json()
+	// 	);
+	// }
 
 	return config;
 };
@@ -98,7 +98,11 @@ const LOGGER_NAMES = {
 	auth: 'auth',
 	plugin: 'plugin',
 	tier: 'tier',
-	init: 'init'
+	init: 'init',
+	broker: 'broker',
+	stake: 'stake',
+	p2p: 'p2p',
+	fiat: 'fiat'
 };
 
 winston.loggers.add('default', generateLoggerConfiguration('all', false));
@@ -153,5 +157,9 @@ module.exports = {
 	loggerInit: winston.loggers.get(LOGGER_NAMES.init),
 	loggerPlugin: winston.loggers.get(LOGGER_NAMES.plugin),
 	loggerPublic: winston.loggers.get(LOGGER_NAMES.public),
-	loggerTier: winston.loggers.get(LOGGER_NAMES.tier)
+	loggerTier: winston.loggers.get(LOGGER_NAMES.tier),
+	loggerBroker: winston.loggers.get(LOGGER_NAMES.broker),
+	loggerStake: winston.loggers.get(LOGGER_NAMES.stake),
+	loggerP2P: winston.loggers.get(LOGGER_NAMES.p2p),
+	loggerFiat: winston.loggers.get(LOGGER_NAMES.loggerFiat)
 };

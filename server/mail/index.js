@@ -1,6 +1,6 @@
 'use strict';
 
-const { formatDate, getCountryFromIp, sendSMTPEmail } = require('./utils');
+const { formatDate, getCountryFromIp, sendSMTPEmail, sendSMTPTestEmail } = require('./utils');
 const payloadTemplate = require('./templates/helpers/payloadTemplate');
 const { loggerEmail } = require('../config/logger');
 const { getValidLanguage } = require('./utils');
@@ -13,6 +13,9 @@ const SEND_EMAIL_COPY = () => GET_KIT_SECRETS().emails.send_email_to_support;
 const API_NAME = () => GET_KIT_CONFIG().api_name;
 const SUPPORT_SOURCE = () => `'${API_NAME()} Support <${SENDER_EMAIL()}>'`;
 const BCC_ADDRESSES = () => SEND_EMAIL_COPY() ? [AUDIT_EMAIL()] : [];
+const SMTP_SERVER = () => GET_KIT_SECRETS().smtp.server;
+const SMTP_USER = () => GET_KIT_SECRETS().smtp.user;
+
 const DEFAULT_LANGUAGE = () => {
 	try {
 		return GET_KIT_CONFIG().defaults.language;
@@ -39,7 +42,7 @@ const sendEmail = (
 		}
 		case MAILTYPE.LOGIN: {
 			if (data.time) data.time = formatDate(data.time, language);
-			if (data.ip) data.country = getCountryFromIp(data.ip);
+			if (data.ip && !data.country) data.country = getCountryFromIp(data.ip);
 			break;
 		}
 		case MAILTYPE.SIGNUP:
@@ -55,8 +58,25 @@ const sendEmail = (
 		case MAILTYPE.DISCOUNT_UPDATE:
 		case MAILTYPE.WITHDRAWAL_REQUEST:
 		case MAILTYPE.BANK_VERIFIED:
+		case MAILTYPE.CONFIRM_EMAIL:
+		case MAILTYPE.LOCKED_ACCOUNT:
+		case MAILTYPE.SUSPICIOUS_LOGIN:
+		case MAILTYPE.USER_DELETED:
 		case MAILTYPE.DEPOSIT:
-		case MAILTYPE.WITHDRAWAL: {
+		case MAILTYPE.WITHDRAWAL:
+		case MAILTYPE.P2P_MERCHANT_IN_PROGRESS:
+		case MAILTYPE.P2P_BUYER_PAID_ORDER:
+		case MAILTYPE.P2P_ORDER_EXPIRED:
+		case MAILTYPE.P2P_BUYER_CANCELLED_ORDER:
+		case MAILTYPE.P2P_BUYER_APPEALED_ORDER:
+		case MAILTYPE.P2P_VENDOR_CONFIRMED_ORDER:
+		case MAILTYPE.P2P_VENDOR_CANCELLED_ORDER:
+		case MAILTYPE.P2P_VENDOR_APPEALED_ORDER:
+		case MAILTYPE.AUTO_TRADE_ERROR:
+		case MAILTYPE.AUTO_TRADE_FILLED:
+		case MAILTYPE.AUTO_TRADE_REMINDER:
+		case MAILTYPE.DOC_REJECTED:
+		case MAILTYPE.DOC_VERIFIED: {
 			to.BccAddresses = BCC_ADDRESSES();
 			break;
 		}
@@ -70,6 +90,13 @@ const sendEmail = (
 		case MAILTYPE.USER_VERIFICATION:
 		case MAILTYPE.CONTACT_FORM: {
 			to.ToAddresses = [AUDIT_EMAIL()];
+			break;
+		}
+		case MAILTYPE.OTP_DISABLED:
+		case MAILTYPE.OTP_ENABLED: {
+			if (data.time) data.time = formatDate(data.time, language);
+			if (data.ip) data.country = getCountryFromIp(data.ip);
+			to.BccAddresses = BCC_ADDRESSES();
 			break;
 		}
 		default:
@@ -86,16 +113,57 @@ const sendEmail = (
 	return send(payload);
 };
 
+const sendRawEmail = (
+	receivers,
+	title,
+	html,
+	text
+) => {
+	let from = SUPPORT_SOURCE();
+
+	const payload = {
+		from,
+		to: receivers,
+		subject: `${API_NAME()} ${title || ''}`,
+		html,
+		text: text || ''
+	};
+
+	return send(payload);
+};
+
 const send = (params) => {
-	return sendSMTPEmail(params)
-		.then((info) => {
-			return info;
-		})
-		.catch((error) => {
-			loggerEmail.error('mail/index/sendSTMPEmail', error);
-		});
+	if (SMTP_SERVER() && SMTP_USER() && SMTP_SERVER().length > 1) {
+		return sendSMTPEmail(params)
+			.then((info) => {
+				return info;
+			})
+			.catch((error) => {
+				loggerEmail.error('mail/index/sendSTMPEmail', error);
+			});
+	}
+};
+
+const testSendSMTPEmail = (receiver = '', smtp = {}) => {
+	const to = { ToAddresses: [receiver] };
+	const messageContent = {
+		'subject': 'Test Email Config SMTP',
+		'html': '<div><p>Test email is sent successfully</p></div>',
+		'text': 'test content'
+	};
+	let from = SUPPORT_SOURCE();
+
+	if (Object.keys(smtp).length > 0) {
+		from = `'SMTP User <${smtp.user}>'`;
+	}
+
+	const payload = payloadTemplate(from, to, messageContent);
+
+	return sendSMTPTestEmail(payload, smtp);
 };
 
 module.exports = {
-	sendEmail
+	sendEmail,
+	testSendSMTPEmail,
+	sendRawEmail
 };

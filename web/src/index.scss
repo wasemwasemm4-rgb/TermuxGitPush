@@ -21,7 +21,7 @@ body {
 	color: $colors-main-black;
 	font-size: $font-size-main !important;
 	font-family: $en--font-family !important;
-	height: 100%;
+	transition: all 0.3s;
 }
 
 // .ham_menu_item{
@@ -49,7 +49,8 @@ body {
 // 	 padding-top: 3rem;
 // }
 
-.language_rtl {
+.half-opacity {
+	opacity: 0.5;
 }
 
 .direction_rtl {
@@ -101,6 +102,10 @@ input:focus {
 	border: none;
 }
 
+.onHoverOpacity:hover {
+	opacity: 0.5;
+}
+
 input[type='number'] {
 	-moz-appearance: textfield;
 	appearance: textfield;
@@ -129,6 +134,10 @@ a {
 	}
 }
 
+.ant-input-number:hover .ant-input-number-handler-wrap {
+	opacity: 0 !important;
+}
+
 @media screen and (max-width: $bp-sm) {
 	html {
 		font-size: 8px !important;
@@ -143,16 +152,7 @@ a {
 }
 
 svg {
-	.tab-summary0,
-	.tab-wallet0,
-	.tab-setting0,
-	.tab-verify0,
-	.tab-security0,
-	.tab-history-st,
-	.help-question,
-	.tab-signout,
 	.tab-api0,
-	.trade-history-1,
 	.deposit-history-3,
 	.withdrawals-history-3,
 	.verification-email,
@@ -165,9 +165,7 @@ svg {
 	.interface-setting,
 	.chat-setting,
 	.audio-setting,
-	.risk-setting,
 	.st1,
-	.trade-history-1,
 	.account-recovery-success-2,
 	.password-reset-2,
 	.transaction-history-1,
@@ -178,12 +176,31 @@ svg {
 	.copy-notification-0,
 	.account-svg-1,
 	.incoming-btc-01,
-	.incoming-toman-01,
-	.coin-btc-5 {
+	.incoming-coin-01,
+	.coin-btc-5,
+	.search-blockchain,
+	.sparkle-dust,
+	.dust-sweeper,
+	.dust-settlement {
 		fill: $colors-black;
 	}
 
-	.logout-door,
+	.fill_secondary-color {
+		fill: $colors-black;
+	}
+
+	.fill_main-color {
+		fill: $colors-main-black;
+	}
+
+	.stroke_none {
+		stroke: none;
+	}
+
+	.dust-settlement-green {
+		fill: $colors-notifications-green;
+	}
+
 	.account-inactive {
 		stroke: $colors-black;
 	}
@@ -192,7 +209,6 @@ svg {
 	.withdraw-3,
 	.deposit-bitcoin-2,
 	.deposit-bitcoin-3,
-	.trade-history-3,
 	.deposit-history-1,
 	.withdrawals-history-1,
 	.risk-order-warning,
@@ -204,7 +220,6 @@ svg {
 	.st0,
 	.st9,
 	.st10,
-	.trade-history-3,
 	.contact-us-icon,
 	.xht-coin-stack,
 	.account-recovery-1,
@@ -226,9 +241,7 @@ svg {
 	.key-trashed,
 	.api-key-revoked,
 	.risk-order-warning,
-	.bonus-offer-icon,
 	.announcement,
-	.newWave-icon,
 	.xht-pdf,
 	.xht-faq,
 	.xht-email,
@@ -237,14 +250,11 @@ svg {
 	.account-summary1,
 	.hap-icon,
 	.expired_icon,
-	.default-icon,
 	.connect-loading,
-	.bottom-chat,
 	.note-kyc,
 	.partial-fill,
 	.limit-trade-tick,
 	.chat-0,
-	.trans-history-1,
 	.quick-trade-insufficient-funds,
 	.quick-trade-success,
 	.gender-female,
@@ -252,12 +262,6 @@ svg {
 	.volume-pending,
 	.quick-trade-4,
 	.quick_trade-tab-icon,
-	.features-pro-trade-icons,
-	.features-payment,
-	.features-legal,
-	.features-lock,
-	.features-support-1,
-	.features-data,
 	.check-send-btc-1,
 	.copy-notification-1,
 	.data-1,
@@ -267,7 +271,7 @@ svg {
 	.gear-grey-1,
 	.g1_3,
 	.incoming-btc-2,
-	.incoming-toman-02,
+	.incoming-coin-02,
 	.security-grey-1,
 	.coin-btc-1,
 	.wallet-selected-2,
@@ -281,20 +285,22 @@ svg {
 	.cancel-all,
 	.fiat-page-under-construction,
 	.generate-reference-number,
-	.osko-logo {
+	.osko-logo,
+	.stake-variable,
+	.stake-pending,
+	.staking-unlock,
+	.send-email-code,
+	.move-xht,
+	.connect-desktop,
+	.wallet-graphic,
+	.wallet-graphic-1 {
 		fill: $colors-main-black;
 	}
 
-	.trade-history-2,
-	.trade-history-4,
-	.trade-history-5,
 	.deposit-history-2,
 	.deposit-history-4,
 	.withdrawals-history-2,
 	.withdrawals-history-4,
-	.trade-history-2,
-	.trade-history-4,
-	.trade-history-5,
 	.transaction-history-4,
 	.wallet-coins-1,
 	.quick-trade-3 {
@@ -316,7 +322,6 @@ svg {
 	.quick-trade-2,
 	.coin-btc-6,
 	.coin-btc-4,
-	.logout-door,
 	.cancel-cross-3,
 	.cancel-cross-2,
 	.account-inactive {
@@ -325,7 +330,6 @@ svg {
 
 	.pending-timer,
 	.tab-close,
-	.trans-history-4,
 	.icon-check-1,
 	.quick-trade-1,
 	.success-check-box-0,
@@ -370,54 +374,5 @@ svg {
 	.deposit-complete-02,
 	.deposit-complete-btc-02 {
 		fill: $colors-notifications-green;
-	}
-
-	.btc0 {
-		fill: $coin-btc;
-	}
-	.btc1 {
-		fill: $coin-btc;
-	}
-	.eth0 {
-		fill: $coin-eth;
-	}
-	.eth1 {
-		fill: $coin-eth;
-	}
-	.bch-icon {
-		fill: $coin-bch;
-	}
-	.xrp-icon {
-		fill: $coin-xrp;
-	}
-	.xht-icon {
-		fill: $coin-xht;
-	}
-	.xmr-icon {
-		fill: $coin-xmr;
-	}
-	.xlm-icon {
-		fill: $coin-xlm;
-	}
-	.eos-icon {
-		fill: $coin-eos;
-	}
-	.trx-icon {
-		fill: $coin-trx;
-	}
-	.ada-icon {
-		fill: $coin-ada;
-	}
-	.bnb-icon {
-		fill: $coin-bnb;
-	}
-	.tusd-icon {
-		fill: $coin-tusd;
-	}
-	.dai-icon {
-		fill: $coin-dai;
-	}
-	.ltc-icon {
-		fill: $coin-ltc;
 	}
 }

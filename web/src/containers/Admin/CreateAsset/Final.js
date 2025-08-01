@@ -1,10 +1,17 @@
-import React, { Fragment } from 'react';
-import { Button } from 'antd';
+import React, { Fragment, useEffect, useState } from 'react';
+import { connect } from 'react-redux';
+import { Button, Modal } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 
 import { STATIC_ICONS } from 'config/icons';
 import Coins from '../Coins';
 import IconToolTip from '../IconToolTip';
+import { getNetworkLabelByKey } from 'utils/wallet';
+import { Link } from 'react-router';
+import { getTabParams } from '../AdminFinancials/Assets';
+import RemoveConfirmation from '../Confirmation';
+
+const basicCoins = ['btc', 'xht', 'eth', 'usdt'];
 
 const Final = ({
 	isPreview = false,
@@ -16,17 +23,144 @@ const Final = ({
 	handleFileChange = () => {},
 	setConfigEdit,
 	handleDelete = () => {},
-	user,
+	user_id,
+	submitting = false,
+	handleWithdrawalEdit,
+	handleScreenChange,
+	isPresentCoin,
+	coins,
+	selectedCoinSymbol,
+	exchange = {},
+	constants = {},
+	allCoins = {},
+	isLoading,
 }) => {
+	let isUpdateRequired = false;
+	if (
+		(exchange &&
+			exchange.plan === 'basic' &&
+			!basicCoins.includes(coinFormData.symbol)) ||
+		(exchange &&
+			exchange.plan === 'crypto' &&
+			coinFormData.type !== 'blockchain')
+	) {
+		isUpdateRequired = true;
+	}
 	const { meta = {}, type } = coinFormData;
+	let coinData = {};
+	allCoins.forEach((item) => {
+		if (item.symbol === coinFormData.symbol) {
+			coinData = {
+				...coinData,
+				...item,
+			};
+		}
+	});
+	const { withdrawal_fees = {}, deposit_fees = {} } = coinData;
+	const { onramp = {} } = constants;
+	const [isUpgrade, setIsUpgrade] = useState(false);
+	const [isVisible, setIsVisible] = useState(false);
+	const tabParams = getTabParams();
+
+	useEffect(() => {
+		if (exchange?.plan === 'fiat' || exchange?.plan === 'boost') {
+			setIsUpgrade(true);
+		}
+	}, [exchange]);
+
+	const renderNetworkFee = ([key, data], index) => {
+		const network = getNetworkLabelByKey(key);
+		const keyArr = withdrawal_fees && Object.keys(withdrawal_fees).length;
+
+		return (
+			<div key={key} className="pb-3">
+				{network ? (
+					<div>
+						<b className="caps-first">network</b>: {network}
+					</div>
+				) : null}
+				<Fragment>
+					{data &&
+						Object.entries(data).map(([key, value]) => {
+							if (key === 'active' && withdrawal_fees) {
+								return (
+									<div key={key}>
+										<b>Status:</b> {value ? 'Active' : 'Not active'}
+									</div>
+								);
+							} else if (!['levels', 'min', 'max', 'type'].includes(key)) {
+								const valueText = value;
+								return (
+									<div key={key}>
+										<b className="caps-first">{key}</b>: {valueText}
+									</div>
+								);
+							}
+							return <></>;
+						})}
+					{keyArr > 1 && index === 0 ? (
+						<div className="border-separator"></div>
+					) : null}
+				</Fragment>
+			</div>
+		);
+	};
+
+	const renderFees = (fees) => {
+		return Object.entries(fees).map(renderNetworkFee);
+	};
+
+	const handleMoveBack = () => {
+		const isExchangeCoin = !!coins.filter(
+			(item) => item.symbol === selectedCoinSymbol
+		).length;
+		if (coinFormData.id && isPresentCoin) {
+			handleScreenChange('step1');
+		} else if (!coinFormData.id || isExchangeCoin) {
+			handleBack(true);
+		} else {
+			handleScreenChange('edit_withdrawal_fees');
+		}
+	};
+
+	const isOwner = coinFormData.owner_id === user_id;
+
 	return (
 		<Fragment>
 			<div className="title">
 				{isPreview || isConfigure
 					? `Manage ${coinFormData.symbol}`
-					: 'Create or add a new coin'}
+					: 'Add Asset'}
 			</div>
-			{!isPreview && !isConfigure ? (
+			{isUpdateRequired ? (
+				<div className="red-warning">
+					<div className="icon-wrapper">
+						<div className="image-crypto">
+							<img
+								className="fiat-icon"
+								src={STATIC_ICONS['CLOUD_PLAN_CRYPTO_PRO_FIAT_RAMP']}
+								alt="new_coin"
+							/>
+						</div>
+					</div>
+					<div>
+						Only upgraded plans can freely add other digital assets. Visit the
+						billing page and upgrade your exchange plan to either{' '}
+						<Link className="link-content" to="/billing">
+							Crypto Pro
+						</Link>
+						,{' '}
+						<Link className="link-content" to="/billing">
+							Fiat Ramp
+						</Link>{' '}
+						or{' '}
+						<Link className="link-content" to="/billing">
+							Boost
+						</Link>
+						.
+					</div>
+				</div>
+			) : !isPreview && !isConfigure ? (
 				type === 'fiat' ? (
 					<div className="grey-warning">
 						<div className="icon-wrapper">
@@ -197,7 +331,7 @@ const Final = ({
 						<span className="ml-2">{coinFormData.type}</span>
 						{isPreview &&
 						!coinFormData.verified &&
-						coinFormData.created_by === user.id ? (
+						coinFormData.created_by === user_id ? (
 							<IconToolTip
 								type="warning"
 								tip="This asset is in pending verification"
@@ -243,23 +377,23 @@ const Final = ({
 					<b>Status:</b> {coinFormData.active ? 'Active' : 'Not active'}
 				</div>
 				<div>
-					<b>Price:</b> {coinFormData.estimated_price}
+					<b>Estimated Price:</b> {coinFormData.estimated_price}
 				</div>
-				<div>
+				{/* <div>
 					<b>Fee for withdrawal:</b> {coinFormData.withdrawal_fee}
+				</div> */}
+				<div>
+					<b>Minimum amount:</b> {coinFormData.min}
 				</div>
 				<div>
-					<b>Minimum withdrawal amount:</b> {coinFormData.min}
+					<b>Maximum amount:</b> {coinFormData.max}
 				</div>
 				<div>
-					<b>Maximum withdrawal amount:</b> {coinFormData.max}
+					<b>Increment Amount (e.g. 0.0001):</b> {coinFormData.increment_unit}
 				</div>
-				<div>
-					<b>Increment Amount:</b> {coinFormData.increment_unit}
-				</div>
-				<div>
+				{/* <div>
 					<b>Decimal points:</b> {meta.decimal_points}
-				</div>
+				</div> */}
 				{isConfigure ? (
 					<div className="btn-wrapper">
 						<Button
@@ -272,30 +406,148 @@ const Final = ({
 					</div>
 				) : null}
 			</div>
+			<div className="preview-detail-container">
+				<div className="title">Withdrawal Fee</div>
+				<div>
+					{withdrawal_fees ? (
+						<div>{renderFees(withdrawal_fees)}</div>
+					) : (
+						<Fragment>
+							<b>{coinFormData.symbol}:</b> {coinFormData.withdrawal_fee}
+						</Fragment>
+					)}
+					{isConfigure && (
+						<div className="btn-wrapper">
+							<Button
+								className="green-btn mb-3"
+								type="primary"
+								onClick={() => handleWithdrawalEdit('withdraw')}
+								disabled={!isOwner}
+							>
+								Edit
+							</Button>
+						</div>
+					)}
+				</div>
+				<div className="preview-detail-container pl-0">
+					<div className="title">Deposit Fee</div>
+					<div>
+						{deposit_fees && <div>{renderFees(deposit_fees)}</div>}
+						{isConfigure && (
+							<div className="btn-wrapper">
+								<Button
+									className="green-btn"
+									type="primary"
+									onClick={() => handleWithdrawalEdit('deposit')}
+									disabled={!isOwner}
+								>
+									Edit
+								</Button>
+							</div>
+						)}
+					</div>
+				</div>
+				{(tabParams?.isFiat === 'onRamp' ||
+					tabParams?.isFiat === 'offRamp') && (
+					<div>
+						<div className="preview-detail-container"></div>
+						<div className="finalfiatwrapper">
+							<div className="title">Fiat ramps</div>
+							{!isUpgrade ? (
+								<>
+									<Link
+										className="fiatlink"
+										to="/admin/fiat?tab=2&isAssetHome=true"
+									>
+										View fiat controls
+									</Link>
+									<div className="d-flex ml-4">
+										<div className="d-flex align-items-center justify-content-between upgrade-section my-4">
+											<div>
+												<div className="font-weight-bold">
+													Add fiat deposits & withdrawals
+												</div>
+												<div>Allow your users to send USD & other fiat</div>
+											</div>
+											<div className="ml-5 button-wrapper">
+												<a
+													href="https://dash.hollaex.com/billing"
+													target="_blank"
+													rel="noopener noreferrer"
+												>
+													<Button type="primary" className="w-100">
+														Upgrade Now
+													</Button>
+												</a>
+											</div>
+										</div>
+									</div>
+								</>
+							) : (
+								Object.keys(onramp).filter((item) => item === tabParams?.symbol)
+									.length && (
+									<div className="mb-3">
+										{Object.keys(onramp[tabParams?.symbol]).map((val, i) => {
+											let name = '';
+											if (onramp[tabParams?.symbol]?.[val]?.type === 'manual') {
+												name =
+													onramp[tabParams?.symbol]?.[val]?.data[0][0].value;
+											} else {
+												name = onramp[tabParams?.symbol]?.[val]?.data;
+											}
+											return (
+												<div className="d-flex align-items-center mt-3">
+													On-ramp {i + 1}: {name}
+													<span className="small-circle mr-2 ml-2 d-flex"></span>
+													<span>PUBLISHED</span>
+												</div>
+											);
+										})}
+										<div className="mt-3">
+											<Link
+												className="fiatlink"
+												to="/admin/fiat?tab=2&isAssetHome=true"
+											>
+												View fiat controls
+											</Link>
+										</div>
+									</div>
+								)
+							)}
+						</div>
+					</div>
+				)}
+			</div>
 			{isPreview || isConfigure ? (
 				<div className="preview-detail-container">
 					<div className="title">Manage</div>
 					<div className="btn-wrapper">
 						<Button
 							type="danger"
-							onClick={() => handleDelete(coinFormData.symbol)}
+							onClick={() => setIsVisible(true)}
+							disabled={submitting}
 						>
 							Remove
 						</Button>
 						<div className="separator"></div>
 						<div className="description-small remove">
-							Removing this coin will permanently delete this coin from your
-							exchange and render any pairs using it inactive. Use with caution!
+							Removing this coin will delist this coin from your exchange. Make
+							sure you remove any associated pairs first. Use with caution!
 						</div>
 					</div>
 				</div>
 			) : null}
 			{!isPreview && !isConfigure ? (
 				<div className="btn-wrapper">
-					<Button className="green-btn" type="primary" onClick={handleBack}>
+					<Button className="green-btn" type="primary" onClick={handleMoveBack}>
 						Back
 					</Button>
 					<div className="separator"></div>
+					<Button
+						type="primary"
+						onClick={handleConfirmation}
+						disabled={isUpdateRequired}
+					/>
 					<Button
 						className="green-btn"
 						type="primary"
@@ -305,8 +557,31 @@ const Final = ({
 					</Button>
 				</div>
 			) : null}
+			{isVisible ? (
+				<Modal
+					visible={isVisible}
+					footer={null}
+					onCancel={() => setIsVisible(false)}
+				>
+					<RemoveConfirmation
+						onCancel={setIsVisible}
+						onHandleRemoveAsset={handleDelete}
+						removeCoin={coinFormData}
+						removeContent={'Assets'}
+						isLoading={isLoading}
+					/>
+				</Modal>
+			) : null}
 		</Fragment>
 	);
 };
 
-export default Final;
+const mapStateToProps = (state) => {
+	return {
+		exchange: state.asset && state.asset.exchange ? state.asset.exchange : {},
+		constants: state.app.constants,
+		allCoins: state.asset.allCoins,
+	};
+};
+
+export default connect(mapStateToProps, null)(Final);

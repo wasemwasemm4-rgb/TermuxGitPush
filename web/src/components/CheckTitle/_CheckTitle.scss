@@ -3,6 +3,7 @@ $custom-title-img-size: 6rem;
 $notification-size: 1.5rem;
 
 .check_title-container {
+	transition: 0.3s;
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
@@ -17,7 +18,7 @@ $notification-size: 1.5rem;
 	.custom_title-label {
 		font-size: $font-size-subhead3;
 		line-height: $font-size-subhead3;
-		padding: 0.25rem 0;
+		padding: 0.25rem 0 1.5rem 0;
 		text-align: center;
 	}
 
@@ -41,26 +42,14 @@ $notification-size: 1.5rem;
 			height: $check-title-img-size;
 			width: $check-title-img-size;
 
-			.trade-history-3,
 			.deposit-history-1,
 			.withdrawals-history-1 {
 				fill: $colors-main-black;
 			}
 
-			.trade-history-1,
 			.deposit-history-3,
 			.withdrawals-history-3 {
 				fill: $colors-black;
-			}
-
-			.trade-history-2,
-			.trade-history-4,
-			.trade-history-5,
-			.deposit-history-2,
-			.deposit-history-4,
-			.withdrawals-history-2,
-			.withdrawals-history-4 {
-				stroke: none;
 			}
 		}
 		.st0,
@@ -94,8 +83,7 @@ $notification-size: 1.5rem;
 			.language-setting,
 			.interface-setting,
 			.chat-setting,
-			.audio-setting,
-			.risk-setting {
+			.audio-setting {
 				fill: $colors-black;
 			}
 		}
@@ -216,17 +204,23 @@ $notification-size: 1.5rem;
 		}
 	}
 }
+.tab_item-deactive {
+	&:hover {
+		opacity: 0.5;
+	}
+}
 
 .custom-tab-wrapper {
 	.tab_item {
 		color: $tab-inactive;
-		height: 10rem;
+		height: 11.5rem;
 		margin: 1rem;
 		max-width: 10rem;
 		min-width: 10rem;
 	}
 
 	.tab_item-active {
+		transition: 0.3s;
 		border: 1px solid $colors-main-border;
 		color: $tab-active !important;
 		font-weight: bold;
@@ -254,7 +248,7 @@ $notification-size: 1.5rem;
 				.interface-setting,
 				.chat-setting,
 				.audio-setting,
-				.risk-setting {
+				.fill_secondary-color {
 					fill: $colors-main-black;
 				}
 			}
@@ -269,7 +263,11 @@ $notification-size: 1.5rem;
 	font-size: 1.2rem;
 
 	.custom_tab_icon-mobile {
-		width: 4rem;
+		width: 4rem !important;
+		svg {
+			width: 4rem !important;
+			height: 4rem !important;
+		}
 		// color: #292b2c;
 	}
 
@@ -320,7 +318,7 @@ $notification-size: 1.5rem;
 		.interface-setting,
 		.chat-setting,
 		.audio-setting,
-		.risk-setting {
+		.fill_secondary-color {
 			fill: $colors-main-black;
 		}
 	}

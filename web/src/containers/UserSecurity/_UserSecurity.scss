@@ -1,13 +1,23 @@
-.user_security-wrapper {
+.user_security-wrapper,
+.user_security-wrapper-disabled {
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
 	align-items: center;
-	margin-top: 30px;
 	padding: 30px;
 	background-color: $app-sidebar-background;
-	> *:not(:last-child) {
-		margin-bottom: 2rem;
+}
+
+.user_security-wrapper-disabled {
+	margin-top: 3%;
+}
+
+.OTP_Success {
+	width: 30px;
+	height: 30px;
+	svg {
+		width: 30px;
+		height: 30px;
 	}
 }
 
@@ -17,8 +27,128 @@
 	min-width: 30rem;
 	width: 30rem;
 
+	.step-one-title-wrapper {
+		font-family: 'Open Sans';
+	}
+
+	.step-one-pop-up {
+		.store-wrapper {
+			cursor: pointer;
+			padding: 2%;
+			width: 30%;
+			color: #000000;
+			font-size: 10px;
+			border-radius: 10px;
+			border: 1px solid $colors-main-border;
+			background-color: #f5f5f7;
+			.store-icons {
+				width: 25%;
+			}
+		}
+		.download-content-title {
+			font-weight: bold;
+			margin: 2% 0;
+		}
+		.store-icons-wrapper {
+			display: flex;
+			justify-content: space-evenly;
+			margin-bottom: 5%;
+			.play-store-field {
+				cursor: pointer;
+				padding: 2%;
+				width: 100%;
+				height: 50%;
+				color: $colors-main-black;
+				font-size: 12px;
+				border-radius: 10px;
+				background-color: $colors-main-black;
+			}
+		}
+		.app-info {
+			margin-bottom: 5%;
+		}
+		.uninstall-info {
+			color: #ffbb00;
+			font-weight: bold;
+		}
+	}
+
+	.step-one-pop-up,
+	.step-two-pop-up {
+		.note-txt {
+			color: #e59b07;
+		}
+		.otp-border,
+		.otp-border-footer {
+			margin-bottom: 5%;
+			border-bottom: 1px solid $colors-main-border;
+			width: 100%;
+		}
+		.otp-border-footer {
+			width: 25%;
+		}
+		.btn-wrapper {
+			display: flex;
+			justify-content: space-between;
+			margin-top: 8%;
+			.back-btn,
+			.proceed-btn {
+				background-color: $link;
+				border: none;
+				width: 45%;
+				height: 40px;
+				text-align: center;
+				color: $colors-main-black;
+			}
+		}
+	}
+
+	.step-two-pop-up {
+		.btn-wrapper {
+			margin-top: 5% !important;
+		}
+	}
+
+	.step-three-pop-up {
+		.verfication-field {
+			background-color: $app-sidebar-background;
+			border: none;
+			border-bottom: 1px solid $colors-black;
+			border-image: initial;
+			width: 100%;
+			margin-top: 5px;
+		}
+		.warning-text {
+			color: $colors-black;
+			margin-top: 15%;
+		}
+		.btn-wrapper {
+			display: flex;
+			justify-content: space-between;
+			margin-top: 8%;
+		}
+	}
+
+	.step-three-pop-up,
+	.step-four-pop-up {
+		.back-btn,
+		.proceed-btn {
+			background-color: $link;
+			border: none;
+			width: 45%;
+			height: 40px;
+			text-align: center;
+			color: $colors-main-black;
+		}
+	}
+
+	.step-four-pop-up {
+		.back-btn {
+			width: 100%;
+		}
+	}
+
 	.otp_form-section-wrapper {
-		border-top: 1px solid $colors-main-border;
 		padding: 0.75rem 0;
 
 		.otp_form-section-content {
@@ -58,7 +188,7 @@
 			font-size: $font-size-subhead2;
 		}
 		.icon_title-svg {
-			@include size(6.5rem);
+			@include size(5.5rem);
 			svg {
 				@include size(6.5rem);
 			}
@@ -85,6 +215,16 @@
 .tokens-date {
 	min-width: 5rem;
 	max-width: 5rem;
+}
+
+.session-login-date {
+	min-width: 7rem;
+	max-width: 8rem;
+}
+
+.expander-handle {
+	min-width: 1rem;
+	max-width: 1rem;
 }
 
 .tokens-icon,
@@ -215,9 +355,51 @@ $padding-input: 4rem;
 		flex-direction: row;
 		align-items: center;
 	}
+
+	.checkbutton-input-wrapper {
+		margin-top: 0px !important;
+	}
+}
+
+.otp-field-wrapper {
+	margin-top: 3%;
+	.warning_text {
+		padding: 10px;
+		text-align: center;
+		background-color: $colors-notifications-red;
+		color: $colors-main-black;
+		.improtant-text {
+			font-weight: bold;
+			text-decoration: underline;
+		}
+	}
 }
 
 .layout-mobile {
+	.user-security-container {
+		padding: 1rem;
+		.header-content {
+			font-size: 13px !important;
+			color: $colors-black;
+			margin-bottom: 2%;
+		}
+		.active_mobile_tab {
+			svg {
+				path {
+					fill: $colors-main-black !important;
+				}
+			}
+		}
+		.security-icon {
+			margin-left: 15%;
+			svg {
+				width: 2.5rem !important;
+				path {
+					fill: $colors-black;
+				}
+			}
+		}
+	}
 	.user_security-wrapper {
 		.warning_text {
 			font-size: $font-size-mobile-txt !important;
@@ -291,6 +473,23 @@ $padding-input: 4rem;
 			font-size: $font-size-mobile-txt !important;
 		}
 	}
+
+	.presentation_container {
+		.edit_token {
+			flex-direction: column;
+
+			.token-keys-wrapper {
+				.field-content,
+				.field-children {
+					font-size: $font-size-subtext !important;
+				}
+			}
+		}
+
+		.token-keys-wrapper {
+			max-width: 35rem;
+		}
+	}
 }
 
 @media (max-width: 1060px) {
@@ -312,8 +511,122 @@ $padding-input: 4rem;
 	.user-security-wrapper {
 		.tab_controller-tabs {
 			.tab_item {
+				transition: 0.3s;
 				font-size: 12px !important;
 			}
 		}
 	}
+}
+
+.edit_token {
+	&.overlay {
+		height: 100%;
+		width: 100%;
+		pointer-events: none;
+		opacity: 0.5;
+	}
+
+	.qr-code-bg {
+		padding: 0 1.5rem 0 1rem;
+	}
+	.qr-code-bg > *:first-child {
+		width: 8rem !important;
+		height: 8rem !important;
+	}
+
+	.ant-radio-wrapper {
+		color: $colors-main-black;
+	}
+
+	.holla-button {
+		width: 150px;
+	}
+
+	.ant-input {
+		color: $colors-main-black;
+	}
+
+	.ant-btn-link {
+		color: $link;
+	}
+
+	.ant-btn-link[disabled] {
+		color: $colors-notifications-blue-disabled;
+	}
+}
+
+.small-expandable {
+	.ant-checkbox-wrapper,
+	.ant-radio-wrapper,
+	.ant-input,
+	.ant-btn,
+	.ant-tag {
+		font-size: $font-size-small !important;
+	}
+	.field-label {
+		font-size: 0.9rem;
+	}
+	.field-wrapper {
+		margin: 0;
+	}
+	.field-children {
+		padding: 0;
+	}
+	.ant-checkbox-wrapper {
+		color: $colors-main-black;
+	}
+	.ant-tag {
+		color: $colors-main-black;
+		background: $tag_background;
+		border: none;
+		border-radius: 70px;
+		margin-bottom: 7px;
+	}
+	.ant-tag-close-icon {
+		color: $colors-main-black;
+		margin-left: 0.8rem;
+	}
+}
+
+.token-keys-wrapper {
+	max-width: 40rem;
+}
+
+.flex-col {
+	flex-basis: 0;
+	flex-grow: 1;
+	padding-right: 1rem;
+}
+
+.session-dialog-content {
+	width: 38rem;
+
+	.icon_title-wrapper {
+		flex-direction: row;
+		justify-content: flex-start;
+		margin-top: 0.5rem;
+
+		.icon_title-text.title {
+			font-size: 2rem;
+			font-weight: bold;
+			margin: 0.5rem;
+		}
+
+		.icon_title-svg {
+			height: 3rem;
+			width: 3rem;
+
+			svg {
+				height: 3rem;
+				width: 3rem;
+			}
+		}
+	}
+}
+
+.errorField {
+	border-color: $colors-notifications-red !important;
+}
+.errorText {
+	color: $colors-notifications-red !important;
 }

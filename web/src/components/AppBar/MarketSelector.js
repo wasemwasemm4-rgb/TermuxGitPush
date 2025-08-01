@@ -1,24 +1,24 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+import { browserHistory } from 'react-router';
+import { StarFilled, StarOutlined, ThunderboltFilled } from '@ant-design/icons';
+import { isMobile } from 'react-device-detect';
 import { object, string, func } from 'prop-types';
-import Image from 'components/Image';
-import classnames from 'classnames';
-import { StarFilled, StarOutlined } from '@ant-design/icons';
+import debounce from 'lodash.debounce';
 
-import { Slider } from 'components';
-import { BASE_CURRENCY, DEFAULT_COIN_DATA } from 'config/constants';
-import STRINGS from 'config/localizedStrings';
-import withConfig from 'components/ConfigProvider/withConfig';
-import {
-	donutFormatPercentage,
-	formatToCurrency,
-	calculatePrice,
-} from 'utils/currency';
 import SearchBox from './SearchBox';
+import STRINGS from 'config/localizedStrings';
+import classnames from 'classnames';
+import EditWrapper from 'components/EditWrapper';
+import { Slider, PriceChange, Coin } from 'components';
+import { DEFAULT_COIN_DATA } from 'config/constants';
+import { formatToCurrency } from 'utils/currency';
 import { removeFromFavourites, addToFavourites } from 'actions/appActions';
 import { isLoggedIn } from 'utils/token';
-import EditWrapper from 'components/EditWrapper';
+import { MarketsSelector } from 'containers/Trade/utils';
+import { unique } from 'utils/data';
+import { Loading } from 'containers/DigitalAssets/components/utils';
 
 class MarketSelector extends Component {
 	constructor(props) {
@@ -32,8 +32,22 @@ class MarketSelector extends Component {
 			symbols,
 			selectedTabMenu,
 			searchValue: '',
-			searchResult: {},
+			searchResult: [],
+			tabResult: [],
+			isLoading: true,
 		};
+	}
+
+	debouncedSetLoadingFalse = debounce(() => {
+		this.setState({ isLoading: false });
+	}, 2000);
+
+	componentDidMount() {
+		const { selectedTabMenu, searchValue } = this.state;
+
+		this.onAddTabClick(selectedTabMenu);
+		this.handleSearch(searchValue);
+		this.debouncedSetLoadingFalse();
 	}
 
 	UNSAFE_componentWillReceiveProps(nextProps) {
@@ -47,62 +61,88 @@ class MarketSelector extends Component {
 	}
 
 	tabListMenuItems = () => {
-		const { symbols, selectedTabMenu } = this.state;
+		const { symbols, selectedTabMenu, isLoading } = this.state;
+		const { coins } = this.props;
 
-		return symbols.map((symbol, index) => (
-			<div
-				key={index}
-				className={classnames(
-					'app-bar-tab-menu-list',
-					'd-flex',
-					'align-items-center',
-					'pointer',
-					{ 'active-tab': symbol === selectedTabMenu }
-				)}
-				onClick={() => this.onAddTabClick(symbol)}
-			>
-				{symbol === 'all' ? STRINGS['ALL'] : symbol.toUpperCase()}
-			</div>
-		));
+		return symbols.map((symbol, index) => {
+			const { display_name } = coins[symbol] || DEFAULT_COIN_DATA;
+			return (
+				<div
+					key={index}
+					className={classnames(
+						'app-bar-tab-menu-list',
+						'd-flex',
+						'align-items-center',
+						'pointer',
+						{ 'active-tab': symbol === selectedTabMenu }
+					)}
+					onClick={() => this.onAddTabClick(symbol)}
+				>
+					{symbol === 'all' ? (
+						isLoading ? (
+							STRINGS['LOADING']
+						) : (
+							<span>{STRINGS['ALL']}</span>
+						)
+					) : isLoading ? (
+						<Loading index={index} />
+					) : (
+						display_name
+					)}
+				</div>
+			);
+		});
 	};
 
 	getSymbols = (pairs) => {
-		const obj = {};
-		Object.entries(pairs).forEach(([key, pair]) => {
-			obj[pair.pair_2] = '';
+		return unique(Object.entries(pairs).map(([_, { pair_2 }]) => pair_2));
+	};
+
+	filterData = (data, filterValue, key1, key2, key3) => {
+		return data.filter((item) => {
+			const value1 = item[key1] || item[key2];
+			const value2 = item[key3];
+
+			return (
+				(value1 && value1.toLowerCase().indexOf(filterValue) !== -1) ||
+				(value2 && value2?.toLowerCase()?.indexOf(filterValue) !== -1)
+			);
 		});
-
-		return Object.keys(obj).map((key) => key);
 	};
 
-	onAddTabClick = (symbol) => {
-		this.setState({ selectedTabMenu: symbol });
+	onAddTabClick = (tabSymbol) => {
+		const { quicktrade, markets } = this.props;
+		const coinsData = this.getCoinsData(quicktrade, markets);
+
+		const tabResult =
+			tabSymbol === 'all'
+				? coinsData
+				: this.filterData(coinsData, tabSymbol, 'key', 'symbol', 'fullname');
+
+		this.setState({ searchResult: tabResult, selectedTabMenu: tabSymbol });
 	};
 
-	handleSearch = (_, value) => {
-		const { pairs, coins } = this.props;
-		if (value) {
-			const result = {};
-			const searchValue = value.toLowerCase().trim();
-			Object.keys(pairs).map((key) => {
-				const temp = pairs[key];
-				const { fullname } =
-					coins[temp.pair_base.toLowerCase()] || DEFAULT_COIN_DATA;
-				const cashName = fullname ? fullname.toLowerCase() : '';
-				if (
-					key.indexOf(searchValue) !== -1 ||
-					temp.pair_base.indexOf(searchValue) !== -1 ||
-					temp.pair_2.indexOf(searchValue) !== -1 ||
-					cashName.indexOf(searchValue) !== -1
-				) {
-					result[key] = temp;
-				}
-				return key;
-			});
-			this.setState({ searchResult: { ...result }, searchValue: value });
-		} else {
-			this.setState({ searchResult: {}, searchValue: '' });
-		}
+	handleSearch = (value = '') => {
+		const { quicktrade, markets } = this.props;
+		const { selectedTabMenu } = this.state;
+		const coinsData = this.getCoinsData(quicktrade, markets);
+
+		const searchValue = value ? value.toLowerCase().trim() : '';
+		const tabResult =
+			selectedTabMenu === 'all'
+				? coinsData
+				: this.filterData(
+						coinsData,
+						selectedTabMenu,
+						'key',
+						'symbol',
+						'fullname'
+				  );
+		const result = !value
+			? tabResult
+			: this.filterData(tabResult, searchValue, 'key', 'symbol', 'fullname');
+
+		this.setState({ searchResult: result, searchValue: value });
 	};
 
 	onViewMarketsClick = () => {
@@ -110,11 +150,19 @@ class MarketSelector extends Component {
 		this.closeAddTabMenu();
 	};
 
+	onViewAssetsClick = () => {
+		browserHistory.push('/prices');
+		if (isMobile) {
+			window.location.reload();
+		}
+	};
+
 	closeAddTabMenu = () => {
+		const { pairs } = this.props;
 		this.setState(
 			{
 				searchValue: '',
-				searchResult: {},
+				searchResult: Object.keys(pairs),
 			},
 			() => {
 				const { closeAddTabMenu = () => {} } = this.props;
@@ -130,6 +178,7 @@ class MarketSelector extends Component {
 
 	toggleFavourite = (pair) => {
 		const { addToFavourites, removeFromFavourites } = this.props;
+
 		if (isLoggedIn()) {
 			return this.isFavourite(pair)
 				? removeFromFavourites(pair)
@@ -137,204 +186,234 @@ class MarketSelector extends Component {
 		}
 	};
 
+	onMarketClick = (key, isQuickTrade) => {
+		const { addTradePairTab } = this.props;
+
+		addTradePairTab(key, isQuickTrade);
+		this.closeAddTabMenu();
+	};
+
+	getTypeSortedData = (array) => {
+		return array.sort((a, b) => {
+			// Custom sorting logic: "pro" comes first
+			if (a.type === 'pro' && b.type !== 'pro') {
+				return -1;
+			} else if (a.type !== 'pro' && b.type === 'pro') {
+				return 1;
+			} else {
+				return 0;
+			}
+		});
+	};
+
+	movePinnedItems = (array) => {
+		const pinnedMarkets = this.props.pinned_markets;
+		const sortedArray = array.sort((a, b) => {
+			// Find the first ID that differs between the two objects
+			const id = pinnedMarkets.find((i) => a?.key !== b?.key);
+
+			if (id) {
+				// If a has the ID, move it to the top
+				return a?.key === id ? -1 : 1;
+			}
+
+			return 0;
+		});
+		return sortedArray;
+	};
+
+	getCoinsData = (quicktrade, markets) =>
+		this.getTypeSortedData(quicktrade).map((data) =>
+			data.type === 'pro'
+				? markets.find(({ key }) => key === data.symbol) || { ...data }
+				: { ...data }
+		);
+
+	onHandleNavigate = () => {
+		const { closeAddTabMenu = () => {} } = this.props;
+		closeAddTabMenu();
+		return browserHistory?.push('/prices');
+	};
+
 	render() {
 		const {
-			pairs,
-			coins = {},
-			tickers = {},
-			addTradePairTab,
 			wrapperClassName,
-			icons: ICONS,
 			constants,
+			markets,
+			pair: activeMarket,
+			quicktrade,
 		} = this.props;
 
-		const { selectedTabMenu, searchValue, searchResult } = this.state;
-		const { handleSearch } = this;
+		const { searchResult, isLoading } = this.state;
 
-		let tabMenu = {};
-		if (searchValue) {
-			tabMenu = { ...searchResult };
-		} else if (selectedTabMenu === 'all') {
-			Object.keys(pairs).map((key) => {
-				let temp = pairs[key];
-				if (temp) {
-					tabMenu[key] = temp;
-				}
-				return key;
-			});
-		} else {
-			Object.keys(pairs).map((key) => {
-				let temp = pairs[key];
-				if (temp && temp.pair_2 === selectedTabMenu) {
-					tabMenu[key] = temp;
-				}
-				return key;
-			});
-		}
-
-		const tabMenuLength = Object.keys(tabMenu).length;
+		const tabMenuLength = markets.length;
 		const hasTabMenu = tabMenuLength !== 0;
-
-		let processedTabMenu = [];
-		if (hasTabMenu) {
-			processedTabMenu = Object.keys(tabMenu)
-				.map((pair) => {
-					let menu = tabMenu[pair] || {};
-					let ticker = tickers[pair] || {};
-					let { symbol = '' } =
-						coins[menu.pair_base || BASE_CURRENCY] || DEFAULT_COIN_DATA;
-					let pairTwo =
-						coins[menu.pair_2 || BASE_CURRENCY] || DEFAULT_COIN_DATA;
-					const { increment_price } = menu;
-					const priceDifference =
-						ticker.open === 0 ? 0 : (ticker.close || 0) - (ticker.open || 0);
-					const tickerPercent =
-						priceDifference === 0 || ticker.open === 0
-							? 0
-							: (priceDifference / ticker.open) * 100;
-					const priceDifferencePercent = isNaN(tickerPercent)
-						? donutFormatPercentage(0)
-						: donutFormatPercentage(tickerPercent);
-
-					const volumePrice = calculatePrice(ticker.volume, symbol);
-
-					return {
-						pair,
-						symbol,
-						menu,
-						pairTwo,
-						ticker,
-						increment_price,
-						priceDifference,
-						priceDifferencePercent,
-						volumePrice,
-					};
-				})
-				.sort(
-					({ volumePrice: volumePriceA }, { volumePrice: volumePriceB }) => {
-						return volumePriceB - volumePriceA;
-					}
-				)
-				.slice(0, Math.min(tabMenuLength, 10));
-		}
+		const coinsData = this.movePinnedItems(
+			searchResult || this.getCoinsData(quicktrade, markets)
+		);
 
 		return (
-			<div className={classnames('app-bar-add-tab-menu', wrapperClassName)}>
+			<div className={classnames(wrapperClassName)}>
 				<div className="app-bar-tab-menu">
 					<Slider small>{this.tabListMenuItems()}</Slider>
 				</div>
 				<div className="app-bar-add-tab-content">
-					<div className="app-bar-add-tab-search">
+					<div
+						className={
+							isMobile
+								? 'app-bar-add-tab-search market-selector-search-wrapper px-3'
+								: 'app-bar-add-tab-search market-selector-search-wrapper'
+						}
+					>
 						<SearchBox
 							name={STRINGS['SEARCH_TXT']}
-							placeHolder={`${STRINGS['SEARCH_TXT']}...`}
+							placeHolder={STRINGS['SEARCH_TXT']}
 							className="app-bar-search-field"
-							handleSearch={handleSearch}
+							handleSearch={(e) =>
+								this.handleSearch(e.target && e.target.value)
+							}
+							showCross
+							isFocus={true}
 						/>
+						{coinsData?.length > 0 && (
+							<div
+								className="blue-link text-underline text-align-center"
+								onClick={() => this.onHandleNavigate()}
+							>
+								<EditWrapper stringId="VIEW_ALL_PRICES">
+									<span className="text-decoration-underline">
+										{STRINGS['VIEW_ALL_PRICES']}
+									</span>
+								</EditWrapper>
+							</div>
+						)}
 					</div>
-					<div
-						className={classnames({
-							'scroll-view': processedTabMenu.length >= 10,
-						})}
-					>
-						{hasTabMenu ? (
-							processedTabMenu.map(
-								(
-									{
-										pair,
-										symbol,
-										menu,
-										pairTwo,
-										ticker,
-										increment_price,
-										priceDifference,
-										priceDifferencePercent,
-									},
-									index
-								) => {
-									return (
-										<div
-											key={index}
-											className="app-bar-add-tab-content-list d-flex align-items-center justify-content-start pointer"
-										>
+					<div className="scroll-view">
+						{hasTabMenu && coinsData.length > 0 ? (
+							coinsData.map((market, index) => {
+								const {
+									key,
+									pair,
+									ticker,
+									increment_price,
+									display_name,
+									symbol,
+									icon_id,
+									type,
+								} = market;
+
+								return (
+									<div
+										key={index}
+										className={classnames(
+											'app-bar-add-tab-content-list',
+											'd-flex align-items-center justify-content-start',
+											'pointer',
+											{
+												'active-market':
+													pair?.name === activeMarket && !isLoading,
+											}
+										)}
+									>
+										{isLoading ? (
+											<Loading index={index} />
+										) : (
 											<div
 												className="pl-3 pr-2 pointer"
-												onClick={() => this.toggleFavourite(pair)}
+												onClick={() => this.toggleFavourite(key || symbol)}
 											>
-												{this.isFavourite(pair) ? (
+												{this.isFavourite(key || symbol) ? (
 													<StarFilled className="stared-market" />
 												) : (
 													<StarOutlined />
 												)}
 											</div>
-											<div
-												className="d-flex align-items-center justify-content-between w-100"
-												onClick={() => addTradePairTab(pair)}
-											>
+										)}
+										<div
+											className="d-flex align-items-center justify-content-between w-100"
+											onClick={() =>
+												this.onMarketClick(
+													key || symbol,
+													type && type !== 'pro'
+												)
+											}
+										>
+											{isLoading ? (
+												<Loading index={index} />
+											) : (
 												<div className="d-flex align-items-center">
-													<Image
-														iconId={
-															ICONS[`${menu.pair_base.toUpperCase()}_ICON`]
-																? `${menu.pair_base.toUpperCase()}_ICON`
-																: 'DEFAULT_ICON'
-														}
-														icon={
-															ICONS[`${menu.pair_base.toUpperCase()}_ICON`]
-																? ICONS[`${menu.pair_base.toUpperCase()}_ICON`]
-																: ICONS.DEFAULT_ICON
-														}
-														wrapperClassName="app-bar-add-tab-icons"
-														imageWrapperClassName="currency-ball-image-wrapper"
+													<Coin
+														iconId={pair?.icon_id || icon_id}
+														type={isMobile ? 'CS8' : 'CS2'}
 													/>
-													<div className="app_bar-pair-font">
-														{symbol.toUpperCase()}/
-														{pairTwo.symbol.toUpperCase()}:
+													<div className="app_bar-pair-font ml-1">
+														{display_name}
 													</div>
-													<div className="title-font ml-1 app-bar_add-tab-price">
-														{formatToCurrency(ticker.close, increment_price)}
-													</div>
+													{ticker && (
+														<>
+															<span className="app_bar-pair-font">:</span>
+															<div className="title-font ml-1 app-bar_add-tab-price">
+																{formatToCurrency(
+																	ticker?.close,
+																	increment_price
+																)}
+															</div>
+														</>
+													)}
 												</div>
-												<div className="d-flex align-items-center mr-4">
-													<div
-														className={
-															priceDifference < 0
-																? 'app-price-diff-down app-bar-price_diff_down'
-																: 'app-bar-price_diff_up app-price-diff-up'
-														}
-													>
-														{/* {formatAverage(formatToCurrency(priceDifference, increment_price))} */}
+											)}
+											{isLoading ? (
+												<Loading index={index} />
+											) : (
+												<span>
+													<div className="d-flex align-items-center">
+														<PriceChange market={market} key={key || symbol} />
 													</div>
-													<div
-														className={
-															priceDifference < 0
-																? 'title-font app-price-diff-down'
-																: priceDifference > 0
-																? 'title-font app-price-diff-up'
-																: 'title-font'
-														}
-													>
-														{priceDifferencePercent}
-													</div>
-												</div>
-											</div>
+													{type && type !== 'pro' && (
+														<div className="d-flex align-items-center mr-4 summary-quick-icon">
+															<ThunderboltFilled />
+														</div>
+													)}
+												</span>
+											)}
 										</div>
-									);
-								}
-							)
+									</div>
+								);
+							})
 						) : (
-							<div className="app-bar-add-tab-content-list d-flex align-items-center">
-								No data...
+							<div className="app-bar-add-tab-content-no-market">
+								{STRINGS['CANT_FIND_MARKETS']}
+								<br />
+								{STRINGS.formatString(
+									STRINGS['TRY_VISITING_ASSETS'],
+									<span
+										onClick={() => this.onViewAssetsClick()}
+										className="text-underline blue-link pointer"
+									>
+										{STRINGS['ASSETS_PAGE']}
+									</span>
+								)}
 							</div>
 						)}
 					</div>
-					<div className="d-flex justify-content-center app_bar-link blue-link pointer">
-						{constants && constants.features && constants.features.pro_trade && (
-							<div onClick={this.onViewMarketsClick}>
-								<EditWrapper stringId="VIEW_MARKET">
-									{STRINGS['VIEW_MARKET']}
-								</EditWrapper>
-							</div>
-						)}
+					<div
+						className={
+							isLoggedIn()
+								? 'd-flex justify-content-center app_bar-link blue-link pointer view-market-btn'
+								: 'd-flex justify-content-center app_bar-link blue-link pointer view-market-btn view-market-link'
+						}
+					>
+						{constants &&
+							constants?.features &&
+							constants?.features?.pro_trade && (
+								<div onClick={this.onViewMarketsClick}>
+									<EditWrapper stringId="VIEW_MARKET">
+										<span className="text-decoration-underline">
+											{STRINGS['VIEW_MARKET']}
+										</span>
+									</EditWrapper>
+								</div>
+							)}
 					</div>
 				</div>
 			</div>
@@ -345,7 +424,6 @@ class MarketSelector extends Component {
 MarketSelector.propTypes = {
 	pairs: object.isRequired,
 	coins: object.isRequired,
-	tickers: object.isRequired,
 	onViewMarketsClick: func,
 	addTradePairTab: func,
 	wrapperClassName: string,
@@ -362,17 +440,29 @@ const mapDispatchToProps = (dispatch) => ({
 	removeFromFavourites: bindActionCreators(removeFromFavourites, dispatch),
 });
 
-const mapStateToProps = ({
-	app: { pairs, tickers, coins, favourites, constants },
-}) => ({
-	pairs,
-	tickers,
-	coins,
-	favourites,
-	constants,
-});
+const mapStateToProps = (store) => {
+	const {
+		app: {
+			pairs,
+			coins,
+			favourites,
+			constants,
+			pair,
+			quicktrade,
+			pinned_markets,
+		},
+	} = store;
 
-export default connect(
-	mapStateToProps,
-	mapDispatchToProps
-)(withConfig(MarketSelector));
+	return {
+		pair,
+		pairs,
+		coins,
+		favourites,
+		constants,
+		markets: MarketsSelector(store),
+		quicktrade,
+		pinned_markets,
+	};
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(MarketSelector);

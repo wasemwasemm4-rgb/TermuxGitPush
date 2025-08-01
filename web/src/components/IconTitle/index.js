@@ -27,22 +27,52 @@ const BasicIconTitle = ({
 					showUpload={false}
 				/>
 			)}
-			<EditWrapper stringId={stringId} iconId={iconId}>
-				<div className={classnames('icon_title-text', 'text-center', textType)}>
-					{text}
-				</div>
+			<EditWrapper
+				stringId={stringId}
+				iconId={iconId}
+				render={(string) => (
+					<div
+						className={classnames(
+							`${
+								className === 'fees-limits-title'
+									? className
+									: className === 'cancel-withdraw-pop-up'
+									? 'cancel-withdraw-pop-up'
+									: 'icon_title-text'
+							} pt-2`,
+							'text-center',
+							text === '2FA Setup' && 'step-one-title-wrapper',
+							textType
+						)}
+					>
+						{string}
+					</div>
+				)}
+			>
+				{text}
 			</EditWrapper>
 		</div>
 	);
 };
 
-const EnhancedIconTitle = ({ subtitle, actionProps, ...rest }) => (
+const EnhancedIconTitle = ({
+	subtitle,
+	subtitleClass = 'font-weight-bold subtitleClass',
+	actionProps,
+	...rest
+}) => (
 	<div className={classnames('w-100')}>
 		<BasicIconTitle {...rest} />
 		<div
 			className={classnames('d-flex', 'justify-content-between', 'p-relative')}
 		>
-			<div className="font-weight-bold font-small">{subtitle}</div>
+			<EditWrapper
+				renderWrapper={(children) => (
+					<div className={subtitleClass}>{children}</div>
+				)}
+			>
+				{subtitle}
+			</EditWrapper>
 			<div>{actionProps && <ActionNotification {...actionProps} />}</div>
 		</div>
 	</div>

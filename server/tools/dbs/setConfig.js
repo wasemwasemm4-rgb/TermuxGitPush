@@ -48,10 +48,9 @@ const kit = {
 		api: API_HOST || '',
 		whitepaper: '',
 		website: '',
-		information: '',
+		information: ''
 	},
 	email_verification_required: false,
-	setup_completed: false,
 	native_currency: NATIVE_CURRENCY || 'usdt',
 	logo_image: LOGO_IMAGE || 'https://dash.testnet.bitholla.com/assets/img/hex-pattern-icon-black-01.svg',
 	injected_values: [],
@@ -68,7 +67,12 @@ const kit = {
 	},
 	features: {},
 	meta: {},
-	user_meta: {}
+	user_meta: {},
+	black_list_countries: [],
+	onramp: {},
+	offramp: {},
+	user_payments: {},
+	dust: {}
 };
 
 const secrets = {

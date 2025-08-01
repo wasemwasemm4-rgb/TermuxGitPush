@@ -1,18 +1,20 @@
 import PhoneNumber from 'awesome-phonenumber';
 import { DEFAULT_LANGUAGE, THEME_DEFAULT } from '../config/constants';
 import { constructSettings } from '../utils/utils';
+import { ACTION_KEYS } from 'actions/userAction';
 
-const USER_DATA_KEYS = [
-	'full_name',
-	'gender',
-	'dob',
-	'nationality',
-	'address',
-	'phone_number',
-	'id_data',
-	'bank_account',
-	'email_verified',
-];
+const USER_DATA = {
+	full_name: null,
+	gender: false,
+	dob: null,
+	nationality: null,
+	address: {},
+	phone_country: null,
+	id_data: {},
+	bank_account: [],
+	email_verified: false,
+	phone_number: null,
+};
 
 const INITIAL_OTP_OBJECT = {
 	requesting: false,
@@ -28,11 +30,21 @@ const INITIAL_ADDRESS_OBJECT = {
 	error: false,
 };
 
+const INITIAL_API_OBJECT = {
+	data: [],
+	count: 0,
+	loading: false,
+	fetched: false,
+	page: 1,
+	isRemaining: false,
+	error: '',
+};
+
 const extractuserData = (data) => {
 	const userData = {
 		timestamp: Date.now(),
 	};
-	USER_DATA_KEYS.forEach((key) => {
+	Object.keys(USER_DATA).forEach((key) => {
 		if (data.hasOwnProperty(key)) {
 			userData[key] = data[key];
 			if (key === 'phone_number') {
@@ -78,6 +90,7 @@ const INITIAL_STATE = {
 	wallet: [],
 	userData: {
 		timestamp: Date.now(),
+		...USER_DATA,
 	},
 	fetching: false,
 	fee: 0,
@@ -99,6 +112,8 @@ const INITIAL_STATE = {
 			popup_order_confirmation: true,
 			popup_order_completed: true,
 			popup_order_partially_filled: true,
+			popup_order_new: true,
+			popup_order_canceled: true,
 		},
 		interface: {
 			theme: THEME_DEFAULT,
@@ -116,6 +131,7 @@ const INITIAL_STATE = {
 			order_portfolio_percentage: 80,
 			popup_warning: true,
 		},
+		apps: [],
 	},
 	addressRequest: INITIAL_ADDRESS_OBJECT,
 	limits: INITIAL_LIMIT_OBJECT,
@@ -124,7 +140,12 @@ const INITIAL_STATE = {
 	affiliation: {},
 	is_hap: false,
 	meta: {},
+	network_id: null,
+	...USER_DATA,
 };
+
+const joinData = (stateData = [], payloadData = []) =>
+	stateData.concat(payloadData);
 
 export default function reducer(state = INITIAL_STATE, action) {
 	switch (action.type) {
@@ -151,6 +172,7 @@ export default function reducer(state = INITIAL_STATE, action) {
 				dob,
 				nationality,
 				meta,
+				network_id,
 			} = action.payload;
 			const userData = extractuserData(action.payload);
 			const fees = action.payload.fees || state.fees;
@@ -189,6 +211,7 @@ export default function reducer(state = INITIAL_STATE, action) {
 				dob,
 				gender,
 				meta,
+				network_id,
 				nationality,
 			};
 		}
@@ -337,11 +360,16 @@ export default function reducer(state = INITIAL_STATE, action) {
 			}
 			return { ...state, tokens };
 		}
-		case 'TOKEN_GENERATED':
+		case 'TOKEN_GENERATED': {
+			const tokens = {
+				count: state.tokens.count + 1,
+				data: [action.payload.token, ...state.tokens.data],
+			};
 			return {
 				...state,
-				tokens: [action.payload.token].concat(state.tokens),
+				tokens,
 			};
+		}
 		case 'SET_USERNAME':
 			return {
 				...state,
@@ -462,15 +490,40 @@ export default function reducer(state = INITIAL_STATE, action) {
 					error: action.payload.response,
 				},
 			};
-		case 'REFERRAL_COUNT_FULFILLED':
+		case ACTION_KEYS.REFERRAL_COUNT_PENDING: {
+			const { page = 1 } = action.payload;
+			const data = page > 1 ? state.affiliation.data : INITIAL_API_OBJECT.data;
 			return {
 				...state,
-				affiliation: action.payload,
+				affiliation: {
+					...INITIAL_API_OBJECT,
+					loading: true,
+					data,
+				},
 			};
-		case 'REFERRAL_COUNT_REJECTED':
+		}
+		case ACTION_KEYS.REFERRAL_COUNT_FULFILLED:
 			return {
 				...state,
-				affiliation: {},
+				affiliation: {
+					...INITIAL_API_OBJECT,
+					loading: false,
+					fetched: true,
+					count: action.payload.count,
+					page: action.payload.page,
+					isRemaining: action.payload.isRemaining,
+					data: joinData(state.affiliation.data, action.payload.data),
+				},
+			};
+		case ACTION_KEYS.REFERRAL_COUNT_REJECTED:
+			return {
+				...state,
+				affiliation: {
+					...INITIAL_API_OBJECT,
+					loading: false,
+					fetched: true,
+					error: action.payload,
+				},
 			};
 		case 'LOGOUT':
 			return INITIAL_STATE;

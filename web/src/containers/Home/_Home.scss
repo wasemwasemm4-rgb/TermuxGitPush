@@ -1,3 +1,5 @@
+@import './MarketCard';
+
 $features-icon--size: 4rem;
 $features-card--width: 17.5rem;
 $features-card--margin: 3rem;
@@ -111,16 +113,7 @@ $trade-tab--arrow-size: 0.4rem;
 	}
 }
 
-.home_header_button {
-	height: 28px;
-	font-weight: bold;
-}
-
 .layout-mobile {
-	.home_header_button {
-		height: 24px;
-	}
-
 	.home-page__market-wrapper {
 		th:nth-child(1) {
 			padding-left: 1rem !important;
@@ -142,6 +135,117 @@ $trade-tab--arrow-size: 0.4rem;
 		.quick_trade-wrapper {
 			flex-direction: column;
 		}
+
+		.signup-field-wrapper {
+			.signup-field {
+				width: 100%;
+			}
+		}
+
+		.main-section-wrapper {
+			&::after {
+				background: transparent;
+			}
+			.section_1-content {
+				.title-description {
+					text-align: center;
+					min-height: 35rem;
+					justify-content: center;
+					align-items: center;
+				}
+				.btn-wrapper {
+					.start-trade-btn {
+						width: 100%;
+						padding: 5%;
+					}
+				}
+			}
+		}
+		.mini-quick-trade-section {
+			.mini-quick-trade-calculator-wrapper {
+				padding: 6% 2% 15%;
+			}
+		}
+		.question-answer-wrapper {
+			padding: 0 2%;
+		}
+	}
+	.html_card_section {
+		flex-direction: column;
+		padding: 5% 0;
+		.card-description-text {
+			width: 90%;
+		}
+		.cards-wrapper {
+			width: unset;
+			margin-top: 10%;
+			flex-direction: column;
+			gap: 2rem;
+		}
+		.card-section-wrapper {
+			padding: 2rem;
+			.card-section {
+				.header_txt {
+					font-size: 14px;
+				}
+			}
+		}
+	}
+	.home-page_section-wrapper {
+		padding-top: 60px !important;
+		padding-bottom: 60px !important;
+	}
+	.home_carousel_section {
+		.slideshow-wrapper {
+			margin-top: 2%;
+		}
+
+		.loading-anime {
+			height: 1.4rem;
+			width: 6rem;
+		}
+	}
+
+	.faq-container {
+		.question-answer-wrapper {
+			.faq-details {
+				width: 95%;
+			}
+			.more-btn {
+				padding: 2.5%;
+			}
+		}
+	}
+
+	.create-account-section {
+		.create-account-wrapper {
+			width: 80%;
+			padding: 30% 0 !important;
+
+			.home-title {
+				line-height: normal;
+			}
+			.input-wrapper {
+				margin-top: 10%;
+				width: 90%;
+			}
+		}
+	}
+
+	.section_1-content {
+		flex-wrap: wrap;
+		gap: 5rem;
+
+		.title-description,
+		.home-page-icon-wrapper {
+			width: 94vw !important;
+		}
+
+		.home-page-icon-wrapper {
+			.home-page-icon {
+				width: 100vw !important;
+			}
+		}
 	}
 }
 
@@ -155,13 +259,22 @@ $trade-tab--arrow-size: 0.4rem;
 	}
 
 	.main-section_button {
-		color: $colors-main-black !important;
+		color: #ffffff !important;
 		background-color: $link !important;
+		border-radius: 2px;
+		transition: all 0.3s ease;
+
+		a {
+			color: inherit !important;
+			text-decoration: none !important;
+		}
+
+		&:hover {
+			opacity: 0.8;
+		}
 	}
 
 	.quick_trade-wrapper {
-		// min-width: 30rem;
-		max-width: 40rem;
 		background-color: $quick-trade-block-background;
 	}
 
@@ -175,15 +288,6 @@ $trade-tab--arrow-size: 0.4rem;
 		color: #000000;
 	}
 
-	.quick_trade-section {
-		background-color: $quick-trade-background;
-		border: 1px solid $colors-border;
-		> .quick_trade-wrapper {
-			flex: 1;
-		}
-	}
-
-	.quick_trade-section,
 	.features-container {
 		padding: 2rem;
 	}
@@ -201,6 +305,28 @@ $trade-tab--arrow-size: 0.4rem;
 
 	.section_1-content {
 		position: relative;
+		display: flex;
+		justify-content: center;
+		gap: 2%;
+		align-items: center;
+		width: 80%;
+
+		.title-description {
+			display: flex;
+			flex-direction: column;
+			justify-content: space-between;
+			width: 50%;
+			min-height: 20rem;
+		}
+
+		.home-page-icon-wrapper {
+			width: 45%;
+
+			.home-page-icon {
+				width: 70rem;
+				position: relative;
+			}
+		}
 
 		.scroll-button {
 			$arrow-size: 2rem;
@@ -261,20 +387,49 @@ $trade-tab--arrow-size: 0.4rem;
 
 	.home-title,
 	.features-title {
-		font-size: $font-size-headline2;
+		font-size: 4.5rem;
 		line-height: normal;
-		font-weight: bold;
-		text-align: center;
+		font-weight: 900;
+		-webkit-text-stroke: 1px #ffffff;
+		letter-spacing: 3px;
+	}
+
+	.home-title {
+		color: #ffffff;
 	}
 
 	.text-section,
 	.buttons-section {
 		margin: 0.5rem;
+		color: #ffffff;
+	}
+
+	.signup-field-wrapper {
+		margin-top: 5%;
+		display: flex;
+		gap: 3%;
+
+		.signup-field {
+			background-color: transparent;
+			border-radius: 25px;
+			width: 50%;
+			color: $colors-main-black;
+		}
+
+		.signup-field:focus,
+		.signup-field:hover {
+			border: 1px solid $colors-main-border !important;
+			box-shadow: none;
+		}
+
+		.signup-btn {
+			width: max-content;
+			border-radius: 25px;
+		}
 	}
 
 	.text-section {
 		font-size: $font-size-subhead3;
-		font-weight: bold;
 	}
 
 	.buttons-section--button {
@@ -294,10 +449,15 @@ $trade-tab--arrow-size: 0.4rem;
 }
 
 .home-page_content {
-	margin-left: auto;
-	margin-right: auto;
-	margin-top: 5rem;
-	max-width: $content-display-width;
+	// margin-left: auto;
+	// margin-right: auto;
+	// margin-top: 5rem;
+	// max-width: $content-display-width;
+	background-color: #18181b;
+
+	.alice-carousel__stage-item {
+		border-right: 1px $colors-border solid;
+	}
 }
 
 .live-markets_header {
@@ -310,18 +470,46 @@ $trade-tab--arrow-size: 0.4rem;
 	font-weight: bolder;
 }
 
-.buttons-section-header {
-	margin: 0 0.5rem;
-}
-
 .home-page_section-wrapper {
-	&:not(.main-section-wrapper) {
-		padding-top: 5rem;
-		padding-bottom: 5rem;
-	}
+	margin-left: auto;
+	margin-right: auto;
+	padding: 12% 0;
+	max-width: 100rem;
+	min-height: 65rem;
 	&.main-section-wrapper {
-		padding-bottom: 5rem;
+		min-height: 50rem !important;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: unset;
+		margin-left: unset;
+		margin-right: unset;
+		max-width: 100%;
+		overflow: hidden;
+		&::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			right: 0;
+			min-width: 15rem;
+			min-height: 50rem;
+			background: linear-gradient(to left, #18181b 15%, transparent 100%);
+			pointer-events: none;
+		}
+		.btn-wrapper {
+			div {
+				width: 100%;
+			}
+
+			.start-trade-btn {
+				min-width: 16rem;
+				width: 100%;
+				display: block;
+				padding: 2%;
+			}
+		}
 	}
+
 	.quick_trade-container {
 		display: flex;
 		justify-content: center;
@@ -342,23 +530,400 @@ $trade-tab--arrow-size: 0.4rem;
 	}
 }
 
-.home_app_bar {
-	height: $navigation_bar-height-lg;
-	min-height: $navigation_bar-height-lg;
-
-	.app_bar-icon-logo {
-		height: 4rem;
-		width: 5rem;
-		background-size: contain;
-		background-position: left center;
-		background-repeat: no-repeat;
+.html_card_section {
+	overflow: auto;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	align-items: center;
+	gap: 2%;
+	background-color: rgba(43, 43, 43, 0.5);
+	min-height: 32rem;
+	padding: 2% 0;
+	.card-description-text {
+		opacity: 0.8;
+	}
+	.cards-wrapper {
+		margin: 3%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-wrap: wrap;
+		width: 100%;
+		gap: 1.5%;
 	}
 
-	.app_bar-icon {
-		flex: 0;
-		margin: 0 0.5rem;
-		padding-right: 8px;
-		width: 100%;
+	.card-section-wrapper {
+		display: flex;
+		justify-content: center;
+		padding: 1.5rem;
+		background: linear-gradient(to top, #000000, #2a2a2a);
+		min-height: 20rem;
+		border-radius: 15px;
+		box-shadow: 2px 2px #000000;
+		transition: transform 0.3s ease-in-out;
+
+		&:hover {
+			transform: translateY(-10px);
+			cursor: pointer;
+		}
+		.card-section {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			width: 20rem;
+			color: #ffffff;
+			padding: 2%;
+			.card_section_logo_wrapper {
+				padding: 3%;
+			}
+			.card_section_logo,
+			.fill-none {
+				width: 4rem;
+				height: 4rem;
+				svg {
+					width: 4rem;
+					height: 4rem;
+				}
+			}
+			.header_txt {
+				font-weight: bold;
+				font-size: 18px;
+				margin: 3% 0;
+			}
+			.card_section_main {
+				text-align: center;
+				opacity: 0.8;
+				.edit-wrapper__icons-container {
+					transform: translate(-20px, 0px) !important;
+				}
+			}
+		}
+	}
+}
+
+.faq-container,
+.create-account-section,
+.mini-quick-trade-section {
+	background-size: cover;
+	background-position-x: center;
+	background-position-y: center;
+
+	.question-answer-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+
+		.faq-details {
+			width: 50%;
+
+			.questions-container {
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				gap: 3%;
+				width: 100%;
+
+				.question-row {
+					width: 100%;
+					display: flex;
+					justify-content: space-between;
+				}
+
+				.question-row:hover {
+					cursor: pointer;
+					opacity: 0.8;
+				}
+			}
+
+			.text-section {
+				width: 100%;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+				padding: 3%;
+				border-bottom: 1px solid $colors-main-border;
+				gap: 5%;
+
+				.answer-section {
+					margin-top: 2%;
+					font-size: 1.2rem;
+					opacity: 0.8;
+				}
+			}
+		}
+		.faq-description-text {
+			width: 60%;
+		}
+
+		.more-btn {
+			margin-top: 4%;
+			padding: 1% 2%;
+			min-width: 8rem;
+			text-align: center;
+			border-radius: 25px;
+		}
+	}
+}
+
+.mini-quick-trade-section {
+	background-size: contain !important;
+	background-position: 80% 0% !important;
+
+	.mini-quick-trade-calculator-wrapper {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 6% 0 15% 0;
+
+		.mini-quicktrade-description-text {
+			width: 60%;
+		}
+		.mini-quick-trade-converter {
+			background-color: #333333 !important;
+
+			.header-wrapper {
+				.title {
+					color: #ffffff !important;
+				}
+				div {
+					padding: unset !important;
+				}
+			}
+
+			.input-holder {
+				.currency-dropdown,
+				.ant-select-arrow,
+				.ant-select {
+					color: #ffffff !important;
+				}
+
+				.ant-select {
+					border-color: #ffffff !important;
+				}
+
+				.ant-input {
+					color: #beb3b3 !important;
+					font-size: 1.8rem;
+					height: 3rem;
+				}
+
+				.ant-input:focus {
+					background-color: #2b2b2b !important;
+				}
+			}
+		}
+
+		.mini-quick-trade-converter:hover {
+			border-color: #ffffff;
+		}
+	}
+
+	.swap-wrapper {
+		.swap-container {
+			border-color: #beb3b3 !important;
+		}
+	}
+}
+
+.create-account-section {
+	.create-account-wrapper {
+		padding: 15% 0 !important;
+
+		.home-title {
+			line-height: 5rem;
+		}
+
+		.input-wrapper {
+			margin-top: 3%;
+			display: flex;
+			gap: 3%;
+			align-items: center;
+			width: 35%;
+
+			.create-account-field {
+				background-color: transparent;
+				border-radius: 25px;
+				width: 70%;
+				color: $colors-main-black;
+			}
+
+			.create-account-field:focus,
+			.create-account-field:hover {
+				border: 1px solid $colors-main-border;
+				box-shadow: none;
+			}
+
+			.signup-btn {
+				border-radius: 25px;
+				width: max-content;
+			}
+		}
+
+		.start-trade-btn {
+			min-width: 18rem;
+			display: block;
+			padding: 5%;
+		}
+	}
+}
+
+.price-carousel::before,
+.price-carousel::after {
+	content: '';
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 35%;
+	z-index: 2;
+	pointer-events: none;
+}
+
+.price-carousel::before {
+	left: 0;
+	background: linear-gradient(to right, #18181b 15%, transparent 100%);
+}
+
+.price-carousel::after {
+	right: 0;
+	background: linear-gradient(to left, #18181b 15%, transparent 100%);
+}
+
+.home_carousel_section {
+	position: relative;
+	overflow: hidden;
+	padding: 10% 0;
+
+	.loading-anime {
+		height: 15px;
+		width: 60px;
+		border-radius: 7px;
+		animation: mymove 3s infinite;
+	}
+
+	.slideshow-wrapper {
+		min-height: 6.6rem;
+		margin: 0 auto;
+		position: relative;
+		margin-top: 0.8%;
+		overflow: hidden;
+		transform: translate3d(0, 0, 0);
+	}
+
+	.slideshow-wrapper > div {
+		position: absolute;
+		top: 0;
+		left: 0;
+		height: 100%;
+		transform: translate3d(0, 0, 0);
+	}
+
+	.parent-slider {
+		gap: 10px;
+
+		&:hover {
+			animation-play-state: paused !important;
+		}
+
+		.price-card-wrapper {
+			width: 100%;
+			display: flex;
+			flex-direction: column;
+			justify-content: space-around;
+			gap: 4%;
+			overflow: hidden;
+
+			.price-card-header,
+			.price-card-content {
+				display: flex;
+				align-items: center;
+				gap: 5%;
+				line-height: 1.5rem;
+
+				.asset-name {
+					max-width: 6rem;
+					text-overflow: ellipsis;
+					overflow: hidden;
+					text-wrap: nowrap;
+					font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+						Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue',
+						sans-serif;
+				}
+			}
+
+			.price-card-content {
+				justify-content: space-between;
+
+				.last-price-label {
+					display: flex;
+					gap: 2px;
+				}
+			}
+		}
+	}
+
+	.slideshow-wrapper .parent-slider {
+		animation: moveSlideshow 50s linear infinite;
+	}
+
+	.parent-slider:hover {
+		animation-play-state: paused;
+	}
+
+	.section {
+		padding: 0.5rem 0.8rem;
+		display: flex;
+		justify-content: space-between;
+		min-width: 15rem;
+		background-color: #202020;
+		border: 1px solid #313131;
+		border-radius: 8px;
+		opacity: 1;
+		font-size: 1.2rem !important;
+		color: #ffffff !important;
+
+		.price-diff,
+		.asset-symbol {
+			color: #beb3b3;
+		}
+		.asset-symbol {
+			margin-top: 2%;
+		}
+	}
+
+	.section:hover {
+		cursor: pointer;
+		background-color: #333333 !important;
+	}
+
+	.height-40 {
+		height: 40px;
+		width: 16rem;
+	}
+
+	.section:hover .trade_tab-pair-title,
+	.section:hover .trade_tab-pair-sub-title,
+	.section:hover .trade_tab-pair-volume {
+		opacity: 1;
+	}
+
+	.section .trade_tab-pair-title,
+	.section .trade_tab-pair-sub-title,
+	.section .trade_tab-pair-volume {
+		opacity: 0.5;
+	}
+}
+
+@keyframes moveSlideshow {
+	0% {
+		transform: translateX(-66.6666%);
+	}
+
+	100% {
+		transform: translateX(0);
 	}
 }
 
@@ -368,8 +933,7 @@ $trade-tab--arrow-size: 0.4rem;
 			margin: 0 2rem 3rem;
 		}
 
-		.buttons-section,
-		.buttons-section-header {
+		.buttons-section {
 			.holla-button {
 				font-size: 1.2rem !important;
 			}
@@ -388,22 +952,82 @@ $trade-tab--arrow-size: 0.4rem;
 				max-width: $features-container--sm--width;
 			}
 		}
+		.html_card_section {
+			flex-direction: column;
+			.card-section-wrapper {
+				padding: 2rem;
+				.card-section {
+					.header_txt {
+						font-size: 14px;
+					}
+				}
+			}
+		}
+	}
+}
+@media (max-width: $bp-lg) {
+	.home_container {
+		.html_card_section {
+			flex-direction: column;
+			.card-section-wrapper {
+				padding: 2rem;
+				.card-section {
+					.header_txt {
+						font-size: 14px;
+					}
+				}
+			}
+		}
+	}
+}
+
+@media screen and (min-width: $bp-sm) and (max-width: $bp-lg) {
+	.main-section-wrapper {
+		.section_1-content {
+			.title-description {
+				.signup-field-wrapper {
+					width: 60%;
+				}
+			}
+		}
 	}
 }
 
 @media (min-width: 1920px) {
-	.home_app_bar {
-		.app_bar-icon-logo {
-			height: 3rem;
-			width: 5rem;
+	.home_container {
+		.home-page_section-wrapper {
+			min-height: 70rem;
+		}
+		.main-section-wrapper {
+			min-height: 56rem !important;
+			padding: 5% 0;
+			.section_1-content {
+				padding: unset;
+				width: 65%;
+			}
 		}
 
-		.app_bar-icon {
-			margin: 1rem 0 1rem;
+		.mini-quick-trade-section {
+			background-position: 70% 0 !important;
+		}
+
+		.home_carousel_section {
+			padding: 5% 0;
+		}
+
+		.mini-quick-trade-calculator-wrapper {
+			padding: 5% 0;
+			padding-bottom: 8%;
+		}
+
+		.question-answer-wrapper {
+			padding: 6% 0;
+		}
+
+		.create-account-section {
+			.create-account-wrapper {
+				padding: 15% 0 !important;
+			}
 		}
 	}
-}
-
-.wide-logo {
-	width: 10rem !important;
 }

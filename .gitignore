@@ -23,6 +23,9 @@ test/Wallet/.log
 test/Report
 test/.env
 test/Dev
+test/selenium/Onboarding/.log/*/*
+test/selenium/.env
+
 
 # production
 build
@@ -30,6 +33,8 @@ build
 # surge
 web/CNAME
 server/tools/hollaex-kit.env.local
+server/tools/nginx-dev/logs/*
+nginx/logs/*
 
 # misc
 web/.DS_Store
@@ -45,6 +50,10 @@ web/yarn-error.log*
 
 web/src/**/*.css
 
+plugins/dist
+plugins/json
+plugins/config
+
 #HollaEx CLI related
 templates/local/nginx/conf.d/*
 templates/local/logs/*
@@ -58,3 +67,5 @@ templates/kubernetes/config/*
 
 .token
 backups
+.vscode/settings.json
+web/public/.vscode/settings.json

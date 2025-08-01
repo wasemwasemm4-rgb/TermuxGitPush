@@ -2,11 +2,10 @@ import React, { PureComponent } from 'react';
 import PropTypes from 'prop-types';
 import classnames from 'classnames';
 import Modal from 'react-modal';
-import Ionicon from 'react-ionicons';
-import { Button, ActionNotification } from '../';
-import STRINGS from '../../config/localizedStrings';
-import { getClasesForLanguage, getLanguage } from '../../utils/string';
-import { getThemeClass } from '../../utils/theme';
+import { CloseOutlined } from '@ant-design/icons';
+import { Button, ActionNotification } from 'components';
+import STRINGS from 'config/localizedStrings';
+import { getClasesForLanguage, getLanguage } from 'utils/string';
 import withEdit from 'components/EditProvider/withEdit';
 
 class Dialog extends PureComponent {
@@ -16,13 +15,17 @@ class Dialog extends PureComponent {
 		closeButton: PropTypes.func,
 		onCloseDialog: PropTypes.func,
 		children: PropTypes.node.isRequired,
-		disableTheme: PropTypes.bool,
 	};
 
 	onRequestClose = (e) => {
 		if (this.props.onCloseDialog) {
 			this.props.onCloseDialog(e);
 		}
+	};
+
+	onHandleBack = () => {
+		const { onHandleEnableBack } = this.props;
+		onHandleEnableBack(2);
 	};
 
 	render() {
@@ -35,11 +38,10 @@ class Dialog extends PureComponent {
 			shouldCloseOnOverlayClick,
 			showCloseText,
 			dialogId,
-			theme,
 			className,
-			disableTheme,
 			bodyOpenClassName,
 			isEditMode,
+			isEnableOtpForm,
 		} = this.props;
 
 		return (
@@ -49,21 +51,17 @@ class Dialog extends PureComponent {
 				contentLabel={label}
 				onRequestClose={this.onRequestClose}
 				shouldCloseOnOverlayClick={shouldCloseOnOverlayClick}
-				portalClassName={classnames(
-					className,
-					languageClasses,
-					disableTheme ? '' : getThemeClass(theme),
-					{ 'layout-edit': isEditMode }
-				)}
+				portalClassName={classnames(className, languageClasses, {
+					'layout-edit': isEditMode,
+				})}
 				bodyOpenClassName={bodyOpenClassName}
 			>
 				{showCloseText && !closeButton && (
 					<ActionNotification
 						text={
-							<Ionicon
-								icon="md-close"
-								fontSize="24px"
-								className="action_notification-image"
+							<CloseOutlined
+								style={{ fontSize: '24px' }}
+								className="action_notification-image secondary-text"
 							/>
 						}
 						onClick={this.onRequestClose}
@@ -76,6 +74,15 @@ class Dialog extends PureComponent {
 						<Button onClick={closeButton} label={STRINGS['CLOSE_TEXT']} />
 					</div>
 				)}
+				{isEnableOtpForm && (
+					<div className="mt-5">
+						<Button
+							className="2fa-back-btn"
+							label={STRINGS['ACCOUNT_SECURITY.OTP.BACK']}
+							onClick={this.onHandleBack}
+						></Button>
+					</div>
+				)}
 			</Modal>
 		);
 	}
@@ -84,10 +91,8 @@ class Dialog extends PureComponent {
 Modal.setAppElement('#root');
 
 Dialog.defaultProps = {
-	disableTheme: false,
 	shouldCloseOnOverlayClick: true,
 	showCloseText: true,
-	theme: '',
 	className: '',
 };
 

@@ -162,16 +162,6 @@ export const generateAdminSettings = (key) => {
 				placeholder: 'Allowed domains',
 				tokenSeparators: [',', ' ', '   '],
 			},
-			site_key: {
-				type: 'input',
-				label: 'Captcha site key (Google ReCaptcha V3)',
-				placeholder: 'Captcha site key (Google ReCaptcha V3)',
-			},
-			secret_key: {
-				type: 'input',
-				label: 'Captcha secret key (Google ReCaptcha V3)',
-				placeholder: 'Captcha secret key (Google ReCaptcha V3)',
-			},
 		};
 	} else if (key === 'email') {
 		return {
@@ -182,6 +172,10 @@ export const generateAdminSettings = (key) => {
 					placeholder: 'auditor email address',
 					validate: [validateRequired, email],
 				},
+				send_email_to_support: {
+					type: 'checkbox',
+					label: 'send email to support',
+				},
 			},
 			email_configuration: {
 				sender: {
@@ -191,19 +185,13 @@ export const generateAdminSettings = (key) => {
 					placeholder: 'Sender email',
 					validate: [validateRequired, email],
 				},
-				send_email_to_support: {
-					type: 'checkbox',
-					label: 'send email to support',
-					// placeholder: 'send email to support',
-					// validate: [validateRequired]
-				},
-				timezone: {
-					type: 'select',
-					label: 'Email timezone',
-					placeholder: 'Select email timezone',
-					validate: [validateRequired],
-					options: minimalTimezoneSet,
-				},
+				// timezone: {
+				// 	type: 'select',
+				// 	label: 'Email timezone',
+				// 	placeholder: 'Select email timezone',
+				// 	validate: [validateRequired],
+				// 	options: minimalTimezoneSet,
+				// },
 				server: {
 					type: 'input',
 					label: 'SMTP server',
@@ -1889,7 +1877,6 @@ export const minimalTimezoneSet = [
 	},
 	{ offset: '+08:00', label: '(GMT+08:00) Singapore', value: 'Asia/Singapore' },
 	{ offset: '+08:00', label: '(GMT+08:00) Manila', value: 'Asia/Manila' },
-	{ offset: '+08:30', label: '(GMT+08:30) Pyongyang', value: 'Asia/Pyongyang' },
 	{ offset: '+09:00', label: '(GMT+09:00) Seoul', value: 'Asia/Seoul' },
 	{ offset: '+09:00', label: '(GMT+09:00) Tokyo', value: 'Asia/Tokyo' },
 	{

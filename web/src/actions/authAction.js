@@ -19,7 +19,7 @@ export function checkVerificationCode(data) {
 			.then((response) => {
 				dispatch({
 					type: 'CHECK_VERIFICATION_CODE_FULFILLED',
-					payload: response.data,
+					payload: { ...response.data, ...data },
 				});
 			})
 			.catch((error) => {
@@ -76,7 +76,7 @@ const setTokenInApp = (token, setInStore = false) => {
 	}
 };
 
-const cleatTokenInApp = (router, path = '/') => {
+const clearTokenInApp = (router, path = '/') => {
 	axios.defaults.headers.common['Authorization'] = {};
 	removeToken();
 	localStorage.removeItem('deposit_initial_display');
@@ -86,30 +86,11 @@ const cleatTokenInApp = (router, path = '/') => {
 export function verifyToken(token) {
 	return (dispatch) => {
 		dispatch({ type: 'VERIFY_TOKEN_PENDING' });
-		axios({
-			method: 'GET',
-			url: '/verify-token',
-			headers: {
-				Authorization: `Bearer ${token}`,
-			},
-		})
-			.then((response) => {
-				setTokenInApp(token);
-				dispatch({
-					type: 'VERIFY_TOKEN_FULFILLED',
-					payload: token,
-				});
-			})
-			.catch((error) => {
-				const message = error.response
-					? error.response.data.message
-					: 'Invalid token';
-				logout(message)(dispatch);
-				dispatch({
-					type: 'VERIFY_TOKEN_REJECTED',
-				});
-				cleatTokenInApp(browserHistory, '/login');
-			});
+		setTokenInApp(token);
+		dispatch({
+			type: 'VERIFY_TOKEN_FULFILLED',
+			payload: token,
+		});
 	};
 }
 
@@ -120,8 +101,11 @@ export const logout = (message = '') => (dispatch) => {
 			message,
 		},
 	});
-	cleatTokenInApp(browserHistory, '/login');
+	requestLogout();
+	clearTokenInApp(browserHistory, '/login');
 };
+
+export const requestLogout = () => axios.get('/logout');
 
 export const setLogoutMessage = (message = '') => ({
 	type: 'SET_LOGOUT_MESSAGE',

@@ -1,5 +1,13 @@
 import axios from 'axios';
-import { PLUGIN_URL } from '../config/constants';
+import moment from 'moment';
+import { PLUGIN_URL } from 'config/constants';
+import querystring from 'query-string';
+
+export const ACTION_KEYS = {
+	REFERRAL_COUNT_PENDING: 'REFERRAL_COUNT_PENDING',
+	REFERRAL_COUNT_FULFILLED: 'REFERRAL_COUNT_FULFILLED',
+	REFERRAL_COUNT_REJECTED: 'REFERRAL_COUNT_REJECTED',
+};
 
 export function getMe() {
 	return {
@@ -202,7 +210,7 @@ export function otpRequest() {
 			.catch((err) => {
 				dispatch({
 					type: 'REQUEST_OTP_REJECTED',
-					payload: err.response.data,
+					payload: err && err.response && err.response.data,
 				});
 			});
 	};
@@ -221,7 +229,8 @@ export const requestTokens = () => {
 	};
 };
 
-export const generateToken = (values) => axios.post(`/user/token`, values);
+export const generateToken = (values) => axios.post('/user/token', values);
+export const editToken = (values) => axios.put('/user/token', values);
 export const tokenGenerated = (token) => ({
 	type: 'TOKEN_GENERATED',
 	payload: {
@@ -229,16 +238,21 @@ export const tokenGenerated = (token) => ({
 	},
 });
 
-export const revokeToken = (id, otp_code = '') =>
+export const revokeToken = (token_id, otp_code = '', email_code = '') =>
 	axios.delete(`/user/token`, {
-		data: { token_id: id, otp_code: otp_code },
+		data: { token_id, otp_code, email_code },
 	});
+
 export const tokenRevoked = (token) => ({
 	type: 'TOKEN_REVOKED',
 	payload: {
 		token,
 	},
 });
+
+export const sendEmailCode = async () => {
+	return await axios.get('/user/request-email-confirmation');
+};
 
 export const setUsername = (values) => axios.post('/user/username', values);
 export const setUsernameStore = (username) => ({
@@ -273,29 +287,33 @@ export const cleanCreateAddress = () => ({
 	type: 'CLEAN_CREATE_ADDRESS',
 });
 
-export const getTradeVolume = () => ({
-	type: 'GET_TRADE_VOLUME',
-	payload: axios.get(`/user/stats`),
-});
+export const getUserReferrals = (page = 1, limit = 20) => {
+	const params = { page, limit };
+	const query = querystring.stringify(params);
 
-export function getUserReferralCount() {
 	return (dispatch) => {
+		dispatch({ type: ACTION_KEYS.REFERRAL_COUNT_PENDING, payload: { page } });
+
 		axios
-			.get('/user/affiliation')
+			.get(`/user/affiliation?${query}`)
 			.then((res) => {
 				dispatch({
-					type: 'REFERRAL_COUNT_FULFILLED',
-					payload: res.data,
+					type: ACTION_KEYS.REFERRAL_COUNT_FULFILLED,
+					payload: {
+						...res.data,
+						page,
+						isRemaining: res.data.count > page * limit,
+					},
 				});
 			})
 			.catch((err) => {
 				dispatch({
-					type: 'REFERRAL_COUNT_REJECTED',
+					type: ACTION_KEYS.REFERRAL_COUNT_REJECTED,
 					payload: err.response,
 				});
 			});
 	};
-}
+};
 
 export const getUserLogins = ({ limit = 50, page = 1, ...rest }) => {
 	return (dispatch) => {
@@ -322,3 +340,105 @@ export const getUserLogins = ({ limit = 50, page = 1, ...rest }) => {
 			});
 	};
 };
+
+export const getSessions = ({ page = 1, limit = 20, ...rest }) => {
+	const params = { page, limit, status: true };
+	const query = querystring.stringify(params);
+
+	return axios.get(`/user/sessions?${query}`);
+};
+
+export const downloadSessions = () => {
+	const queryData = {
+		format: 'csv',
+		status: true,
+	};
+
+	const query = querystring.stringify(queryData);
+	return axios
+		.get(`/user/sessions?${query}`)
+		.then(({ data }) => {
+			const url = window.URL.createObjectURL(new Blob([data]));
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute(
+				'download',
+				`sessions_${moment().format('YYYY-MM-DD')}.csv`
+			);
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+		})
+		.catch((err) => {});
+};
+
+export const revokeSession = (session_id) =>
+	axios.post('/user/revoke-session', { session_id });
+
+export const downloadLogins = (params = {}) => {
+	const queryData = {
+		format: 'csv',
+	};
+
+	if (params && params.start_date) {
+		queryData.start_date = params.start_date;
+	}
+
+	if (params && params.end_date) {
+		queryData.end_date = params.end_date;
+	}
+
+	if (params && params.status) {
+		if (params.status === 'failed') {
+			queryData.status = false;
+		} else if (params.status === 'success') {
+			queryData.status = true;
+		}
+	}
+
+	const query = querystring.stringify(queryData);
+	return axios
+		.get(`/user/logins?${query}`)
+		.then(({ data }) => {
+			const url = window.URL.createObjectURL(new Blob([data]));
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute(
+				'download',
+				`logins_${moment().format('YYYY-MM-DD')}.csv`
+			);
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+		})
+		.catch((err) => {});
+};
+
+export const getLogins = ({ page = 1, limit = 20, ...params }) => {
+	const queryData = { page, limit };
+
+	if (params && params.start_date) {
+		queryData.start_date = params.start_date;
+	}
+
+	if (params && params.end_date) {
+		queryData.end_date = params.end_date;
+	}
+
+	if (params && params.status) {
+		if (params.status === 'failed') {
+			queryData.status = false;
+		} else if (params.status === 'success') {
+			queryData.status = true;
+		}
+	}
+
+	const query = querystring.stringify(queryData);
+
+	return axios.get(`/user/logins?${query}`);
+};
+
+export const deleteUser = (email_code, otp_code) =>
+	axios.delete('/user', {
+		data: { otp_code, email_code },
+	});

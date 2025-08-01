@@ -4,6 +4,7 @@ import store from 'store';
 import STRINGS from '../config/localizedStrings';
 import { BASE_CURRENCY, DEFAULT_COIN_DATA } from '../config/constants';
 import { findPath, convertPathToPairNames } from './data';
+import { isNaN } from 'lodash';
 
 export const BTC_FORMAT = '0,0.[0000]';
 export const ETH_FORMAT = '0,0.[0000]';
@@ -31,7 +32,7 @@ export const AVERAGE_FORMAT = '3a';
 // };
 
 export const roundNumber = (number = 0, decimals = 4) => {
-	if (number === 0) {
+	if (number === 0 || number === Infinity || isNaN(number)) {
 		return 0;
 	} else if (decimals > 0) {
 		const multipliedNumber = math.multiply(
@@ -48,7 +49,7 @@ export const roundNumber = (number = 0, decimals = 4) => {
 	}
 };
 
-export const getFormat = (min = 0, fullFormat) => {
+export const getFormat = (min = 0, fullFormat, amount) => {
 	let value = math.format(min, { notation: 'fixed' });
 	if (fullFormat) {
 		return { digit: 8, format: '0,0.[00000000]' };
@@ -62,13 +63,40 @@ export const getFormat = (min = 0, fullFormat) => {
 			.join('');
 		return { digit: point.length, format: `0,0.[${res}]` };
 	} else {
+		if (amount) {
+			const [digitsBeforeDecimal] = amount?.toString().split('.');
+			return digitsBeforeDecimal.length > 4
+				? { digit: 0, format: `0,0` }
+				: { digit: 4, format: `0,0.[0000]` };
+		}
+
 		return { digit: 4, format: `0,0.[0000]` };
 	}
 };
 
+export const countDecimals = (val) => {
+	if (Math.floor(val) === val) return 0;
+	return val.toString().split('.')[1].length || 0;
+};
+
 export const formatToCurrency = (amount = 0, min = 0, fullFormat = false) => {
+	let formatObj = getFormat(min, fullFormat, amount);
+	return numbro(roundNumber(amount, formatObj.digit))?.format(
+		formatObj?.format
+	);
+};
+
+export const formatCurrencyByIncrementalUnit = (
+	amount = 0,
+	min = 0,
+	fullFormat = false
+) => {
 	let formatObj = getFormat(min, fullFormat);
-	return numbro(roundNumber(amount, formatObj.digit)).format(formatObj.format);
+	let _amount = amount;
+	if (min >= 1) {
+		_amount = math.subtract(amount, math.mod(amount, min));
+	}
+	return numbro(roundNumber(_amount, formatObj.digit)).format(formatObj.format);
 };
 
 export const formatToSimple = (amount = 0, min = 0, fullFormat = false) => {
@@ -148,9 +176,10 @@ export const calculatePrice = (value = 0, key = BASE_CURRENCY) => {
 };
 
 export const calculateOraclePrice = (value = 0, price = 0) => {
-	const effectivePrice = price >= 0 ? price : 0;
+	const effectiveValue = !isNaN(value) ? value : 0;
+	const effectivePrice = !isNaN(price) && math.largerEq(price, 0) ? price : 0;
 	return math.number(
-		math.multiply(math.fraction(value), math.fraction(effectivePrice))
+		math.multiply(math.fraction(effectiveValue), math.fraction(effectivePrice))
 	);
 };
 

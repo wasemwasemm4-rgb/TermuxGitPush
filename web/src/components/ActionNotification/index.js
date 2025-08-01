@@ -10,7 +10,7 @@ const getClassNames = (status) => {
 		case 'warning':
 			return 'notification-warning';
 		case 'information':
-			return 'notification-info';
+			return 'notification-info underline-text';
 		case 'disabled':
 			return 'notification-disabled';
 		case 'loading':
@@ -26,6 +26,7 @@ const ActionNotification = ({
 	status,
 	onClick,
 	iconId,
+	tradeClassName,
 	iconPath,
 	className,
 	reverseImage,
@@ -36,8 +37,11 @@ const ActionNotification = ({
 	rotateIfLtr,
 	rotateIfRtl,
 	showActionText,
+	hideActionText = false,
 	disable = false,
+	isFromWallet = false,
 }) => {
+	const isVisible = isFromWallet ? isFromWallet : !isMobile;
 	// This is to prevent action when edit string or upload icons are clicked
 	const onActionClick = ({ target: { dataset = {} } }) => {
 		const { stringId, iconId } = dataset;
@@ -50,7 +54,11 @@ const ActionNotification = ({
 	return (
 		<div
 			className={classnames(
-				'action_notification-wrapper',
+				tradeClassName ? tradeClassName : 'action_notification-wrapper',
+				!tradeClassName && {
+					position: 'absolute',
+					top: '0.25rem',
+				},
 				{
 					pointer: !disable && showPointer,
 					left: textPosition === 'left',
@@ -63,7 +71,7 @@ const ActionNotification = ({
 			)}
 			onClick={onActionClick}
 		>
-			{(showActionText || !isMobile) && (
+			{!hideActionText && (showActionText || isVisible) && (
 				<div
 					className={classnames(
 						'action_notification-text',
@@ -73,6 +81,17 @@ const ActionNotification = ({
 					{text}
 				</div>
 			)}
+			{isMobile &&
+				(text === 'Check deposit status' || text === 'Need help?') && (
+					<div
+						className={classnames(
+							'action_notification-text',
+							getClassNames(status)
+						)}
+					>
+						{text}
+					</div>
+				)}
 			<Image
 				iconId={iconId}
 				stringId={stringId}

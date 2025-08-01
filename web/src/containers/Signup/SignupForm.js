@@ -6,9 +6,10 @@ import {
 	email,
 	requiredWithCustomMessage,
 	normalizeEmail,
-} from '../../components/Form/validations';
-import { AuthForm, BlueLink } from '../../components';
-import STRINGS from '../../config/localizedStrings';
+	passwordsMatch,
+} from 'components/Form/validations';
+import { AuthForm, BlueLink } from 'components';
+import STRINGS from 'config/localizedStrings';
 
 export const FORM_NAME = 'SignForm';
 
@@ -33,7 +34,7 @@ export const generateFormFields = (strings, theme, links = {}) => ({
 	},
 	password_repeat: {
 		type: 'password',
-		validate: [required],
+		validate: [required, passwordsMatch],
 		fullWidth: true,
 		label: strings['FORM_FIELDS.PASSWORD_REPEAT_LABEL'],
 		placeholder: strings['FORM_FIELDS.PASSWORD_REPEAT_PLACEHOLDER'],
@@ -60,11 +61,6 @@ export const generateFormFields = (strings, theme, links = {}) => ({
 				text={strings['SIGN_UP.TERMS.policy']}
 			/>
 		),
-	},
-	captcha: {
-		type: 'captcha',
-		theme,
-		validate: [required],
 	},
 });
 

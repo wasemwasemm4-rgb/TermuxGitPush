@@ -1,6 +1,6 @@
 'use strict';
 
-module.exports = function(sequelize, DataTypes) {
+module.exports = function (sequelize, DataTypes) {
 	const Status = sequelize.define(
 		'Status',
 		{
@@ -42,10 +42,19 @@ module.exports = function(sequelize, DataTypes) {
 			kit_version: {
 				type: DataTypes.STRING,
 				allowNull: true
+			},
+			email: {
+				type: DataTypes.JSONB,
+				defaultValue: {}
+			},
+			constants: {
+				type: DataTypes.JSONB,
+				defaultValue: {}
 			}
 		},
 		{
-			underscored: true
+			underscored: true,
+			tableName: 'Statuses'
 		}
 	);
 

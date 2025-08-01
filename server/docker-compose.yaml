@@ -1,7 +1,8 @@
+# Dev mode HollaEx Kit Docker-Copmose
 version: '3'
 services:
   hollaex-kit-redis:
-    image: redis:5.0.5-alpine
+    image: redis:7.2.0-alpine
     depends_on:
       - hollaex-kit-db
     networks:
@@ -12,7 +13,7 @@ services:
       - REDIS_PASSWORD=bitholla
     command : ["sh", "-c", "redis-server --requirepass $${REDIS_PASSWORD}"]
   hollaex-kit-db:
-    image: postgres:10.9
+    image: postgres:14.9
     ports:
       - 5432:5432
     environment:
@@ -26,22 +27,22 @@ services:
     ports:
       - 10010:10010
       - 10011:10011
+      - 10012:10012
+      - 10013:10013
     build:
       context: .
-      dockerfile: ./tools/Dockerfile.pm2
+      dockerfile: ./tools/Dockerfile
     env_file:
       - ./tools/hollaex-kit.env.local
     entrypoint:
-      - pm2-runtime
-      - start
-      - ecosystem.config.js
-      - --env
-      - development
+      - /bin/sh
+      - -c 
+      - pm2-runtime start ecosystem.config.js --env development;
     volumes:
       - ./api:/app/api
       - ./config:/app/config
       - ./db:/app/db
-      - ./plugins.js:/app/plugins.js
+      - ./plugins:/app/plugins
       - ./mail:/app/mail
       - ./ws:/app/ws
       - ./app.js:/app/app.js
@@ -50,9 +51,13 @@ services:
       - ./messages.js:/app/messages.js
       - ./logs:/app/logs
       - ./test:/app/test
-      - ./tools:/app/tools
+      - ./tools/dbs:/app/tools/dbs
+      - ./tools/general:/app/tools/general
       - ./utils:/app/utils
+      - /app/utils/hollaex-network-lib/node_modules
+      - /app/utils/hollaex-tools-lib/node_modules
       - ./init.js:/app/init.js
+      - ../plugins/src/plugins:/app/dev-plugins
     depends_on:
       - hollaex-kit-db
       - hollaex-kit-redis
@@ -61,10 +66,10 @@ services:
   hollaex-kit-nginx:
     image: nginx:1.15.8-alpine
     volumes:
-      - ./tools/nginx:/etc/nginx
-      - ./tools/nginx/conf.d:/etc/nginx/conf.d
-      - ./tools/nginx/logs:/var/log
-      - ./tools/nginx/static:/usr/share/nginx/html
+      - ./tools/nginx-dev:/etc/nginx
+      - ./tools/nginx-dev/conf.d:/etc/nginx/conf.d
+      - ./tools/nginx-dev/logs:/var/log
+      - ./tools/nginx-dev/static:/usr/share/nginx/html
     ports:
       - 80:80
     environment:

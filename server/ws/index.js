@@ -10,10 +10,13 @@ const {
 	WS_UNSUPPORTED_OPERATION,
 	WS_USER_AUTHENTICATED
 } = require('../messages');
-const { initializeTopic, terminateTopic, authorizeUser, terminateClosedChannels, handleChatData } = require('./sub');
+const { initializeTopic, terminateTopic, authorizeUser, terminateClosedChannels, handleChatData, handleP2pData } = require('./sub');
 const { connect, hubConnected } = require('./hub');
 const { setWsHeartbeat } = require('ws-heartbeat/server');
 const WebSocket = require('ws');
+
+const clientMessageCounts = new Map();
+const MAX_MESSAGES_PER_SECOND = 10;
 
 wss.on('connection', (ws, req) => {
 	// attaching unique id and authorization to the socket
@@ -43,31 +46,54 @@ wss.on('connection', (ws, req) => {
 				throw new Error(WS_WRONG_INPUT);
 			}
 
+			const now = Date.now();
+			let clientData = clientMessageCounts.get(ws.id) || { count: 0, timestamp: now };
+
+			if (now - clientData.timestamp >= 1000) {
+				clientData = { count: 0, timestamp: now };
+			}
+			// Increment message count
+			clientData.count += 1;
+
+			if (clientData.count > MAX_MESSAGES_PER_SECOND) {
+				// Rate limit exceeded
+				throw new Error(`Error: Rate limit exceeded for ${ws.id}. Please slow down. Maximum message per second: ${MAX_MESSAGES_PER_SECOND}. Your current rate: ${clientData.count}`);
+			}
+
+			clientMessageCounts.set(ws.id, clientData);
+
 			const { op, args } = message;
 			if (op === 'ping') {
 				ws.send(JSON.stringify({ message: 'pong' }));
 			} else if (op === 'subscribe') {
 				loggerWebsocket.info(ws.id, 'ws/index/message', message);
-				args.forEach(arg => {
+				args.forEach((arg) => {
 					let [topic, symbol] = arg.split(':');
 					initializeTopic(topic, ws, symbol);
 				});
 			} else if (op === 'unsubscribe') {
 				loggerWebsocket.info(ws.id, 'ws/index/message', message);
-				args.forEach(arg => {
+				args.forEach((arg) => {
 					let [topic, symbol] = arg.split(':');
 					terminateTopic(topic, ws, symbol);
 				});
 			} else if (op === 'auth') {
 				loggerWebsocket.info(ws.id, 'ws/index/message auth');
 				const credentials = args[0];
-				const ip = req.socket ? req.socket.remoteAddress : undefined;
+				const ip = req.headers['x-real-ip'];
 				authorizeUser(credentials, ws, ip);
 			} else if (op === 'chat') {
 				loggerWebsocket.info(ws.id, 'ws/index/message', message);
-				args.forEach(arg => {
+				args.forEach((arg) => {
 					const { action, data } = arg;
 					handleChatData(action, ws, data);
+				});
+			} 
+			else if (op === 'p2pChat') {
+				loggerWebsocket.info(ws.id, 'ws/index/message', message);
+				args.forEach((arg) => {
+					const { action, data } = arg;
+					handleP2pData(action, ws, data);
 				});
 			} else {
 				throw new Error(WS_UNSUPPORTED_OPERATION);
@@ -84,6 +110,7 @@ wss.on('connection', (ws, req) => {
 	});
 
 	ws.on('close', () => {
+		clientMessageCounts.delete(ws.id);
 		if (hubConnected()) {
 			terminateClosedChannels(ws);
 		}

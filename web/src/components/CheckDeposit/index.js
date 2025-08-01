@@ -2,13 +2,13 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { reduxForm, getFormValues } from 'redux-form';
 
-import STRINGS from '../../config/localizedStrings';
-import { Button } from '../../components';
+import STRINGS from 'config/localizedStrings';
+import { Button, EditWrapper, IconTitle } from 'components';
 import { STATIC_ICONS } from 'config/icons';
-import renderFields from '../../components/Form/factoryFields';
+import renderFields from 'components/Form/factoryFields';
 import withConfig from 'components/ConfigProvider/withConfig';
-import { required } from '../Form/validations';
-import { getNetworkLabelByKey } from 'utils/wallet';
+import { required } from 'components/Form/validations';
+import { getNetworkNameByKey } from 'utils/wallet';
 
 const FORM_NAME = 'CheckDeposit';
 
@@ -24,6 +24,7 @@ const CheckDeposit = ({
 	valid,
 	error,
 	formValues,
+	icons: ICONS,
 	...props
 }) => {
 	const coinOptions = [];
@@ -40,16 +41,18 @@ const CheckDeposit = ({
 	const formFields = {};
 	formFields.transaction_id = {
 		type: 'text',
-		placeholder: STRINGS['DEPOSIT_STATUS.SEARCH_FIELD_LABEL'],
+		stringId: 'DEPOSIT_STATUS.TRANSACTION_ID,DEPOSIT_STATUS.SEARCH_FIELD_LABEL',
 		label: STRINGS['DEPOSIT_STATUS.TRANSACTION_ID'],
+		placeholder: STRINGS['DEPOSIT_STATUS.SEARCH_FIELD_LABEL'],
 		validate: [required],
 		fullWidth: true,
 	};
 
 	formFields.currency = {
-		type: 'select',
-		placeholder: STRINGS['DEPOSIT_STATUS.CURRENCY_FIELD_LABEL'],
+		type: 'autocomplete',
+		stringId: 'COINS,DEPOSIT_STATUS.CURRENCY_FIELD_LABEL',
 		label: STRINGS['COINS'],
+		placeholder: STRINGS['DEPOSIT_STATUS.CURRENCY_FIELD_LABEL'],
 		options: coinOptions,
 		validate: [required],
 		fullWidth: true,
@@ -64,13 +67,15 @@ const CheckDeposit = ({
 		const { network: networks = '' } = coins[formValues.currency];
 		const networkOptions = networks.split(',').map((network) => ({
 			value: network,
-			label: getNetworkLabelByKey(network),
+			label: getNetworkNameByKey(network),
 		}));
 
 		formFields.network = {
 			type: 'select',
-			placeholder: STRINGS['WITHDRAWALS_FORM_NETWORK_PLACEHOLDER'],
+			stringId:
+				'WITHDRAWALS_FORM_NETWORK_LABEL,WITHDRAWALS_FORM_NETWORK_PLACEHOLDER',
 			label: STRINGS['WITHDRAWALS_FORM_NETWORK_LABEL'],
+			placeholder: STRINGS['WITHDRAWALS_FORM_NETWORK_PLACEHOLDER'],
 			validate: [required],
 			options: networkOptions,
 			fullWidth: true,
@@ -81,34 +86,66 @@ const CheckDeposit = ({
 
 	formFields.address = {
 		type: 'text',
-		placeholder: STRINGS['DEPOSIT_STATUS.ADDRESS_FIELD_LABEL'],
+		stringId:
+			'USER_VERIFICATION.USER_DOCUMENTATION_FORM.FORM_FIELDS.ADDRESS_LABEL,DEPOSIT_STATUS.ADDRESS_FIELD_LABEL',
 		label:
 			STRINGS[
 				'USER_VERIFICATION.USER_DOCUMENTATION_FORM.FORM_FIELDS.ADDRESS_LABEL'
 			],
+		placeholder: STRINGS['DEPOSIT_STATUS.ADDRESS_FIELD_LABEL'],
 		validate: [required],
 		fullWidth: true,
 	};
 
+	if (formValues && formValues.currency) {
+		if (formValues.currency === 'xrp') {
+			formFields.destination_tag = {
+				type: 'number',
+				stringId:
+					'DEPOSIT_STATUS.DESTINATION_TAG_LABEL,DEPOSIT_STATUS.DESTINATION_TAG_PLACEHOLDER',
+				label: STRINGS['DEPOSIT_STATUS.DESTINATION_TAG_LABEL'],
+				placeholder: STRINGS['DEPOSIT_STATUS.DESTINATION_TAG_PLACEHOLDER'],
+				fullWidth: true,
+			};
+		} else if (
+			formValues.currency === 'xlm' ||
+			formValues.network === 'xlm' ||
+			formValues.network === 'ton'
+		) {
+			formFields.destination_tag = {
+				type: 'text',
+				stringId: 'DEPOSIT_STATUS.MEMO_LABEL,DEPOSIT_STATUS.MEMO_PLACEHOLDER',
+				label: STRINGS['DEPOSIT_STATUS.MEMO_LABEL'],
+				placeholder: STRINGS['DEPOSIT_STATUS.MEMO_PLACEHOLDER'],
+				fullWidth: true,
+			};
+		}
+	}
+
 	return (
 		<form className="check-deposit-modal-wrapper" onSubmit={handleSubmit}>
 			<div className="d-flex justify-content-center align-items-center flex-column">
-				<img
-					src={STATIC_ICONS.SEARCH}
-					alt="search"
-					className="search-icon mb-4"
+				<IconTitle
+					stringId="DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS"
+					text={STRINGS['DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS']}
+					textType="title"
+					iconPath={ICONS['SEARCH_BLOCKCHAIN']}
+					iconId="SEARCH_BLOCKCHAIN"
 				/>
-				<h2>{STRINGS['DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS']}</h2>
 			</div>
 			<div className="inner-content">
-				<span className="field-header">
-					{STRINGS['DEPOSIT_STATUS.CHECK_DEPOSIT_STATUS']}
-				</span>
-				<div className="mb-5">
-					{STRINGS['DEPOSIT_STATUS.STATUS_DESCRIPTION']}
+				<div>
+					<EditWrapper stringId="DEPOSIT_STATUS.SEARCH_BLOCKCHAIN_FOR_DEPOSIT">
+						{STRINGS['DEPOSIT_STATUS.SEARCH_BLOCKCHAIN_FOR_DEPOSIT']}
+					</EditWrapper>
+				</div>
+				<div className="mb-5 field-header">
+					<EditWrapper stringId="DEPOSIT_STATUS.STATUS_DESCRIPTION">
+						{STRINGS['DEPOSIT_STATUS.STATUS_DESCRIPTION']}
+					</EditWrapper>
 				</div>
 				{renderFields(formFields)}
-				{message ? (
+				{message && (
 					<div className="d-flex">
 						<img
 							src={STATIC_ICONS.VERIFICATION_ICON}
@@ -117,15 +154,23 @@ const CheckDeposit = ({
 						/>
 						<p className="success-msg">{message}</p>
 					</div>
-				) : null}
+				)}
 				{error && <div className="warning_text">{error}</div>}
 			</div>
-			<div className="w-100 buttons-wrapper d-flex justify-content-between mt-3">
-				<Button label="BACK" onClick={onCloseDialog} className="mr-3" />
-				<Button
-					label={STRINGS['SUBMIT']}
-					disabled={pristine || submitting || !valid}
-				/>
+
+			<div className="d-flex justify-content-center align-items-center mt-2">
+				<div className="f-1 d-flex justify-content-end verification-buttons-wrapper">
+					<EditWrapper stringId="BACK" />
+					<Button label={STRINGS['BACK']} onClick={onCloseDialog} />
+				</div>
+				<div className="separator" />
+				<div className="f-1 d-flex justify-content-end verification-buttons-wrapper">
+					<EditWrapper stringId="SUBMIT" />
+					<Button
+						label={STRINGS['SUBMIT']}
+						disabled={pristine || submitting || !valid}
+					/>
+				</div>
 			</div>
 		</form>
 	);

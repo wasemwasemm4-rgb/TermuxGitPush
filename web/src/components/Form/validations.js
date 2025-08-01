@@ -2,8 +2,8 @@ import React from 'react';
 import validator from 'validator';
 import WAValidator from 'multicoin-address-validator';
 import math from 'mathjs';
-import { roundNumber } from '../../utils/currency';
-import STRINGS from '../../config/localizedStrings';
+import { roundNumber } from 'utils/currency';
+import STRINGS from 'config/localizedStrings';
 import { getDecimals } from 'utils/utils';
 
 const passwordRegEx = /^(?=.*[a-zA-Z])(?=.*\d).{8,}$/;
@@ -30,20 +30,28 @@ export const password = (value = '') =>
 		? STRINGS['VALIDATIONS.INVALID_PASSWORD_2']
 		: undefined;
 
+export const passwordsMatch = (value, allValues) =>
+	value !== allValues.password
+		? STRINGS['VALIDATIONS.PASSWORDS_DONT_MATCH']
+		: undefined;
 export const username = (value = '') =>
 	!usernameRegEx.test(value) ? STRINGS['INVALID_USERNAME'] : undefined;
 
-export const validAddress = (symbol = '', message, network) => {
+export const validAddress = (symbol = '', message, network, key = '') => {
 	let currency = network ? network.toUpperCase() : symbol.toUpperCase();
 	return (address) => {
 		let valid;
 
 		try {
-			if (currency === 'bnb') currency = 'eth';
+			if (currency === 'bnb' || currency === 'klay' || currency === 'matic' || currency === 'pol')
+				currency = 'eth';
 
 			const supported = WAValidator.findCurrency(currency);
 			if (supported) {
-				valid = WAValidator.validate(address, currency);
+				valid = WAValidator.validate(
+					address ? address : (address = key),
+					currency
+				);
 			} else {
 				valid = true;
 			}
@@ -90,12 +98,16 @@ export const step = (step, message) => (value = 0) =>
 	math.larger(math.mod(math.bignumber(value), math.bignumber(step)), 0)
 		? message || STRINGS.formatString(STRINGS['VALIDATIONS.STEP'], step)
 		: undefined;
-export const checkBalance = (available, coinName, fee = 0) => (value = 0) => {
-	const operation =
-		fee > 0
-			? math.number(math.add(math.fraction(value), math.fraction(fee)))
-			: value;
-
+export const checkBalance = (
+	available,
+	coinName,
+	fee = 0,
+	type = 'static',
+	min,
+	max
+) => (value = 0) => {
+	let operation;
+	operation = value;
 	if (operation > available) {
 		const errorMessage = coinName
 			? STRINGS.formatString(
@@ -159,7 +171,7 @@ export const evaluateOrder = (
 		}
 	}
 
-	if (available < orderPrice) {
+	if (parseFloat(available) < parseFloat(orderPrice)) {
 		return STRINGS['VALIDATIONS.INSUFFICIENT_BALANCE'];
 	}
 	return '';
@@ -265,3 +277,6 @@ export const validateOtp = (message = STRINGS['OTP_FORM.ERROR_INVALID']) => (
 export const normalizeEmail = (value = '') => value.toLowerCase();
 
 export const tokenKeyValidation = required;
+
+export const requiredWithTrim = (value) =>
+	!value.trim() ? STRINGS['VALIDATIONS.REQUIRED'] : undefined;

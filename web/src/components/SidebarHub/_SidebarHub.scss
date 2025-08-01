@@ -30,7 +30,7 @@ $deactive-tab-border: $boder--width solid $border--color;
 }
 
 @mixin bottom-border($color, $height) {
-	border-bottom: $height solid $color;
+	// border-bottom: $height solid $color;
 }
 
 .sidebar_hub-wrapper {
@@ -83,19 +83,13 @@ $deactive-tab-border: $boder--width solid $border--color;
 						border-right: none;
 					}
 				}
-
-				&.tab-btc {
-					@include tab-active($coin-btc, $coin-btc-1, $tab_lines-height);
-				}
-				&.tab-eur {
-					@include tab-active($coin-eur, $coin-eur-1, $tab_lines-height);
-				}
 			}
 		}
 	}
 
 	.sidebar_hub-content {
 		// margin: $section--bottom-margin $content--margin;
+		margin-bottom: 5%;
 		.sidebar_hub-section {
 			border-top: $deactive-tab-border;
 

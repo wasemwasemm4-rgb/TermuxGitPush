@@ -1,17 +1,16 @@
 import flatten from 'flat';
+import FIATS from './fiats';
 
 const options = { safe: true, delimiter: '_' };
 const nestedIcons = {
+	FIATS,
+
 	EXCHANGE: {
 		LOGO: '',
 		FAV_ICON: '/favicon.ico',
-		LOADER: '/assets/loader-dark.gif',
+		LOADER: '/assets/dark-spinner.gif',
 		BOARDING_IMAGE: '/assets/dark-background.jpg',
 		LANDING_PAGE: '/assets/images/hollaex-background.png',
-	},
-
-	TRADE: {
-		HISTORY: '/assets/images/trade-history.svg',
 	},
 
 	QUICK_TRADE: {
@@ -39,7 +38,10 @@ const nestedIcons = {
 		SECURITY: '/assets/images/tab-security.svg',
 		VERIFY: '/assets/images/tab-verify.svg',
 		SETTING: '/assets/images/tab-setting.svg',
+		APPS: '/assets/images/apps.svg',
 		API: '/assets/images/tab-api.svg',
+		STAKE: '/assets/images/stake-page-icon.svg',
+		P2P: '/assets/images/p2p-feature.svg',
 	},
 
 	TOKEN: {
@@ -61,6 +63,7 @@ const nestedIcons = {
 		ID_NEW: '/assets/images/verification-id.svg',
 		BANK_NEW: '/assets/images/verification-bank.svg',
 		DOCUMENT_NEW: '/assets/images/verification-document.svg',
+		USER_PAYMENT: '/assets/images/verification-bank.svg',
 	},
 
 	SETTING: {
@@ -72,6 +75,13 @@ const nestedIcons = {
 		RISK_ICON: '/assets/images/risk-settings-icon.svg',
 		RISK_ADJUST_ICON: '/assets/images/risk-management-pop-adjust.svg',
 		RISK_MANAGE_WARNING_ICON: '/assets/images/risk-manage-pop-warning.svg',
+	},
+
+	APPS: {
+		ALL: '/assets/images/all-apps.svg',
+		USER: '/assets/images/my-apps.svg',
+		CONFIGURE: '/assets/images/interface-settings-icon.svg',
+		REMOVE: '/assets/images/cancel-cross-active.svg',
 	},
 
 	SECURITY: {
@@ -91,15 +101,6 @@ const nestedIcons = {
 		ICON_8: '/assets/images/level-8.svg',
 		ICON_9: '/assets/images/level-9.svg',
 		ICON_10: '/assets/images/level-10.svg',
-	},
-
-	FEATURES: {
-		PRO_TRADING: '/assets/images/features-pro-trade-icons.svg',
-		PAYMENT: '/assets/images/features-payment-card-icons.svg',
-		SECURITY: '/assets/images/features-lock-icons.svg',
-		REPORTING: '/assets/images/features-data-icons.svg',
-		SUPPORT: '/assets/images/features-support-icons.svg',
-		LEGAL: '/assets/images/features-legal-icons.svg',
 	},
 
 	SOCIAL: {
@@ -125,6 +126,18 @@ const nestedIcons = {
 		ARROW: '/assets/images/arrow-down.svg',
 	},
 
+	DUST: {
+		TITLE: '/assets/images/duster-wallet-sweeper.svg',
+		CONFIRMATION: 'assets/images/sparkle-dust.svg',
+		SUCCESSFUL: '/assets/images/dust-settlement-complete-sparkle.svg',
+	},
+
+	FEES_AND_LIMITS: {
+		TRADING_FEES: '/assets/images/withdraw-tier-section.svg',
+		WITHDRAWAL_FEES: '/assets/images/withdraw-tier-section.svg',
+		WITHDRAWAL_LIMITS: '/assets/images/withdraw-tier-section.svg',
+	},
+
 	DEMO_LOGIN_ICON: '/assets/icons/demo-login-icon-dark.svg',
 	CANCEL_WITHDRAW: '/assets/icons/cancel-withdraw-dark-02-03.svg',
 	CONTACT_US_ICON: '/assets/acounts/help-contact-us-01.svg',
@@ -147,9 +160,11 @@ const nestedIcons = {
 	LETTER: '/assets/acounts/account-icons-24.svg',
 
 	OTP_CODE: '/assets/acounts/account-icons-28.svg',
+	EMAIL_CODE: '/assets/icons/send-email-code.svg',
 	COPY_NEW: '/assets/images/copy.svg',
 	COPY_NOTIFICATION: '/assets/images/copy-icon-snack-notification.svg',
 	ACCOUNT_LINE: '/assets/images/account.svg',
+	FOOTER_ACCOUNT_LINE: '/assets/images/account-summary-tab-01.svg',
 	ACCOUNT_RECOVERY: '/assets/images/account-recovery.svg',
 	BITCOIN_WALLET: '/assets/images/bitcoin-wallet.svg',
 	CHECK_SENDING_BITCOIN: '/assets/images/check-sending-bitcoin.svg',
@@ -168,7 +183,7 @@ const nestedIcons = {
 	ID_GREY: '/assets/images/id-grey.svg',
 
 	INCOMING_BTC: '/assets/images/incoming-btc.svg',
-	INCOMING_TOMAN: '/assets/images/incoming-toman.svg',
+	INCOMING_COIN: '/assets/images/incoming-coin.svg',
 
 	PASSWORD_RESET: '/assets/images/password-reset.svg',
 
@@ -187,7 +202,11 @@ const nestedIcons = {
 	BLUE_ARROW_RIGHT: '/assets/images/blue-arrow-right.svg',
 	SESSION_TIMED_OUT: '/assets/images/session-timed-out.svg',
 	BLUE_EDIT: '/assets/images/blue-edit-exir-icon.svg',
+	BLUE_TRADE_ICON: '/assets/images/trade.svg',
+	BLUE_EARN_ICON: '/assets/images/earn.svg',
 	BLUE_PLUS: '/assets/images/max-plus-blue-icon.svg',
+	BLUE_DEPOSIT_ICON: '/assets/images/blue-deposit-icon.svg',
+	BLUE_WITHROW_ICON: '/assets/images/blue_withrow_icon.svg',
 	BLUE_TIMER: '/assets/images/timer-icon.svg',
 
 	NOTIFICATION_VERIFICATION_WARNING: '/assets/images/verification.svg',
@@ -200,12 +219,14 @@ const nestedIcons = {
 	SIDEBAR_ACCOUNT_INACTIVE: '/assets/images/account_2-inactive.svg',
 	SIDEBAR_POST_ACTIVE: '/assets/images/post-active.svg',
 	SIDEBAR_TRADING_ACTIVE: '/assets/images/trade-active.svg',
+	FOOTER_TRADING_ACTIVE:
+		'/assets/images/pro-trade-markets-mobile-tab-01 copy-01.svg',
 	SIDEBAR_QUICK_TRADING_ACTIVE:
 		'/assets/images/quick-trade-tab-selected-01.svg',
+	FOOTER_QUICK_ACTIVE: '/assets/images/quick-trade-convert-mobile-tab-01.svg',
 	SIDEBAR_QUICK_TRADING_INACTIVE: '/assets/images/quick-trade-tab-01-01.svg',
 	SIDEBAR_ADMIN_DASH_ACTIVE: '/assets/images/admin-dash-icon.svg',
-	ARROW_TRANSFER_HISTORY_ACTIVE:
-		'/assets/images/arrow-trans-history-active.svg',
+	ARROW_TRANSFER_HISTORY_ACTIVE: '/assets/images/arrow-trans-history.svg',
 
 	CHECK_ORDER: '/assets/images/check-order-popup-01.svg',
 	ITEM_OPTIONS: '/assets/images/item-options.svg',
@@ -223,14 +244,21 @@ const nestedIcons = {
 	SELF_KYC_ID_EN: '/assets/self-kyc-id-note-english.png',
 
 	NOTE_KYC: '/assets/images/note-KYC.svg',
-	SIDEBAR_CHAT: '/assets/images/bottom-chat-icon.svg',
 	SIDEBAR_HELP: '/assets/images/help-question-mark-icon.svg',
+	FOOTER_PLUGIN: '/assets/images/card-active-plugin-mobile-tab-01.svg',
 	CONNECT_LOADING: '/assets/images/connect-loading.svg',
+	FIAT_KYC: '/assets/images/fiat-kyc.svg',
 
 	REFER_ICON: '/assets/images/refer-icon.svg',
+	REFER_DOLLAR_ICON: '/assets/images/referral-link-dollar-graphic.svg',
+	NEW_REFER_ICON: '/assets/images/Group 5483.svg',
 	STAKETOKEN_ICON: '/assets/images/stake.svg',
-	DEFAULT_ICON: '/assets/icons/missing-coin-light.svg',
+	STAKING_1: '/assets/images/staking_1.png',
+	STAKING_2: '/assets/images/staking_2.svg',
+	STAKING_3: '/assets/images/staking_3.svg',
+	DEFAULT_ICON: '/assets/icons/coin-graphic-not-detected.svg',
 	EXPIRED_ICON: '/assets/images/expired.svg',
+	CHART_VIEW: '/assets/images/chart-view-mobile.svg',
 
 	HAP_ACCOUNT_ICON: '/assets/icons/hap-account-icon.svg',
 	ACCOUNT_SUMMARY: '/assets/icons/account-icon-summary.svg',
@@ -241,24 +269,110 @@ const nestedIcons = {
 	XHT_FAQ: '/assets/images/XHT-FAQ.svg',
 	XHT_PDF: '/assets/images/XHT-pdf.svg',
 	REFERRAL_SUCCESS: '/assets/icons/send-request.svg',
-	INCOMING_WAVE: '/assets/images/incoming-wave.svg',
 	TRADE_ANNOUNCEMENT: '/assets/images/announcement.svg',
-	BONUS_OFFERING: '/assets/icons/bonus_offering.svg',
 
 	CANCEL_ORDERS: '/assets/images/cancel-all-orders.svg',
 	FIAT_UNDER_CONSTRUCTION: '/assets/icons/fiat-page-under-construction-01.svg',
 
 	STAKING_AMOUNT_MODAL: '/assets/stake/staking-modal-background.jpg',
-	STAKING_PERIOD_ITEM: '/assets/stake/staking-pariod-option-background.jpg',
+	STAKING_PERIOD_ITEM: '/assets/stake/staking-period-option-background.jpg',
 	STAKING_MODAL_BACKGROUND: '/assets/stake/modal_background.png',
 	STAKING_SUCCESSFUL_MESSAGE: '/assets/stake/success_stake-unstake.png',
+	STAKING_PANEL_BACKGROUND: '/assets/stake/success_stake-unstake.png',
 	STAKING_ERROR: '/assets/stake/error.svg',
+	STAKING_VARIABLE: '/assets/stake/variable_icon.svg',
+	STAKING_UNLOCK: '/assets/stake/unlock-unstake-icon.svg',
+	STAKING_BACKGROUND: '/assets/stake/stake-background.jpg',
+	STAKING_CEFI_LOGO: '/assets/stake/Group 5977.svg',
+	STAKING__LOCK: '/assets/stake/Group 5950.svg',
+	META_MASK_NOT_FOUND: '/assets/icons/metamask-fox-stake-not-detected.svg',
 	STAKING_ACCOUNT: '',
 	METAMASK: '',
+	MOVE_XHT: '/assets/stake/xht-move.svg',
+	CONNECT_DESKTOP: '/assets/stake/connect-via-desktop.svg',
+	SEARCH_BLOCKCHAIN: '/assets/images/search-blockchain.svg',
+	ASSET_INFO_COIN: '/assets/images/digital-assets-coins.svg',
+	GAINER_CARD_ICON: '/assets/images/gainer-arrow-up.svg',
+	LOSER_CARD_ICON: '/assets/images/arrow-down-loser.svg',
+	NEW_ASSET_CARD_ICON: '/assets/images/new-coin-bolt.svg',
+	CLOCK: '/assets/images/clock.svg',
+	REVOKE_SESSION: '/assets/images/signout.svg',
 
 	//should move this to the plugin itself once the functionality is added
 	GENERATE_REFERENCE_NUMBER: '/assets/icons/generate-reference-number-01.svg',
 	OSKO_LOGO: '/assets/icons/osko-logo.svg',
+
+	REFRESH_ICON: '/assets/icons/refresh-icon.svg',
+	WALLET_GRAPHIC: '/assets/images/wallet-background-graphic-dark-theme.svg',
+	WALLET_ARROW_DOWN: '/assets/images/deposit-arrow-down.svg',
+	WALLET_ARROW_UP: '/assets/images/withdraw-arrow-up.svg',
+
+	FOOTERBAR_ASSETS_TRADE: '/assets/images/asset-prices-mobile-tab-01.svg',
+	WALLET_FOOTER: '/assets/images/wallet-mobile-tab-02-01 (1).svg',
+
+	WITHDRAW_TITLE: '/assets/images/withdraw-out-box.svg',
+	DEPOSIT_TITLE: '/assets/images/deposit-box.svg',
+
+	ADDRESS_BOOK: '/assets/images/global-address-book.svg',
+	CHAT_P2P_ICON: '/assets/images/chat-icon-p2p-02.svg',
+
+	WITHDRAW_OPTION_ICON: '/assets/images/withdraw-option-icon.svg',
+	BUY_CRYPTO_OPTION: '/assets/images/buy-crypto-option.svg',
+	API_OPTION_ICON: '/assets/images/api-option-icon.svg',
+	DEFI_STAKE_OPTION_ICON: '/assets/images/defi-stake.svg',
+	CEFI_STAKE_OPTION_ICON: '/assets/images/cefi-stake.svg',
+	PROFIT_LOSS_OPTION_ICON: '/assets/images/profit-loss-option-icon.svg',
+	FEES_OPTION_ICON: '/assets/images/fees-option-icon.svg',
+	LIMITS_OPTION_ICON: '/assets/images/limits-option-icon.svg',
+	WALLET_OPTION_ICON: '/assets/images/wallet-option-icon.svg',
+	LANGUAGE_OPTION_ICON: '/assets/images/language-option-icon.svg',
+	P2P_OPTION_ICON: '/assets/images/p2p-option-icon.svg',
+	HISTORY_OPTION_ICON: '/assets/images/history-option-icon.svg',
+	VOLUME_OPTION_ICON: '/assets/images/volume-option-icon.svg',
+	ASSET_OPTION_ICON: '/assets/images/asset-option-icon.svg',
+	OPTION_2FA_ICON: '/assets/images/2fa-option-icon.svg',
+	PASSWORD_OPTION_ICON: '/assets/images/password-option-icon.svg',
+	LOGIN_OPTION_ICON: '/assets/images/login-option-icon.svg',
+	SESSION_OPTION_ICON: '/assets/images/session-option-icon.svg',
+	BANK_OPTION_ICON: '/assets/images/bank-option-icon.svg',
+	AUDIO_OPTION_ICON: '/assets/images/audio.svg',
+	ADDRESS_OPTION_ICON: '/assets/images/address-option-icon.svg',
+	NOTIFICATION_OPTION_ICON: '/assets/images/notification-option-icon.svg',
+	HELP_OPTION_ICON: '/assets/images/help-bubble.svg',
+	INTERFACE_OPTION_ICON: '/assets/images/interface-option-icon.svg',
+	IDENTITY_OPTION_ICON: '/assets/images/identity-option-icon.svg',
+	PHONE_OPTION_ICON: '/assets/images/phone-option-icon.svg',
+	EMAIL_OPTION_ICON: '/assets/images/email-option-icon.svg',
+	DEPOSIT_OPTION_ICON: '/assets/images/deposit-hot.svg',
+	TRADE_OPTION_ICON: '/assets/images/trade-hot.svg',
+	CONVERT_OPTION_ICON: '/assets/images/convert.svg',
+	REFERRAL_OPTION_ICON: '/assets/images/referral-gift.svg',
+
+	PING_CONNECTION: '/assets/images/ping-connection-check.svg',
+	NO_ICON: '/assets/images/no-icon-drop-down-icon.svg',
+	ONRAMPER_ICON: '/assets/images/onramper.svg',
+	HOT_ICON: '/assets/images/fire-emoji.svg',
+	AUTO_TRADER_ICON: '/assets/images/auto-trade.svg',
+	ANNOUNCEMENT_ICON: '/assets/images/announcement-option-icon.svg',
+	SPARKLE_ICON: '/assets/images/sparkle-icon.svg',
+	NETWORK_ERROR: '/assets/images/network-error.svg',
+	SERVER_ERROR: '/assets/images/server-error.svg',
+	SERVER_MAINTENANCE_ERROR: '/assets/images/server-maintenance-error.svg',
+	TOO_MANY_REQUEST_ERROR: '/assets/images/too-many-request-error.svg',
+
+	FROZEN_ICON: '/assets/images/frozen.svg',
+	CONFIRM_FREEZE_ICON: '/assets/images/confirm-freeze.svg',
+
+	HOME_PAGE_TRADE_ICON: '/assets/images/home-page-trade.png',
+	DI_LANDING_PAGE_SECTION_QUESTION_SECTION: '/assets/images/faq-background.png',
+	DI_LANDING_PAGE_SECTION_QUICK_TRADE_CALCULATOR:
+		'/assets/images/global-background.png',
+	DI_LANDING_PAGE_SECTION_CREATE_ACCOUNT_SECTION:
+		'/assets/images/world-dots-lines.png',
+	ACCOUNT_FUNDING: '/assets/images/account-funding.svg',
+	WORLD_TRADE: '/assets/images/world-trade.svg',
+	API_BUILDER: '/assets/images/api-builder.svg',
+	LIVE_TRADE_ICON: '/assets/images/live-trade-icon.svg',
 };
 
 const icons = flatten(nestedIcons, options);

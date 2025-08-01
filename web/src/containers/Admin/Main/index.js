@@ -6,7 +6,7 @@ import UserList from './userList';
 import TradingVolume from './tradingVolume';
 import { getNumOfUsers, getMonthlyTradingVolume } from './actions';
 import { getEmail } from '../../../utils';
-import { checkRole, isAdmin } from '../../../utils/token';
+import { getRole, isAdmin } from '../../../utils/token';
 import './index.css';
 
 class Main extends Component {
@@ -25,7 +25,7 @@ class Main extends Component {
 		pairError: '',
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		this.getPairsData(this.props.pairs);
 		this.getUserData();
 	}
@@ -149,7 +149,7 @@ class Main extends Component {
 							<p>Welcome {getEmail()}</p>
 						</Col>
 						<Col span={8}>
-							<p>Role: {checkRole()}</p>
+							<p>Role: {getRole()}</p>
 						</Col>
 					</Row>
 					<div className="main-header">

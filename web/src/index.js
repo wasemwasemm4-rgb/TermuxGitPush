@@ -1,6 +1,5 @@
 import 'core-js/stable';
 import 'regenerator-runtime/runtime';
-import 'whatwg-fetch';
 import React from 'react';
 import { hash } from 'rsvp';
 import { Provider } from 'react-redux';
@@ -23,7 +22,11 @@ import store from './store';
 import { generateRoutes } from './routes';
 import './index.css';
 import '../node_modules/rc-tooltip/assets/bootstrap_white.css'; // eslint-disable-line
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
+import classnames from 'classnames';
+import ThemeProvider from 'containers/ThemeProvider';
 import {
 	setLocalVersions,
 	getLocalVersions,
@@ -33,6 +36,10 @@ import {
 	setSetupCompleted,
 	setBaseCurrency,
 	setDefaultLogo,
+	consoleKitInfo,
+	getContracts,
+	modifySections,
+	setupAxiosInterceptors,
 } from 'utils/initialize';
 
 import { getKitData } from 'actions/operatorActions';
@@ -52,73 +59,81 @@ import {
 	changePair,
 	setPairs,
 	setCurrencies,
+	setUserPayments,
+	setOnramp,
+	setOfframp,
 	setOrderLimits,
 	setHelpdeskInfo,
+	setContracts,
+	setAllContracts,
+	setBroker,
+	setTransactionLimits,
+	setQuickTrade,
+	setAdminSortData,
+	setAdminWalletSortData,
+	setAdminDigitalAssetsSortData,
+	setSortModeChange,
+	setSortModeVolume,
+	SORT,
+	WALLET_SORT,
+	DIGITAL_ASSETS_SORT,
+	setExchangeTimeZone,
+	setAppAnnouncements,
+	setErrorCount,
 } from 'actions/appActions';
+// import { setPricesAndAsset } from 'actions/assetActions';
 import { hasTheme } from 'utils/theme';
 import { generateRCStrings } from 'utils/string';
+import { LANGUAGE_KEY, DEFAULT_PINNED_COINS } from 'config/constants';
+import {
+	consolePluginDevModeInfo,
+	mergePlugins,
+	IS_PLUGIN_DEV_MODE,
+} from 'utils/plugin';
+import { drawFavIcon } from 'helpers/vanilla';
+import { setupManifest } from 'helpers/manifest';
+import {
+	hideBooting,
+	showBooting,
+	setLoadingImage,
+	setLoadingStyle,
+} from 'helpers/boot';
+import {
+	filterPinnedAssets,
+	handleUpgrade,
+	NetworkError,
+	ServerError,
+	ServerMaintenanceError,
+	TooManyRequestError,
+} from 'utils/utils';
+import { isLoggedIn } from 'utils/token';
+import { getAnnouncementDetails } from 'containers/Announcement/actions';
+import { ErrorBoundary } from 'components';
 
-import { version, name } from '../package.json';
-import { API_URL, LANGUAGE_KEY } from './config/constants';
-console.info(
-	`%c${name.toUpperCase()} ${version}`,
-	'color: #00509d; font-family:sans-serif; font-size: 20px; font-weight: 800'
-);
-console.info(
-	`%c${API_URL}`,
-	'font-family:sans-serif; font-size: 16px; font-weight: 600'
-);
-
-if (process.env.REACT_APP_PLUGIN_DEV_MODE === 'true') {
-	console.info(
-		'%cPLUGIN DEVELOPMENT MODE',
-		'color: #00509d; font-family:sans-serif; font-size: 14px; font-weight: 600'
-	);
-
-	if (process.env.REACT_APP_PLUGIN) {
-		console.info(
-			`%cPlugin: ${process.env.REACT_APP_PLUGIN}`,
-			'color: #00509d; font-family:sans-serif; font-size: 14px; font-weight: 600'
-		);
-	} else {
-		console.info(
-			'%cYou must pass plugin parameter',
-			'color: #d90429; font-family:sans-serif'
-		);
-		console.info(
-			'%cnpm run dev:plugin --plugin=TEST_PLUGIN',
-			'color: #55a630; background-color: #212529; font-family:sans-serif; line-height: 40px; padding: 10px'
-		);
-		throw new Error('plugin is required');
-	}
-}
-
-const drawFavIcon = (url) => {
-	const head = document.getElementsByTagName('head')[0];
-	const linkEl = document.createElement('link');
-
-	linkEl.type = 'image/x-icon';
-	linkEl.rel = 'icon';
-	linkEl.href = url;
-
-	// remove existing favicons
-	const links = head.getElementsByTagName('link');
-
-	for (let i = links.length; --i >= 0; ) {
-		if (/\bicon\b/i.test(links[i].getAttribute('rel'))) {
-			head.removeChild(links[i]);
-		}
-	}
-
-	head.appendChild(linkEl);
-};
+setupAxiosInterceptors();
+consoleKitInfo();
+consolePluginDevModeInfo();
 
 const getConfigs = async () => {
 	const localVersions = getLocalVersions();
 
+	localStorage.removeItem('initialized');
 	const kitData = await getKitData();
+	if (isLoggedIn) {
+		const announcement = await getAnnouncementDetails();
+		store.dispatch(setAppAnnouncements(announcement?.data));
+	}
+
 	const {
-		meta: { versions: remoteVersions = {}, sections = {} } = {},
+		meta: {
+			versions: remoteVersions = {},
+			sections = {},
+			default_sort = SORT.CHANGE,
+			pinned_markets = [],
+			default_wallet_sort = WALLET_SORT.AMOUNT,
+			pinned_assets = [],
+			default_digital_assets_sort = DIGITAL_ASSETS_SORT.CHANGE,
+		} = {},
 		valid_languages = '',
 		info: { initialized },
 		setup_completed,
@@ -127,29 +142,30 @@ const getConfigs = async () => {
 		features: { home_page = false } = {},
 		injected_values = [],
 		injected_html = {},
-		captcha = {},
+		defaults = {},
+		timezone = '',
 	} = kitData;
 
 	store.dispatch(setConfig(kitData));
-	if (kitData.defaults) {
+	if (defaults) {
 		const themeColor = localStorage.getItem('theme');
 		const isThemeValid = hasTheme(themeColor, kitData.color);
 		const language = localStorage.getItem(LANGUAGE_KEY);
 
-		if (kitData.defaults.theme && (!themeColor || !isThemeValid)) {
-			store.dispatch(changeTheme(kitData.defaults.theme));
-			localStorage.setItem('theme', kitData.defaults.theme);
+		if (defaults.theme && (!themeColor || !isThemeValid)) {
+			store.dispatch(changeTheme(defaults.theme));
+			localStorage.setItem('theme', defaults.theme);
 		}
 
-		if (!language && kitData.defaults.language) {
-			store.dispatch(setLanguage(kitData.defaults.language));
+		if (!language && defaults.language) {
+			store.dispatch(setLanguage(defaults.language));
 		}
 	}
 	if (kitData.info) {
 		store.dispatch(setInfo({ ...kitData.info }));
 	}
 
-	kitData['sections'] = sections;
+	kitData['sections'] = modifySections(sections);
 
 	const promises = {};
 	Object.keys(remoteVersions).forEach((key) => {
@@ -186,9 +202,19 @@ const getConfigs = async () => {
 		store.dispatch(changePair(initialPair));
 	}
 
+	store.dispatch(setCurrencies(constants.coins));
+	store.dispatch(setUserPayments(kitData.user_payments));
+	store.dispatch(setOnramp(kitData.onramp));
+	store.dispatch(setOfframp(kitData.offramp));
 	store.dispatch(setPairs(constants.pairs));
 	store.dispatch(setPairsData(constants.pairs));
-	store.dispatch(setCurrencies(constants.coins));
+	store.dispatch(setContracts(getContracts(constants.coins)));
+	store.dispatch(setAllContracts(constants));
+	store.dispatch(setBroker(constants.broker));
+	store.dispatch(setQuickTrade(constants.quicktrade));
+	store.dispatch(setTransactionLimits(constants.transactionLimits));
+	// store.dispatch(setPricesAndAsset({}, constants.coins));
+	store.dispatch(setExchangeTimeZone(timezone));
 
 	const orderLimits = {};
 	Object.keys(constants.pairs).forEach((pair) => {
@@ -213,49 +239,59 @@ const getConfigs = async () => {
 	setValidLanguages(valid_languages);
 	setExchangeInitialized(initialized);
 	setSetupCompleted(setup_completed);
+
+	const isBasic = handleUpgrade(kitData.info);
+	const pinnedCoins = filterPinnedAssets(
+		isBasic ? DEFAULT_PINNED_COINS : pinned_assets,
+		constants.coins
+	);
+
 	store.dispatch(setHomePageSetting(home_page));
 	store.dispatch(setInjectedValues(injected_values));
 	store.dispatch(setInjectedHTML(injected_html));
+	store.dispatch(setAdminSortData({ pinned_markets, default_sort }));
+	store.dispatch(
+		setAdminWalletSortData({ pinned_assets: pinnedCoins, default_wallet_sort })
+	);
+	store.dispatch(
+		setAdminDigitalAssetsSortData({
+			pinned_assets: pinnedCoins,
+			default_digital_assets_sort,
+		})
+	);
 
-	const {
-		data: { data: plugins = [] } = { data: [] },
-	} = await requestPlugins();
-
-	let allPlugins = [];
-
-	if (
-		process.env.REACT_APP_PLUGIN_DEV_MODE === 'true' &&
-		process.env.REACT_APP_PLUGIN
-	) {
-		const pluginName = process.env.REACT_APP_PLUGIN;
-		const url = `/${pluginName}.json`;
-		const response = await fetch(url);
-		const pluginObject = await response.json();
-
-		plugins.forEach((plugin) => {
-			if (plugin.name === pluginName) {
-				const mergedPlugin = merge({}, plugin, pluginObject);
-				allPlugins.push(mergedPlugin);
-			} else {
-				allPlugins.push(plugin);
-			}
-		});
-
-		if (!plugins.find(({ name }) => name === pluginName)) {
-			allPlugins.push({ ...pluginObject, name: pluginName });
-		}
+	if (default_sort === SORT.VOL) {
+		store.dispatch(setSortModeVolume());
 	} else {
-		allPlugins = plugins;
+		store.dispatch(setSortModeChange());
 	}
-
-	store.dispatch(setPlugins(allPlugins));
-	store.dispatch(setWebViews(allPlugins));
-	store.dispatch(setHelpdeskInfo(allPlugins));
 
 	const appConfigs = merge({}, defaultConfig, remoteConfigs, {
 		coin_icons,
-		captcha,
+		valid_languages,
+		defaults,
 	});
+
+	setLoadingStyle(appConfigs);
+	setLoadingImage(appConfigs);
+
+	try {
+		const {
+			data: { data: plugins = [] } = { data: [] },
+		} = await requestPlugins();
+
+		const allPlugins = IS_PLUGIN_DEV_MODE
+			? await mergePlugins(plugins)
+			: plugins;
+
+		store.dispatch(setPlugins(allPlugins));
+		store.dispatch(setWebViews(allPlugins));
+		store.dispatch(setHelpdeskInfo(allPlugins));
+	} catch (err) {
+		console.error(err);
+		showBooting();
+		throw err;
+	}
 
 	const {
 		app: { plugins_injected_html },
@@ -281,30 +317,72 @@ const bootstrapApp = (
 	drawFavIcon(EXCHANGE_FAV_ICON);
 	// window.appConfig = { ...appConfig }
 	const {
-		app: { remoteRoutes, plugins },
+		app: {
+			remoteRoutes,
+			plugins,
+			constants: { api_name: name },
+		},
 	} = store.getState();
 
 	const RCStrings = generateRCStrings(plugins);
 	const mergedStrings = merge({}, RCStrings, appConfig.strings);
+	setupManifest({ name, short_name: name });
 
 	initializeStrings(mergedStrings);
 
 	render(
 		<Provider store={store}>
-			<EditProvider>
-				<ConfigProvider initialConfig={appConfig}>
-					<Router
-						routes={generateRoutes(remoteRoutes)}
-						history={browserHistory}
-					/>
-				</ConfigProvider>
-			</EditProvider>
+			<ErrorBoundary>
+				<EditProvider>
+					<ConfigProvider initialConfig={appConfig}>
+						<Router
+							routes={generateRoutes(remoteRoutes)}
+							history={browserHistory}
+						/>
+					</ConfigProvider>
+				</EditProvider>
+			</ErrorBoundary>
 		</Provider>,
 		document.getElementById('root')
 	);
 };
 
+const renderInitialError = (err) => {
+	const getErrorCount = store.getState()?.app.errorCount || 0;
+	render(
+		<Provider store={store}>
+			<EditProvider>
+				<ThemeProvider>
+					<div
+						className={classnames(
+							'important-text',
+							'd-flex ',
+							'justify-content-between',
+							'align-center',
+							'flex-direction-column',
+							'py-5',
+							'font-title',
+							'h-100'
+						)}
+					>
+						{!navigator.onLine ? (
+							<NetworkError />
+						) : err?.response?.status === 504 ? (
+							<ServerError />
+						) : err?.response?.status === 429 ? (
+							<TooManyRequestError />
+						) : (
+							getErrorCount >= 3 && <ServerMaintenanceError />
+						)}
+					</div>
+				</ThemeProvider>
+			</EditProvider>
+		</Provider>,
+		document.getElementById('root')
+	);
+};
 const initialize = async () => {
+	const getErrorCount = store.getState()?.app.errorCount || 0;
 	try {
 		const [
 			configs,
@@ -318,9 +396,15 @@ const initialize = async () => {
 			injected_html,
 			plugins_injected_html
 		);
+		hideBooting();
 	} catch (err) {
 		console.error('Initialization failed!\n', err);
 		setTimeout(initialize, 3000);
+		if (!navigator.onLine || getErrorCount >= 3 || err?.response?.status) {
+			renderInitialError(err);
+		} else {
+			store.dispatch(setErrorCount(getErrorCount + 1));
+		}
 	}
 };
 

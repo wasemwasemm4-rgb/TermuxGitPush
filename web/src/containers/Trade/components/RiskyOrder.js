@@ -1,14 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router';
 
-import { IconTitle, Button } from '../../../components';
-import STRINGS from '../../../config/localizedStrings';
+import { DEFAULT_COIN_DATA } from 'config/constants';
+import { IconTitle, Button } from 'components';
+import STRINGS from 'config/localizedStrings';
 import { EditWrapper } from 'components';
 import withConfig from 'components/ConfigProvider/withConfig';
 import { formatToCurrency } from 'utils/currency';
 
 const RiskyOrder = ({ data, onConfirm, onClose, icons: ICONS }) => {
-	const { symbol = '' } = data.coins[data.pairData.pair_2] || {};
+	const { display_name } =
+		data.coins[data.pairData.pair_2] || DEFAULT_COIN_DATA;
 	const { increment_price } = data.pairData;
 	return (
 		<div className="risky-trade-wrapper">
@@ -37,14 +39,19 @@ const RiskyOrder = ({ data, onConfirm, onClose, icons: ICONS }) => {
 					{STRINGS['USER_SETTINGS.RISKY_WARNING_TEXT_3']}
 				</EditWrapper>
 			</div>
-			<EditWrapper stringId="USER_SETTINGS.GO_TO_RISK_MANAGMENT">
-				<Link
-					to="/settings?tab=5"
-					onClick={() => onClose()}
-					className="blue-link"
-				>
-					{STRINGS['USER_SETTINGS.GO_TO_RISK_MANAGMENT']}
-				</Link>
+			<EditWrapper
+				stringId="USER_SETTINGS.GO_TO_RISK_MANAGMENT"
+				render={(string) => (
+					<Link
+						to="/settings?tab=4"
+						onClick={() => onClose()}
+						className="blue-link"
+					>
+						{string}
+					</Link>
+				)}
+			>
+				{STRINGS['USER_SETTINGS.GO_TO_RISK_MANAGMENT']}
 			</EditWrapper>
 			<div className="mb-2 mt-2">
 				<EditWrapper stringId="TYPE">
@@ -54,8 +61,12 @@ const RiskyOrder = ({ data, onConfirm, onClose, icons: ICONS }) => {
 			{data.order.price && data.order.size ? (
 				<div className="mb-2">
 					<EditWrapper stringId="AMOUNT">
-						{STRINGS['AMOUNT']}: {formatToCurrency((data.order.price * data.order.size), increment_price)}{' '}
-						{symbol.toUpperCase()}
+						{STRINGS['AMOUNT']}:{' '}
+						{formatToCurrency(
+							data.order.price * data.order.size,
+							increment_price
+						)}{' '}
+						{display_name}
 					</EditWrapper>
 				</div>
 			) : null}

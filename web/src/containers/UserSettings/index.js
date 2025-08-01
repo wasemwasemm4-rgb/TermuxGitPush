@@ -11,14 +11,15 @@ import {
 	openContactForm,
 	openRiskPortfolioOrderWarning,
 	closeNotification,
+	setSettingsTab,
 } from 'actions/appActions';
-import { logout } from '../../actions/authAction';
+import { logout } from 'actions/authAction';
 import {
 	updateUserSettings,
 	setUserData,
 	setUsername,
 	setUsernameStore,
-} from '../../actions/userAction';
+} from 'actions/userAction';
 import {
 	IconTitle,
 	HeaderSection,
@@ -28,26 +29,24 @@ import {
 	MobileTabBar,
 	Loader,
 	TabController,
-} from '../../components';
+	EditWrapper,
+	NotLoggedIn,
+} from 'components';
 import SettingsForm, { generateFormValues } from './SettingsForm';
-import UsernameForm, { generateUsernameFormValues } from './UsernameForm';
+import AccountForm, { generateUsernameFormValues } from './AccountForm';
 import LanguageForm, { generateLanguageFormValues } from './LanguageForm';
 import NotificationForm, {
 	generateNotificationFormValues,
 } from './NotificationForm';
 import AudioCueForm, { generateAudioCueFormValues } from './AudioForm';
-import RiskForm, { generateWarningFormValues } from './RiskForm';
-
-import STRINGS from '../../config/localizedStrings';
+import { isLoggedIn } from 'utils/token';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
-import { EditWrapper } from 'components';
 
 class UserSettings extends Component {
 	state = {
 		sections: [],
 		tabs: [],
-		dialogIsOpen: false,
-		modalText: '',
 		activeTab: 0,
 	};
 
@@ -62,11 +61,40 @@ class UserSettings extends Component {
 		} else {
 			this.updateTabs(this.props, this.state.activeTab);
 		}
+		if (window.location.search && window.location.search.includes('signals')) {
+			this.setState({ activeTab: 0 });
+			this.props.setSettingsTab(0);
+		} else if (
+			window.location.search &&
+			window.location.search.includes('interface')
+		) {
+			this.setState({ activeTab: 1 });
+			this.props.setSettingsTab(1);
+		} else if (
+			window.location.search &&
+			window.location.search.includes('language')
+		) {
+			this.setState({ activeTab: 2 });
+			this.props.setSettingsTab(2);
+		} else if (
+			window.location.search &&
+			window.location.search.includes('audioCue')
+		) {
+			this.setState({ activeTab: 3 });
+			this.props.setSettingsTab(3);
+		} else if (
+			window.location.search &&
+			window.location.search.includes('account')
+		) {
+			this.setState({ activeTab: 4 });
+			this.props.setSettingsTab(4);
+		}
+		this.openCurrentTab();
 	}
 
 	UNSAFE_componentWillReceiveProps(nextProps) {
 		if (nextProps.activeLanguage !== this.props.activeLanguage) {
-			this.updateTabs(this.props, this.state.activeTab);
+			this.updateTabs(nextProps, this.state.activeTab);
 		}
 		if (
 			JSON.stringify(this.props.settings) !== JSON.stringify(nextProps.settings)
@@ -97,6 +125,43 @@ class UserSettings extends Component {
 		}
 	}
 
+	componentDidUpdate(prevProps, prevState) {
+		if (this.props.getSettingsTab !== this.state.activeTab) {
+			this.setState({
+				activeTab: this.props.getSettingsTab,
+			});
+		}
+		if (
+			JSON.stringify(prevState.activeTab) !==
+			JSON.stringify(this.state.activeTab)
+		) {
+			this.openCurrentTab();
+		}
+	}
+
+	componentWillUnmount() {
+		if (this.props.getSettingsTab) {
+			this.props.setSettingsTab(0);
+		}
+	}
+
+	openCurrentTab = () => {
+		let currentTab = '';
+		if (this.state.activeTab === 0) {
+			currentTab = 'signals';
+		}
+		if (this.state.activeTab === 1) {
+			currentTab = 'interface';
+		} else if (this.state.activeTab === 2) {
+			currentTab = 'language';
+		} else if (this.state.activeTab === 3) {
+			currentTab = 'audioCue';
+		} else if (this.state.activeTab === 4) {
+			currentTab = 'account';
+		}
+		this.props.router.push(`/settings?${currentTab}`);
+	};
+
 	onAdjustPortfolio = () => {
 		this.props.openRiskPortfolioOrderWarning({
 			onSubmit: (formProps) => this.onSubmitSettings(formProps, 'risk'),
@@ -104,15 +169,22 @@ class UserSettings extends Component {
 		});
 	};
 
-	updateTabs = ({ username = '', settings = {}, coins = {} }, activeTab) => {
+	updateTabs = (
+		{ activeLanguage = '', username = '', settings = {}, coins = {} },
+		activeTab
+	) => {
 		const {
 			constants = {},
 			icons: ICONS,
-			totalAsset,
 			themeOptions,
+			selectable_native_currencies,
 		} = this.props;
 		const formValues = generateFormValues({
-			options: themeOptions.map(({ value }) => ({ value, label: value })),
+			options: themeOptions?.map(({ value }) => ({ value, label: value })),
+			currencyOptions: selectable_native_currencies?.map((value) => ({
+				value,
+				label: value,
+			})),
 		});
 		const usernameFormValues = generateUsernameFormValues(
 			settings.chat.set_username
@@ -120,9 +192,14 @@ class UserSettings extends Component {
 		const languageFormValue = generateLanguageFormValues(
 			constants.valid_languages
 		);
-		const notificationFormValues = generateNotificationFormValues();
-		const audioFormValues = generateAudioCueFormValues();
-		const warningFormValues = generateWarningFormValues();
+		const DEFAULT_TOGGLE_OPTIONS = [
+			{ value: true, label: STRINGS['DEFAULT_TOGGLE_OPTIONS.ON'] },
+			{ value: false, label: STRINGS['DEFAULT_TOGGLE_OPTIONS.OFF'] },
+		];
+		const notificationFormValues = generateNotificationFormValues(
+			DEFAULT_TOGGLE_OPTIONS
+		);
+		const audioFormValues = generateAudioCueFormValues(DEFAULT_TOGGLE_OPTIONS);
 
 		let audioFormInitialValues = {
 			all: true,
@@ -152,7 +229,9 @@ class UserSettings extends Component {
 					// 	iconId="SETTING_NOTIFICATION_ICON"
 					// 	icon={ICONS['SETTING_NOTIFICATION_ICON']}
 					// />
-					<div>{STRINGS['USER_SETTINGS.TITLE_NOTIFICATION']}</div>
+					<EditWrapper stringId="USER_SETTINGS.TITLE_NOTIFICATION">
+						{STRINGS['USER_SETTINGS.TITLE_NOTIFICATION']}
+					</EditWrapper>
 				),
 				content: (
 					<NotificationForm
@@ -178,7 +257,9 @@ class UserSettings extends Component {
 					// 	iconId="SETTING_INTERFACE_ICON"
 					// 	icon={ICONS['SETTING_INTERFACE_ICON']}
 					// />
-					<div>{STRINGS['USER_SETTINGS.TITLE_INTERFACE']}</div>
+					<EditWrapper stringId="USER_SETTINGS.TITLE_INTERFACE">
+						{STRINGS['USER_SETTINGS.TITLE_INTERFACE']}
+					</EditWrapper>
 				),
 				content: (
 					<SettingsForm
@@ -204,7 +285,9 @@ class UserSettings extends Component {
 					// 	iconId="SETTING_LANGUAGE_ICON"
 					// 	icon={ICONS['SETTING_LANGUAGE_ICON']}
 					// />
-					<div>{STRINGS['USER_SETTINGS.TITLE_LANGUAGE']}</div>
+					<EditWrapper stringId="USER_SETTINGS.TITLE_LANGUAGE">
+						{STRINGS['USER_SETTINGS.TITLE_LANGUAGE']}
+					</EditWrapper>
 				),
 				content: (
 					<LanguageForm
@@ -212,7 +295,7 @@ class UserSettings extends Component {
 							this.onSubmitSettings(formProps, 'language')
 						}
 						formFields={languageFormValue}
-						initialValues={{ language: settings.language }}
+						initialValues={{ language: activeLanguage }}
 						ICONS={ICONS}
 					/>
 				),
@@ -230,7 +313,9 @@ class UserSettings extends Component {
 					// 	iconId="SETTING_AUDIO_ICON"
 					// 	icon={ICONS['SETTING_AUDIO_ICON']}
 					// />
-					<div>{STRINGS['USER_SETTINGS.TITLE_AUDIO_CUE']}</div>
+					<EditWrapper stringId="USER_SETTINGS.TITLE_AUDIO_CUE">
+						{STRINGS['USER_SETTINGS.TITLE_AUDIO_CUE']}
+					</EditWrapper>
 				),
 				content: (
 					<AudioCueForm
@@ -244,47 +329,22 @@ class UserSettings extends Component {
 			{
 				title: isMobile ? (
 					<CustomMobileTabs
-						title={STRINGS['USER_SETTINGS.TITLE_MANAGE_RISK']}
-						icon={ICONS['SETTING_RISK_ICON']}
+						title={STRINGS['USER_SETTINGS.TITLE_ACCOUNT']}
+						icon={ICONS['ACCOUNT_LINE']}
 					/>
 				) : (
 					// <CustomTabs
-					// 	stringId="USER_SETTINGS.TITLE_MANAGE_RISK"
-					// 	title={STRINGS['USER_SETTINGS.TITLE_MANAGE_RISK']}
-					// 	iconId="SETTING_RISK_ICON"
-					// 	icon={ICONS['SETTING_RISK_ICON']}
-					// />
-					<div>{STRINGS['USER_SETTINGS.TITLE_MANAGE_RISK']}</div>
-				),
-				content: (
-					<RiskForm
-						coins={coins}
-						onAdjustPortfolio={this.onAdjustPortfolio}
-						totalAssets={totalAsset}
-						onSubmit={(formProps) => this.onSubmitSettings(formProps, 'risk')}
-						formFields={warningFormValues}
-						initialValues={settings.risk}
-						ICONS={ICONS}
-					/>
-				),
-			},
-			{
-				title: isMobile ? (
-					<CustomMobileTabs
-						title={STRINGS['USER_SETTINGS.TITLE_CHAT']}
-						icon={ICONS['SETTING_CHAT_ICON']}
-					/>
-				) : (
-					// <CustomTabs
-					// 	stringId="USER_SETTINGS.TITLE_CHAT"
-					// 	title={STRINGS['USER_SETTINGS.TITLE_CHAT']}
+					// 	stringId="USER_SETTINGS.TITLE_ACCOUNT"
+					// 	title={STRINGS['USER_SETTINGS.TITLE_ACCOUNT']}
 					// 	iconId="SETTING_CHAT_ICON"
 					// 	icon={ICONS['SETTING_CHAT_ICON']}
 					// />
-					<div>{STRINGS['USER_SETTINGS.TITLE_CHAT']}</div>
+					<EditWrapper stringId="USER_SETTINGS.TITLE_ACCOUNT">
+						{STRINGS['USER_SETTINGS.TITLE_ACCOUNT']}
+					</EditWrapper>
 				),
 				content: (
-					<UsernameForm
+					<AccountForm
 						onSubmit={this.onSubmitUsername}
 						formFields={usernameFormValues}
 						initialValues={{ username }}
@@ -328,26 +388,27 @@ class UserSettings extends Component {
 			case 'audio':
 				settings.audio = formProps;
 				break;
-			case 'risk':
-				if (formProps.order_portfolio_percentage) {
-					formValues.order_portfolio_percentage = parseInt(
-						formProps.order_portfolio_percentage,
-						10
-					);
-				}
-				settings.risk = formValues;
-				break;
 			default:
 		}
 		return updateUserSettings(settings)
 			.then(({ data }) => {
 				this.props.setUserData(data);
 				if (data.settings) {
-					if (data.settings.language)
+					if (data.settings.language) {
 						this.props.changeLanguage(data.settings.language);
+					}
 					if (data.settings.interface && data.settings.interface.theme) {
 						this.props.changeTheme(data.settings.interface.theme);
 						localStorage.setItem('theme', data.settings.interface.theme);
+					}
+					if (
+						data.settings.interface &&
+						data.settings.interface.display_currency
+					) {
+						localStorage.setItem(
+							'base_currnecy',
+							data.settings.interface.display_currency
+						);
 					}
 				}
 				this.props.closeNotification();
@@ -382,6 +443,7 @@ class UserSettings extends Component {
 
 	setActiveTab = (activeTab) => {
 		this.setState({ activeTab });
+		this.props.setSettingsTab(activeTab);
 		if (this.props.location.query && this.props.location.query.tab) {
 			this.removeQueryString();
 		}
@@ -391,11 +453,18 @@ class UserSettings extends Component {
 	};
 
 	render() {
-		if (this.props.verification_level === 0) {
+		const {
+			icons: ICONS,
+			openContactForm,
+			user: { verification_level },
+		} = this.props;
+
+		if (isLoggedIn() && verification_level === 0) {
 			return <Loader />;
 		}
+
 		const { activeTab, tabs } = this.state;
-		const { icons: ICONS, openContactForm } = this.props;
+
 		return (
 			<div className="presentation_container apply_rtl settings_container">
 				{!isMobile && (
@@ -407,44 +476,62 @@ class UserSettings extends Component {
 						iconId={STRINGS['ACCOUNTS.TAB_SETTINGS']}
 					/>
 				)}
-				<HeaderSection
-					stringId="ACCOUNTS.TAB_SETTINGS"
-					title={STRINGS['ACCOUNTS.TAB_SETTINGS']}
-					openContactForm={openContactForm}
-				>
+				{!isMobile ? (
+					<HeaderSection
+						stringId="ACCOUNTS.TAB_SETTINGS"
+						title={isMobile && STRINGS['ACCOUNTS.TAB_SETTINGS']}
+						openContactForm={openContactForm}
+					>
+						<div className="header-content mt-3">
+							<div>
+								<EditWrapper stringId="USER_SETTINGS.TITLE_TEXT">
+									{STRINGS['USER_SETTINGS.TITLE_TEXT']}
+								</EditWrapper>
+							</div>
+							<div className="mb-3">
+								<EditWrapper stringId="USER_SETTINGS.TITLE_TEXT_1">
+									{STRINGS['USER_SETTINGS.TITLE_TEXT_1']}
+								</EditWrapper>
+							</div>
+						</div>
+					</HeaderSection>
+				) : (
 					<div className="header-content">
 						<div>
+							<EditWrapper stringId="USER_SETTINGS.TITLE_TEXT">
+								{STRINGS['USER_SETTINGS.TITLE_TEXT']}
+							</EditWrapper>
+						</div>
+						<div className="mb-3">
 							<EditWrapper stringId="USER_SETTINGS.TITLE_TEXT_1">
 								{STRINGS['USER_SETTINGS.TITLE_TEXT_1']}
 							</EditWrapper>
 						</div>
-						<div className="mb-3">
-							<EditWrapper stringId="USER_SETTINGS.TITLE_TEXT_2">
-								{STRINGS['USER_SETTINGS.TITLE_TEXT_2']}
-							</EditWrapper>
+					</div>
+				)}
+
+				<NotLoggedIn>
+					{!isMobile ? (
+						<TabController
+							activeTab={activeTab}
+							setActiveTab={this.setActiveTab}
+							tabs={tabs}
+						/>
+					) : (
+						<MobileTabBar
+							activeTab={activeTab}
+							renderContent={this.renderContent}
+							setActiveTab={this.setActiveTab}
+							tabs={tabs}
+						/>
+					)}
+					{!isMobile && this.renderContent(tabs, activeTab)}
+					{isMobile && (
+						<div className="my-4 text-center">
+							{/* <Button label={STRINGS["ACCOUNTS.TAB_SIGNOUT"]} onClick={this.logout} /> */}
 						</div>
-					</div>
-				</HeaderSection>
-				{!isMobile ? (
-					<TabController
-						activeTab={activeTab}
-						setActiveTab={this.setActiveTab}
-						tabs={tabs}
-					/>
-				) : (
-					<MobileTabBar
-						activeTab={activeTab}
-						renderContent={this.renderContent}
-						setActiveTab={this.setActiveTab}
-						tabs={tabs}
-					/>
-				)}
-				{!isMobile ? this.renderContent(tabs, activeTab) : null}
-				{isMobile && (
-					<div className="my-4">
-						{/* <Button label={STRINGS["ACCOUNTS.TAB_SIGNOUT"]} onClick={this.logout} /> */}
-					</div>
-				)}
+					)}
+				</NotLoggedIn>
 			</div>
 		);
 	}
@@ -462,8 +549,10 @@ const mapStateToProps = (state) => ({
 	price: state.orderbook.price,
 	//orders: state.order.activeOrders,
 	constants: state.app.constants,
-	totalAsset: state.asset.totalAsset,
 	features: state.app.features,
+	selectable_native_currencies:
+		state.app.constants.selectable_native_currencies,
+	getSettingsTab: state.app.selectedSettingsTab,
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -478,6 +567,7 @@ const mapDispatchToProps = (dispatch) => ({
 	),
 	closeNotification: bindActionCreators(closeNotification, dispatch),
 	logout: bindActionCreators(logout, dispatch),
+	setSettingsTab: bindActionCreators(setSettingsTab, dispatch),
 });
 
 export default connect(

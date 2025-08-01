@@ -1,33 +1,27 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import { BASE_CURRENCY, DEFAULT_COIN_DATA } from 'config/constants';
-import { donutFormatPercentage, formatToCurrency } from 'utils/currency';
+import { PriceChange } from 'components';
+import { formatToCurrency } from 'utils/currency';
+import { ThunderboltFilled } from '@ant-design/icons';
 
 const Tab = ({
-	pair = {},
 	tab,
-	ticker = {},
-	coins = {},
 	activePairTab,
 	onTabClick,
 	selectedToOpen,
 	selectedToRemove,
 	sortId,
+	market = {},
 }) => {
-	const { symbol } =
-		coins[pair.pair_base || BASE_CURRENCY] || DEFAULT_COIN_DATA;
-	const pairTwo = coins[pair.pair_2 || BASE_CURRENCY] || DEFAULT_COIN_DATA;
-	const { increment_price } = pair;
-	const priceDifference =
-		ticker.open === 0 ? 0 : (ticker.close || 0) - (ticker.open || 0);
-	const tickerPercent =
-		priceDifference === 0 || ticker.open === 0
-			? 0
-			: (priceDifference / ticker.open) * 100;
-	const priceDifferencePercent = isNaN(tickerPercent)
-		? donutFormatPercentage(0)
-		: donutFormatPercentage(tickerPercent);
+	const {
+		key,
+		pair: { increment_price } = {},
+		ticker: { close } = {},
+		display_name,
+		type,
+	} = market;
+
 	return (
 		<div
 			id={`trade-tab-${sortId}`}
@@ -45,31 +39,24 @@ const Tab = ({
 		>
 			<div
 				className="favourite-tab d-flex w-100 content-center"
-				onClick={() => onTabClick(tab)}
+				onClick={() => onTabClick(tab, type && type !== 'pro')}
 			>
 				<div className="app_bar-pair-font d-flex align-items-center justify-content-between">
-					<div className="app_bar-currency-txt">
-						{symbol.toUpperCase()}/{pairTwo.symbol.toUpperCase()}:
-					</div>
-					<div className="title-font ml-1">
-						{formatToCurrency(ticker.close, increment_price)}
-					</div>
-					<div
-						className={
-							priceDifference < 0
-								? 'app-price-diff-down app-bar-price_diff_down'
-								: 'app-bar-price_diff_up app-price-diff-up'
-						}
-					/>
-					<div
-						className={
-							priceDifference < 0
-								? 'title-font app-price-diff-down'
-								: priceDifference > 0 ? 'title-font app-price-diff-up' : "title-font"
-						}
-					>
-						{priceDifferencePercent}
-					</div>
+					<div className="app_bar-currency-txt">{display_name}</div>
+					{increment_price && (
+						<>
+							<div className="title-font fav-price-label ml-1">
+								<span className="app_bar-currency-txt mr-1">:</span>
+								{formatToCurrency(close, increment_price)}
+							</div>
+							<PriceChange market={market} key={key} />
+						</>
+					)}
+					{type && type !== 'pro' && (
+						<div className="d-flex align-items-center ml-1 summary-quick-icon">
+							<ThunderboltFilled />
+						</div>
+					)}
 				</div>
 			</div>
 		</div>

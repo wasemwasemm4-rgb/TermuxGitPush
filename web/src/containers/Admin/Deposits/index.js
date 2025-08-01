@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import { SyncOutlined } from '@ant-design/icons';
 import { Table, Spin, Button, Input, Select, Alert, Modal } from 'antd';
 import moment from 'moment';
-
-import './index.css';
 
 import {
 	requestDeposits,
@@ -17,9 +16,11 @@ import { renderRowContent, COLUMNS, SELECT_KEYS } from './utils';
 import { Filters } from './Filters';
 import ValidateDismiss from './ValidateDismiss';
 
-const InputGroup = Input.Group;
-const Option = Select.Option;
-const Search = Input.Search;
+import './index.css';
+
+const { Group: InputGroup, Search } = Input;
+const { Option } = Select;
+
 // const HEADERS = [
 // 	{ label: 'Type', dataIndex: 'type', key: 'type' },
 // 	{ label: 'User ID', dataIndex: 'user_id', key: 'user_id' },
@@ -56,11 +57,11 @@ class Deposits extends Component {
 		currentTablePage: 1,
 		isRemaining: true,
 		isOpen: false,
-		statusType: "",
+		statusType: '',
 		validateData: {},
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		const { initialData, queryParams = {} } = this.props;
 		if (Object.keys(queryParams).length) {
 			this.requestDeposits(
@@ -264,6 +265,11 @@ class Deposits extends Component {
 	};
 
 	onClickFilters = () => {
+		console.log(
+			'this.state.queryParams',
+			this.state.queryParams,
+			this.props.queryParams
+		);
 		this.requestDeposits(this.state.queryParams, this.props.queryParams);
 	};
 
@@ -293,74 +299,78 @@ class Deposits extends Component {
 	};
 
 	onOpenModal = (validateData, statusType) => {
-		this.setState({ isOpen: true, validateData, statusType })
-	}
+		this.setState({ isOpen: true, validateData, statusType });
+	};
 
 	onCancelModal = () => {
-		this.setState({ isOpen: false, statusType: "" })
-	}
+		this.setState({ isOpen: false, statusType: '' });
+	};
 
 	handleConfirm = (formValues) => {
 		const { statusType, queryType } = this.state;
 		let body = {
 			transaction_id: formValues.transaction_id,
+			updated_transaction_id: formValues.updated_transaction_id,
 			rejected: false,
 			processing: false,
-			waiting: false
+			waiting: false,
 		};
 		if (formValues.description) {
 			body = {
 				...body,
-				description: formValues.description
-			}
+				description: formValues.description,
+			};
 		}
-		if (statusType === "validate") {
+		if (statusType === 'validate') {
 			body = {
 				...body,
 				status: true,
-				dismissed: false
-			}
+				dismissed: false,
+			};
+		} else if (statusType === 'retry') {
+			body = {
+				...body,
+				dismissed: false,
+				processing: false,
+				rejected: false,
+				status: false,
+				waiting: false,
+			};
 		} else {
 			body = {
 				...body,
 				dismissed: true,
-				status: false
-			}
+				status: false,
+			};
 		}
 		if (queryType === 'deposit') {
 			requestMint(body)
 				.then((data) => {
-					this.requestDeposits(
-						this.state.queryParams,
-						this.props.queryParams
-					);
+					this.requestDeposits(this.state.queryParams, this.props.queryParams);
 					this.onCancelModal();
 				})
 				.catch((error) => {
 					const message = error.data ? error.data.message : error.message;
 					this.setState({
-						error: message
+						error: message,
 					});
 					this.onCancelModal();
 				});
 		} else {
 			requestBurn(body)
 				.then((data) => {
-					this.requestDeposits(
-						this.state.queryParams,
-						this.props.queryParams
-					);
+					this.requestDeposits(this.state.queryParams, this.props.queryParams);
 					this.onCancelModal();
 				})
 				.catch((error) => {
 					const message = error.data ? error.data.message : error.message;
 					this.setState({
-						error: message
+						error: message,
 					});
 					this.onCancelModal();
 				});
 		}
-	}
+	};
 	render() {
 		const {
 			deposits,
@@ -482,7 +492,7 @@ class Deposits extends Component {
 							rowKey={(data) => {
 								return data.id;
 							}}
-							expandedRowRender={renderRowContent}
+							expandedRowRender={(vals) => renderRowContent({ ...vals, coins })}
 							expandRowByClick={true}
 							pagination={{
 								current: currentTablePage,
@@ -497,19 +507,21 @@ class Deposits extends Component {
 					onCancel={this.onCancelModal}
 					width="37rem"
 				>
-					{isOpen
-						? <ValidateDismiss
+					{isOpen ? (
+						<ValidateDismiss
 							validateData={validateData}
 							statusType={statusType}
 							onCancel={this.onCancelModal}
 							handleConfirm={this.handleConfirm}
 						/>
-						: null
-					}
+					) : null}
 				</Modal>
 			</div>
 		);
 	}
 }
+const mapStateToProps = (state) => ({
+	coins: state.app.coins,
+});
 
-export default Deposits;
+export default connect(mapStateToProps)(Deposits);

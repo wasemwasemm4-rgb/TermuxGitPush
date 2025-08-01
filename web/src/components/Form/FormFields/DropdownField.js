@@ -14,7 +14,7 @@ class DropdownField extends Component {
 		filter: '',
 	};
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		if (this.props.input.value || this.props.input.value === false) {
 			this.setValue(this.props.input.value);
 		} else if (this.props.defaultValue || this.props.defaultValue === false) {
@@ -94,6 +94,20 @@ class DropdownField extends Component {
 			key={`${this.props.input.name}-${option.value}-${index}`}
 			onClick={this.onSelectOption(option)}
 			className={classnames('dropdown-option', {
+				pointer: !this.props.disabled,
+			})}
+		>
+			{this.renderIcon(option)}
+			{option.label}
+		</div>
+	);
+
+	renderOptionWhenOpen = (option, index) => (
+		<div
+			id={`${this.props.input.name}-${option.value}-${index}`}
+			key={`${this.props.input.name}-${option.value}-${index}`}
+			onClick={this.onSelectOption(option)}
+			className={classnames('dropdown-option-open', {
 				pointer: !this.props.disabled,
 			})}
 		>
@@ -195,6 +209,10 @@ class DropdownField extends Component {
 						</div>
 					)}
 				</div>
+				{isOpen &&
+					selectedItem &&
+					!autocomplete &&
+					this.renderOptionWhenOpen(selectedItem)}
 				{isOpen && this.renderOptions(filteredOptions)}
 			</FieldWrapper>
 		);

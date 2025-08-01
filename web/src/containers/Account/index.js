@@ -3,11 +3,10 @@ import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 import { isMobile } from 'react-device-detect';
 
-import { CheckTitle, MobileBarTabs, Loader } from '../../components';
-import { IS_XHT } from '../../config/constants';
-import { UserSecurity, UserSettings, Summary, Verification } from '../';
-import STRINGS from '../../config/localizedStrings';
-import { openContactForm } from '../../actions/appActions';
+import { CheckTitle, MobileBarTabs, Loader, EditWrapper } from 'components';
+import { UserSecurity, UserSettings, Summary, Verification } from 'containers';
+import STRINGS from 'config/localizedStrings';
+import { openContactForm } from 'actions/appActions';
 
 import withConfig from 'components/ConfigProvider/withConfig';
 
@@ -45,9 +44,7 @@ class Account extends Component {
 	};
 
 	componentDidMount() {
-		if (this.props.id) {
-			this.updateTabs(this.props);
-		}
+		this.updateTabs(this.props);
 	}
 
 	UNSAFE_componentWillReceiveProps(nextProps) {
@@ -63,26 +60,11 @@ class Account extends Component {
 		}
 	}
 
-	hasUserVerificationNotifications = (
-		verification_level,
-		bank_account = {},
-		id_data = {}
-	) => {
-		if (
-			verification_level >= 2 &&
-			bank_account.verified &&
-			id_data.status === 3
-		) {
-			return false;
-		}
-		return true;
-	};
-
 	updateTabs = (
 		{
 			verification_level,
 			otp_enabled,
-			bank_account,
+			bank_account = [],
 			id_data,
 			full_name,
 			phone_number,
@@ -116,6 +98,7 @@ class Account extends Component {
 		} else if (!phone_number && enabledPlugins.includes('sms')) {
 			verificationPending = true;
 		} else if (
+			bank_account &&
 			!bank_account.filter((acc) => acc.status === 0 || acc.status === 2)
 				.length &&
 			enabledPlugins.includes('bank')
@@ -126,7 +109,7 @@ class Account extends Component {
 		const tabs = [
 			{
 				title: isMobile ? (
-					STRINGS['SUMMARY.TITLE']
+					<EditWrapper>{STRINGS['SUMMARY.TITLE']}</EditWrapper>
 				) : (
 					<CheckTitle
 						stringId="SUMMARY.TITLE"
@@ -139,7 +122,7 @@ class Account extends Component {
 			},
 			{
 				title: isMobile ? (
-					STRINGS['ACCOUNTS.TAB_SECURITY']
+					<EditWrapper>{STRINGS['ACCOUNTS.TAB_SECURITY']}</EditWrapper>
 				) : (
 					<CheckTitle
 						stringId="ACCOUNTS.TAB_SECURITY"
@@ -150,11 +133,16 @@ class Account extends Component {
 					/>
 				),
 				notifications: !otp_enabled ? '!' : '',
-				content: <UserSecurity openApiKey={activeDevelopers} />,
+				content: (
+					<UserSecurity
+						openApiKey={activeDevelopers}
+						router={this.props.router}
+					/>
+				),
 			},
 			{
 				title: isMobile ? (
-					STRINGS['ACCOUNTS.TAB_VERIFICATION']
+					<EditWrapper>{STRINGS['ACCOUNTS.TAB_VERIFICATION']}</EditWrapper>
 				) : (
 					<CheckTitle
 						stringId="ACCOUNTS.TAB_VERIFICATION"
@@ -163,12 +151,17 @@ class Account extends Component {
 						icon={ICONS['TAB_SUMMARY']}
 					/>
 				),
-				notifications: verificationPending && !IS_XHT ? '!' : '',
-				content: <Verification router={this.props.router} location={this.props.location}/>,
+				notifications: verificationPending ? '!' : '',
+				content: (
+					<Verification
+						router={this.props.router}
+						location={this.props.location}
+					/>
+				),
 			},
 			{
 				title: isMobile ? (
-					STRINGS['ACCOUNTS.TAB_SETTINGS']
+					<EditWrapper>{STRINGS['ACCOUNTS.TAB_SETTINGS']}</EditWrapper>
 				) : (
 					<CheckTitle
 						stringId="ACCOUNTS.TAB_SETTINGS"
@@ -177,7 +170,9 @@ class Account extends Component {
 						icon={ICONS['GEAR_GREY']}
 					/>
 				),
-				content: <UserSettings location={location} />,
+				content: (
+					<UserSettings location={location} router={this.props.router} />
+				),
 			},
 		];
 		this.setState({ tabs, activeTab });
@@ -192,13 +187,11 @@ class Account extends Component {
 	openContactForm = (data) => {
 		this.props.openContactForm(data);
 	};
-	goToVerification = () => this.props.router.push('/verification');
 
 	render() {
-		const { id } = this.props;
 		const { activeTab, tabs } = this.state;
 
-		if (!id || activeTab === -1) {
+		if (activeTab === -1) {
 			return <Loader />;
 		}
 
@@ -217,15 +210,6 @@ class Account extends Component {
 			</div>
 		) : (
 			<div className="presentation_container apply_rtl">
-				{/* <TabController
-					activeTab={activeTab}
-					setActiveTab={this.setActiveTab}
-					tabs={tabs}
-					title={STRINGS["ACCOUNTS.TITLE"]}
-					titleIcon={ICONS["ACCOUNT_LINE"]}
-					iconId="ACCOUNT_LINE"
-					className="account-tab"
-				/> */}
 				<div className="inner_container">
 					{activeTab > -1 && this.renderContent(tabs, activeTab)}
 				</div>

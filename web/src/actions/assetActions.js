@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { BASE_CURRENCY, DEFAULT_COIN_DATA } from 'config/constants';
+import { DEFAULT_COIN_DATA } from 'config/constants';
 import {
 	calculateBalancePrice,
 	calculateOraclePrice,
@@ -8,25 +8,39 @@ import {
 	donutFormatPercentage,
 } from 'utils/currency';
 
-export const SET_PRICES_AND_ASSET = 'SET_PRICES_AND_ASSET';
+export const SET_PRICES_AND_ASSET_PENDING = 'SET_PRICES_AND_ASSET_PENDING';
+export const SET_PRICES_AND_ASSET_SUCCESS = 'SET_PRICES_AND_ASSET_SUCCESS';
+export const SET_PRICES_AND_ASSET_FAILURE = 'SET_PRICES_AND_ASSET_FAILURE';
 export const SET_ALL_COINS = 'SET_ALL_COINS';
 export const SET_ALL_PAIRS = 'SET_ALL_PAIRS';
 export const SET_EXCHANGE = 'SET_EXCHANGE';
+export const SET_DASH_TOKEN = 'SET_DASH_TOKEN';
+
+export const setPricesAndAssetPending = () => {
+	return (dispatch) => {
+		dispatch({ type: SET_PRICES_AND_ASSET_PENDING });
+	};
+};
 
 export const setPricesAndAsset = (balance, coins) => {
 	return (dispatch) => {
-		getPrices({ coins }).then((prices) => {
-			const totalAsset = calculateBalancePrice(balance, prices, coins);
+		dispatch({ type: SET_PRICES_AND_ASSET_PENDING });
+		getPrices({ coins })
+			.then((prices) => {
+				const totalAsset = calculateBalancePrice(balance, prices, coins);
 
-			dispatch({
-				type: SET_PRICES_AND_ASSET,
-				payload: {
-					oraclePrices: prices,
-					totalAsset,
-					chartData: generateChartData(balance, prices, coins, totalAsset),
-				},
+				dispatch({
+					type: SET_PRICES_AND_ASSET_SUCCESS,
+					payload: {
+						oraclePrices: prices,
+						totalAsset,
+						chartData: generateChartData(balance, prices, coins, totalAsset),
+					},
+				});
+			})
+			.catch((err) => {
+				dispatch({ type: SET_PRICES_AND_ASSET_FAILURE });
 			});
-		});
 	};
 };
 
@@ -63,13 +77,26 @@ export const setExchange = (exchange) => {
 	};
 };
 
+export const setDashToken = (dashToken) => {
+	return (dispatch) => {
+		dispatch({
+			type: SET_DASH_TOKEN,
+			payload: {
+				dashToken,
+			},
+		});
+	};
+};
+
 const ENDPOINTS = {
 	GET_PRICE: '/oracle/prices',
 };
 
 export const getPrices = async ({
 	amount = 1,
-	quote = BASE_CURRENCY,
+	quote = localStorage?.getItem('base_currnecy')
+		? localStorage?.getItem('base_currnecy')
+		: 'usdt',
 	coins = {},
 }) => {
 	const assets = Object.keys(coins).join();

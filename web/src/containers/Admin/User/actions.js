@@ -1,7 +1,8 @@
-import { all } from 'bluebird';
+import { all } from 'rsvp';
 import querystring from 'query-string';
 import axios from 'axios';
 import store from 'store';
+import moment from 'moment';
 
 import { PLUGIN_URL } from '../../../config/constants';
 import { requestAuthenticated } from '../../../utils';
@@ -31,11 +32,14 @@ export const updateNotes = (values) => {
 	};
 	return requestAuthenticated(`/admin/user/note?user_id=${values.id}`, options);
 };
+
+export const deleteNotes = (id) => {
+	const values = { id, note: '' };
+	return updateNotes(values);
+};
+
 export const requestUserImages = (values, kyc_name) => {
-	let url = `/plugins/kyc/id?${toQueryString(values)}`;
-	if (kyc_name !== 'kyc') {
-		url = `/plugins/${kyc_name}/admin/files?${toQueryString(values)}`;
-	}
+	const url = `/plugins/${kyc_name}/admin/files?${toQueryString(values)}`;
 	return requestAuthenticated(url, {}, null, PLUGIN_URL)
 		.catch(handleError)
 		.then((data) => data);
@@ -46,12 +50,7 @@ export const updateUserData = (values) => {
 		method: 'PUT',
 		body: JSON.stringify(values),
 	};
-	return requestAuthenticated(
-		`/plugins/kyc/admin?user_id=${values.id}`,
-		options,
-		null,
-		PLUGIN_URL
-	);
+	return requestAuthenticated(`/admin/user?user_id=${values.id}`, options);
 };
 
 export const addBankData = (values) => {
@@ -59,6 +58,7 @@ export const addBankData = (values) => {
 	const {
 		app: {
 			pluginNames: { bank },
+			features: { ultimate_fiat },
 		},
 	} = store.getState();
 
@@ -66,18 +66,23 @@ export const addBankData = (values) => {
 		method: 'POST',
 		body: JSON.stringify(values),
 	};
-	return requestAuthenticated(
-		`/plugins/${bank}/admin?id=${values.id}`,
-		options,
-		null,
-		PLUGIN_URL
-	);
+
+	// This will be deprecated and ultimate fiat will supersede bank plugin
+	return !bank && ultimate_fiat
+		? requestAuthenticated(`/admin/user/bank?id=${values.id}`, options)
+		: requestAuthenticated(
+				`/plugins/${bank}/admin?id=${values.id}`,
+				options,
+				null,
+				PLUGIN_URL
+		  );
 };
 
 export const approveBank = (values) => {
 	const {
 		app: {
 			pluginNames: { bank },
+			features: { ultimate_fiat },
 		},
 	} = store.getState();
 
@@ -85,18 +90,23 @@ export const approveBank = (values) => {
 		method: 'POST',
 		body: JSON.stringify(values),
 	};
-	return requestAuthenticated(
-		`/plugins/${bank}/verify`,
-		options,
-		null,
-		PLUGIN_URL
-	);
+
+	// This will be deprecated and ultimate fiat will supersede bank plugin
+	return !bank && ultimate_fiat
+		? requestAuthenticated('/admin/bank/verify', options)
+		: requestAuthenticated(
+				`/plugins/${bank}/verify`,
+				options,
+				null,
+				PLUGIN_URL
+		  );
 };
 
 export const rejectBank = (values) => {
 	const {
 		app: {
 			pluginNames: { bank },
+			features: { ultimate_fiat },
 		},
 	} = store.getState();
 
@@ -104,21 +114,23 @@ export const rejectBank = (values) => {
 		method: 'POST',
 		body: JSON.stringify(values),
 	};
-	return requestAuthenticated(
-		`/plugins/${bank}/revoke`,
-		options,
-		null,
-		PLUGIN_URL
-	);
+
+	// This will be deprecated and ultimate fiat will supersede bank plugin
+	return !bank && ultimate_fiat
+		? requestAuthenticated('/admin/bank/revoke', options)
+		: requestAuthenticated(
+				`/plugins/${bank}/revoke`,
+				options,
+				null,
+				PLUGIN_URL
+		  );
 };
 
 export const requestUser = (values, kyc_name) => {
-	let params = values;
-	if (kyc_name !== 'kyc') {
-		params = {
-			user_id: values.id,
-		};
-	}
+	const params = {
+		user_id: values.id,
+	};
+
 	const promises = [
 		requestUserData(values),
 		requestUserImages(params, kyc_name),
@@ -139,7 +151,10 @@ export const requestUsersDownload = (values) => {
 			const url = window.URL.createObjectURL(new Blob([res.data]));
 			const link = document.createElement('a');
 			link.href = url;
-			link.setAttribute('download', 'users.csv');
+			link.setAttribute(
+				'download',
+				`users_${moment().format('YYYY-MM-DD')}.csv`
+			);
 			document.body.appendChild(link);
 			link.click();
 		})
@@ -153,6 +168,15 @@ export const deactivateOtp = (values) => {
 	};
 
 	return requestAuthenticated('/admin/deactivate-otp', options);
+};
+
+export const disableWithdrawal = (values) => {
+	const options = {
+		method: 'POST',
+		body: JSON.stringify(values),
+	};
+
+	return requestAuthenticated('/admin/user/disable-withdrawal', options);
 };
 
 export const flagUser = (values) => {
@@ -179,6 +203,24 @@ export const verifyUser = (values) => {
 	};
 
 	return requestAuthenticated('/admin/verify-email', options);
+};
+
+export const recoverUser = (values) => {
+	const options = {
+		method: 'POST',
+		body: JSON.stringify(values),
+	};
+
+	return requestAuthenticated('/admin/user/restore', options);
+};
+
+export const deleteUser = (values) => {
+	const options = {
+		method: 'DELETE',
+		body: JSON.stringify(values),
+	};
+
+	return requestAuthenticated('/admin/user', options);
 };
 
 export const performVerificationLevelUpdate = (values) => {
@@ -231,4 +273,126 @@ export const deleteMeta = (user, name) => {
 		method: 'DELETE',
 	};
 	return requestAuthenticated(`/admin/kit/user-meta?name=${name}`, options);
+};
+
+export const updateIdData = (body, id) => {
+	const options = {
+		method: 'PUT',
+		body: JSON.stringify(body),
+	};
+	return requestAuthenticated(`/admin/user?user_id=${id}`, options);
+};
+
+export const getUserAffiliation = (user_id, page = 1, limit = 50) => {
+	const params = { user_id, page, limit };
+	const query = querystring.stringify(params);
+
+	const options = {
+		method: 'GET',
+	};
+	return requestAuthenticated(`/admin/user/affiliation?${query}`, options);
+};
+
+export const fetchReferralCodesByAdmin = (user_id, page = 1, limit = 50) => {
+	const params = { user_id, page, limit };
+	const query = querystring.stringify(params);
+
+	const options = {
+		method: 'GET',
+	};
+	return requestAuthenticated(`/admin/user/referral/code?${query}`, options);
+};
+
+export const postReferralCodeByAdmin = (values) => {
+	const options = {
+		method: 'POST',
+		body: JSON.stringify(values),
+	};
+	return requestAuthenticated(`/admin/user/referral/code`, options);
+};
+
+export const getUserReferer = (user_id) => {
+	const options = {
+		method: 'GET',
+	};
+	return requestAuthenticated(
+		`/admin/user/referer?user_id=${user_id}`,
+		options
+	);
+};
+
+export const requestAddUser = (values) => {
+	const options = {
+		method: 'POST',
+		body: JSON.stringify(values),
+	};
+	return requestAuthenticated('/admin/user', options);
+};
+
+export const requestUserBalancesDownload = (values) => {
+	let path = '/admin/balances';
+	if (values) {
+		path = `/admin/balances?${toQueryString(values)}`;
+	}
+	return axios({
+		method: 'GET',
+		url: path,
+	})
+		.then((res) => {
+			const url = window.URL.createObjectURL(new Blob([res.data]));
+			const link = document.createElement('a');
+			link.href = url;
+			link.setAttribute(
+				'download',
+				`balances_${moment().format('YYYY-MM-DD')}.csv`
+			);
+			document.body.appendChild(link);
+			link.click();
+		})
+		.catch((err) => {});
+};
+
+export const changeUserEmail = (values) => {
+	try {
+		const options = {
+			method: 'PUT',
+			body: JSON.stringify(values),
+		};
+		return requestAuthenticated('/admin/user/email', options);
+	} catch (error) {
+		return error;
+	}
+};
+
+export const fetchP2PPaymentMethods = (values) => {
+	const queryValues =
+		values && Object.keys(values).length ? querystring.stringify(values) : '';
+	return requestAuthenticated(`/admin/user/payment-details?${queryValues}`);
+};
+
+export const createP2PPaymentMethod = (values) => {
+	const options = {
+		method: 'POST',
+		body: JSON.stringify(values),
+	};
+
+	return requestAuthenticated('/admin/user/payment-details', options);
+};
+
+export const deleteP2PPaymentMethod = (values) => {
+	const options = {
+		method: 'DELETE',
+		body: JSON.stringify(values),
+	};
+
+	return requestAuthenticated('/admin/user/payment-details', options);
+};
+
+export const updateP2PPaymentMethod = (values) => {
+	const options = {
+		method: 'PUT',
+		body: JSON.stringify(values),
+	};
+
+	return requestAuthenticated('/admin/user/payment-details', options);
 };

@@ -1,24 +1,64 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import classnames from 'classnames';
 import math from 'mathjs';
+import { CaretUpOutlined, CaretDownFilled } from '@ant-design/icons';
 
-import { Table, ActionNotification } from '../../../components';
-import { getFormatTimestamp } from '../../../utils/utils';
-import { formatBaseAmount, formatToCurrency } from '../../../utils/currency';
+import { Table, ActionNotification, Coin } from 'components';
+import { getFormatTimestamp } from 'utils/utils';
+import { formatBaseAmount, formatToCurrency } from 'utils/currency';
 import { isMobile } from 'react-device-detect';
 import { subtract } from '../utils';
-import STRINGS from '../../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
 
-const generateHeaders = (pairs = {}, onCancel, onCancelAll, ICONS) => [
+const rendercaret = (label, onHandleClick, activeSort) => {
+	return (
+		<div className="d-flex mt-2">
+			{STRINGS[label]}
+			<div className="d-flex flex-column mx-2">
+				<CaretUpOutlined
+					className={
+						activeSort?.label === label && activeSort?.type === 'caretUp'
+							? 'active-icon'
+							: 'inactive-icon'
+					}
+					onClick={() => onHandleClick('caretUp', label)}
+				/>
+				<CaretDownFilled
+					className={
+						activeSort?.label === label && activeSort?.type === 'caretDown'
+							? 'active-icon'
+							: 'inactive-icon'
+					}
+					onClick={() => onHandleClick('caretDown', label)}
+				/>
+			</div>
+		</div>
+	);
+};
+
+const generateHeaders = (
+	pairs = {},
+	onCancel,
+	onCancelAll,
+	ICONS,
+	activeOrdersMarket,
+	orders,
+	onHandleClick,
+	activeSort
+) => [
 	{
+		stringId: 'PAIR',
 		label: STRINGS['PAIR'],
 		key: 'pair',
-		exportToCsv: ({ symbol }) => symbol.toUpperCase(),
-		renderCell: ({ symbol }, key, index) => {
+		exportToCsv: ({ display_name }) => display_name,
+		renderCell: ({ display_name, icon_id }, key, index) => {
 			return (
 				<td key={index} className="text-uppercase">
-					{symbol}
+					<div className="d-flex align-items-center">
+						<Coin iconId={icon_id} type="CS7" />
+						<div>{display_name}</div>
+					</div>
 				</td>
 			);
 		},
@@ -53,35 +93,31 @@ const generateHeaders = (pairs = {}, onCancel, onCancelAll, ICONS) => [
 	//     );
 	//   },
 	// },
-	{
-		label: STRINGS['TIME'],
+	!isMobile && {
+		label: rendercaret('TIME', onHandleClick, activeSort),
 		key: 'created_At',
 		renderCell: ({ created_at = '' }, key, index) => {
 			return <td key={index}>{getFormatTimestamp(created_at)}</td>;
 		},
 	},
 	{
-		label: STRINGS['PRICE'],
+		label: rendercaret('PRICE', onHandleClick, activeSort),
 		key: 'price',
 		renderCell: ({ price = 0, symbol }, key, index) => {
 			let pairData = pairs[symbol] || {};
 			return (
-				<td key={index}>
-					{formatToCurrency(price, pairData.increment_price)}
-				</td>
+				<td key={index}>{formatToCurrency(price, pairData.increment_price)}</td>
 			);
 		},
 	},
 	{
-		label: STRINGS['AMOUNT'],
+		label: STRINGS['SIZE'],
 		key: 'size',
 		exportToCsv: ({ size = 0 }) => size,
 		renderCell: ({ size = 0, symbol }, key, index) => {
 			let pairData = pairs[symbol] || {};
 			return (
-				<td key={index}>
-					{formatToCurrency(size, pairData.increment_size)}
-				</td>
+				<td key={index}>{formatToCurrency(size, pairData.increment_size)}</td>
 			);
 		},
 	},
@@ -92,10 +128,7 @@ const generateHeaders = (pairs = {}, onCancel, onCancelAll, ICONS) => [
 			let pairData = pairs[symbol] || {};
 			return (
 				<td key={index}>
-					{formatToCurrency(
-						subtract(size, filled),
-						pairData.increment_size
-					)}
+					{formatToCurrency(subtract(size, filled), pairData.increment_size)}
 				</td>
 			);
 		},
@@ -122,12 +155,12 @@ const generateHeaders = (pairs = {}, onCancel, onCancelAll, ICONS) => [
 			);
 		},
 	},
-	{
+	!isMobile && {
 		label: STRINGS['TRIGGER_CONDITIONS'],
 		key: 'type',
 		exportToCsv: ({ stop, symbol }) => {
 			let pairData = pairs[symbol] || {};
-			return stop && formatToCurrency(stop, pairData.increment_price)
+			return stop && formatToCurrency(stop, pairData.increment_price);
 		},
 		renderCell: ({ stop, symbol }, key, index) => {
 			let pairData = pairs[symbol] || {};
@@ -139,7 +172,7 @@ const generateHeaders = (pairs = {}, onCancel, onCancelAll, ICONS) => [
 		},
 	},
 	{
-		label: (
+		label: !isMobile ? (
 			<span className="trade__active-orders_cancel-All">
 				<ActionNotification
 					stringId="CANCEL_ALL"
@@ -149,7 +182,12 @@ const generateHeaders = (pairs = {}, onCancel, onCancelAll, ICONS) => [
 					onClick={() => onCancelAll()}
 					status="information"
 					textPosition="left"
+					disable={activeOrdersMarket === ''}
 				/>
+			</span>
+		) : (
+			<span className="trade__active-orders_cancel-All">
+				{STRINGS['CANCEL']}
 			</span>
 		),
 		key: 'cancel',
@@ -183,7 +221,33 @@ const ActiveOrders = ({
 	height,
 	cancelDelayData,
 	icons: ICONS,
+	activeOrdersMarket,
+	pageSize,
 }) => {
+	const [filteredOrders, setFilteredOrders] = useState([...orders]);
+	const [activeSort, setActiveSort] = useState({
+		label: 'TIME',
+		type: 'caretUp',
+	});
+
+	useEffect(() => {
+		setFilteredOrders(orders);
+	}, [orders]);
+
+	const onHandleClick = (type, label) => {
+		setActiveSort({ label, type });
+		const filteredData = [...filteredOrders]?.sort((a, b) => {
+			if (label === 'TIME') {
+				return type === 'caretUp'
+					? new Date(b.created_at) - new Date(a.created_at)
+					: new Date(a.created_at) - new Date(b.created_at);
+			} else {
+				return type === 'caretUp' ? b.price - a.price : a.price - b.price;
+			}
+		});
+		setFilteredOrders(filteredData);
+	};
+
 	return (
 		<div
 			className={
@@ -193,15 +257,26 @@ const ActiveOrders = ({
 			}
 		>
 			<Table
-				headers={generateHeaders(pairs, onCancel, onCancelAll, ICONS)}
+				headers={generateHeaders(
+					pairs,
+					onCancel,
+					onCancelAll,
+					ICONS,
+					activeOrdersMarket,
+					orders,
+					onHandleClick,
+					activeSort
+				)}
 				cancelDelayData={cancelDelayData}
-				data={orders}
+				data={filteredOrders}
 				count={orders.length}
 				showAll={true}
 				displayPaginator={false}
 				rowKey={(data) => {
 					return data.id;
 				}}
+				pageSize={pageSize}
+				cssTransitionClassName="general-record"
 			/>
 		</div>
 	);

@@ -1,17 +1,20 @@
-import React, { Fragment } from 'react';
+import React from 'react';
+import { connect } from 'react-redux';
+import { Link } from 'react-router';
 import { reduxForm } from 'redux-form';
-import QRCode from 'qrcode.react';
-import { ExclamationCircleFilled } from '@ant-design/icons';
-import STRINGS from '../../config/localizedStrings';
-import { EditWrapper, Button } from 'components';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
-import { required } from 'components/Form/validations';
-import { getNetworkLabelByKey } from 'utils/wallet';
-
-import Image from 'components/Image';
-import renderFields from 'components/Form/factoryFields';
 import { isMobile } from 'react-device-detect';
+
+import { STATIC_ICONS } from 'config/icons';
+import { EditWrapper, Button, SmartTarget } from 'components';
+import { required } from 'components/Form/validations';
+import { getNetworkNameByKey } from 'utils/wallet';
+import { renderLabel } from 'containers/Withdraw/utils';
+import STRINGS from 'config/localizedStrings';
+import Image from 'components/Image';
 import Fiat from './Fiat';
+import DepositComponent from './Deposit';
+import TransactionsHistory from 'containers/TransactionsHistory';
 
 export const generateBaseInformation = (id = '') => (
 	<div className="text">
@@ -23,7 +26,30 @@ export const generateBaseInformation = (id = '') => (
 	</div>
 );
 
+export const renderBackToWallet = (callback) => {
+	return (
+		<div style={{ fontSize: '15px' }} onClick={() => callback()}>
+			<EditWrapper stringId="CURRENCY_WALLET.WALLET_PAGE">
+				{STRINGS.formatString(
+					STRINGS['CURRENCY_WALLET.WALLET_PAGE'],
+					<Link className="link-content">
+						{STRINGS['CURRENCY_WALLET.BACK']}
+					</Link>
+				)}
+			</EditWrapper>
+		</div>
+	);
+};
+
+export const onHandleSymbol = (value) => {
+	const regex = /\(([^)]+)\)/;
+	const match = value.match(regex);
+	const curr = match ? match[1].toLowerCase() : null;
+	return curr;
+};
+
 export const generateFormFields = ({
+	currency,
 	networks,
 	address,
 	label,
@@ -31,22 +57,38 @@ export const generateFormFields = ({
 	copyOnClick,
 	destinationAddress,
 	destinationLabel,
+	coins,
+	network,
+	fee,
+	openQRCode,
 }) => {
 	const fields = {};
 
 	if (networks) {
 		const networkOptions = networks.map((network) => ({
 			value: network,
-			label: getNetworkLabelByKey(network),
+			label: getNetworkNameByKey(network),
 		}));
+
+		const { min } = coins[currency];
+		const warnings = [STRINGS['DEPOSIT_FORM_NETWORK_WARNING']];
+		if (min) {
+			warnings.push(
+				STRINGS.formatString(
+					STRINGS['DEPOSIT_FORM_MIN_WARNING'],
+					min,
+					currency.toUpperCase()
+				)
+			);
+		}
 
 		fields.network = {
 			type: 'select',
 			stringId:
-				'WITHDRAWALS_FORM_NETWORK_LABEL,WITHDRAWALS_FORM_NETWORK_PLACEHOLDER,DEPOSIT_FORM_NETWORK_WARNING',
+				'WITHDRAWALS_FORM_NETWORK_LABEL,WITHDRAWALS_FORM_NETWORK_PLACEHOLDER,DEPOSIT_FORM_NETWORK_WARNING,DEPOSIT_FORM_MIN_WARNING',
 			label: STRINGS['WITHDRAWALS_FORM_NETWORK_LABEL'],
 			placeholder: STRINGS['WITHDRAWALS_FORM_NETWORK_PLACEHOLDER'],
-			warning: STRINGS['DEPOSIT_FORM_NETWORK_WARNING'],
+			warnings,
 			validate: [required],
 			fullWidth: true,
 			options: networkOptions,
@@ -66,6 +108,18 @@ export const generateFormFields = ({
 			copyOnClick,
 			hideCheck: true,
 			ishorizontalfield: true,
+			notification: [
+				{
+					stringId: 'QR_CODE.SHOW',
+					text: STRINGS['QR_CODE.SHOW'],
+					status: 'information',
+					iconPath: STATIC_ICONS['QR_CODE_SHOW'],
+					className: 'file_upload_icon',
+					useSvg: true,
+					onClick: openQRCode,
+					hideActionText: true,
+				},
+			],
 		};
 	}
 
@@ -82,6 +136,48 @@ export const generateFormFields = ({
 		};
 	}
 
+	if (fee) {
+		const feeKey = networks ? network : currency;
+		const { deposit_fees } = coins[currency];
+		if (deposit_fees && deposit_fees[feeKey]) {
+			const { symbol, type } = deposit_fees[feeKey];
+			const isPercentage = type === 'percentage';
+			const fee_coin = isPercentage ? '' : symbol || currency;
+
+			const fullname = coins[fee_coin]?.fullname || '';
+
+			fields.fee = {
+				type: 'number',
+				stringId:
+					'WITHDRAWALS_FORM_FEE_COMMON_LABEL,WITHDRAWALS_FORM_FEE_PLACEHOLDER',
+				label: STRINGS.formatString(
+					STRINGS[
+						fee_coin && fee_coin !== currency
+							? 'WITHDRAWALS_FORM_FEE_COMMON_LABEL_COIN'
+							: 'WITHDRAWALS_FORM_FEE_COMMON_LABEL'
+					],
+					fullname
+				),
+				placeholder: STRINGS.formatString(
+					STRINGS['WITHDRAWALS_FORM_FEE_PLACEHOLDER'],
+					fullname
+				),
+				disabled: true,
+				fullWidth: true,
+				ishorizontalfield: true,
+				...(fee_coin && fee_coin !== currency
+					? {
+							warning: STRINGS.formatString(
+								STRINGS['WITHDRAWALS_FORM_FEE_WARNING'],
+								fullname,
+								fee_coin.toUpperCase()
+							),
+					  }
+					: {}),
+			};
+		}
+	}
+
 	return fields;
 };
 
@@ -94,62 +190,77 @@ const RenderContentForm = ({
 	setCopied,
 	copied,
 	address,
-	showGenerateButton,
-	formFields,
 	icons: ICONS,
+	targets,
+	depositCurrency,
+	currentCurrency,
+	openQRCode,
+	updateAddress,
+	depositAddress,
+	router,
 	selectedNetwork,
 }) => {
-	const coinObject = coins[currency];
-	if (coinObject && coinObject.type !== 'fiat') {
+	const coinObject = coins[depositCurrency] || coins[currency];
+
+	const generalId = 'REMOTE_COMPONENT__FIAT_WALLET_DEPOSIT';
+	const currencySpecificId = `${generalId}__${currency.toUpperCase()}`;
+	const id = targets.includes(currencySpecificId)
+		? currencySpecificId
+		: generalId;
+
+	if ((coinObject && coinObject.type !== 'fiat') || !coinObject) {
 		return (
-			<Fragment>
+			<SmartTarget
+				id={currencySpecificId}
+				titleSection={titleSection}
+				currency={currency}
+			>
 				<div className="withdraw-form-wrapper">
-					<div className="withdraw-form">
-						<Image
-							iconId={`${currency.toUpperCase()}_ICON`}
-							icon={ICONS[`${currency.toUpperCase()}_ICON`]}
-							wrapperClassName="form_currency-ball"
-						/>
-						{titleSection}
-						{(currency === 'xrp' ||
-							currency === 'xlm' ||
-							selectedNetwork === 'xlm') && (
-							<div className="d-flex">
-								<div className="d-flex align-items-baseline field_warning_wrapper">
-									<ExclamationCircleFilled className="field_warning_icon" />
-									<div className="field_warning_text">
-										{STRINGS['DEPOSIT_FORM_TITLE_WARNING_DESTINATION_TAG']}
+					<div className="withdraw-form d-flex">
+						<div className="w-100">
+							{!coinObject?.allow_deposit && currentCurrency && (
+								<div className="d-flex">
+									<div className="withdraw-deposit-icon-wrapper">
+										<Image
+											iconId={'CLOCK'}
+											icon={ICONS['CLOCK']}
+											svgWrapperClassName="action_notification-svg withdraw-deposit-icon"
+										/>
 									</div>
+									<span className="withdraw-deposit-content">
+										{renderLabel('ACCORDIAN.DISABLED_DEPOSIT_CONTENT')}
+									</span>
 								</div>
-								<EditWrapper stringId="DEPOSIT_FORM_TITLE_WARNING_DESTINATION_TAG" />
-							</div>
-						)}
-						{renderFields(formFields)}
-						{address && (
-							<div className="deposit_info-qr-wrapper d-flex align-items-center justify-content-center">
-								<div className="qr_code-wrapper d-flex flex-column">
-									<div className="qr-code-bg d-flex justify-content-center align-items-center">
-										<QRCode value={address} />
-									</div>
-									<div className="qr-text">
-										<EditWrapper stringId="DEPOSIT.QR_CODE">
-											{STRINGS['DEPOSIT.QR_CODE']}
-										</EditWrapper>
-									</div>
+							)}
+							{currentCurrency && coinObject?.allow_deposit && (
+								<div className="d-flex align-items-center">
+									<Image
+										iconId={'DEPOSIT_BITCOIN'}
+										icon={ICONS['DEPOSIT_BITCOIN']}
+										wrapperClassName="form_currency-ball margin-aligner"
+									/>
+									{titleSection}
 								</div>
+							)}
+							<DepositComponent
+								updateAddress={updateAddress}
+								depositAddress={depositAddress}
+								openQRCode={openQRCode}
+								onCopy={onCopy}
+								coins={coins}
+								currency={currency}
+								onOpen={onOpen}
+								router={router}
+								selectedNetwork={selectedNetwork}
+							/>
+						</div>
+						{!isMobile && (
+							<div className="side-icon-wrapper">
+								<Image iconId={'DEPOSIT_TITLE'} icon={ICONS['DEPOSIT_TITLE']} />
 							</div>
 						)}
 					</div>
-					{showGenerateButton && (
-						<div className="btn-wrapper">
-							<Button
-								stringId="GENERATE_WALLET"
-								label={STRINGS['GENERATE_WALLET']}
-								onClick={onOpen}
-							/>
-						</div>
-					)}
-					{isMobile && address && (
+					{isMobile && address && depositAddress && (
 						<div className="btn-wrapper">
 							<CopyToClipboard text={address} onCopy={setCopied}>
 								<Button
@@ -162,23 +273,33 @@ const RenderContentForm = ({
 						</div>
 					)}
 				</div>
-			</Fragment>
+				<TransactionsHistory
+					isFromWallet={true}
+					isDepositFromWallet={true}
+					selectedAsset={depositCurrency}
+				/>
+			</SmartTarget>
 		);
 	} else if (coinObject && coinObject.type === 'fiat') {
-		return (
-			<Fiat
-				id="REMOTE_COMPONENT__FIAT_WALLET_DEPOSIT"
-				titleSection={titleSection}
-				icons={ICONS}
-				currency={currency}
-			/>
-		);
+		return <Fiat id={id} titleSection={titleSection} currency={currency} />;
 	} else {
 		return <div>{STRINGS['DEPOSIT.NO_DATA']}</div>;
 	}
 };
 
-export default reduxForm({
+const mapStateToProps = ({
+	app: {
+		targets,
+		depositFields: { depositCurrency },
+	},
+}) => ({
+	targets,
+	depositCurrency,
+});
+
+const Form = reduxForm({
 	form: 'GenerateWalletForm',
 	enableReinitialize: true,
 })(RenderContentForm);
+
+export default connect(mapStateToProps)(Form);

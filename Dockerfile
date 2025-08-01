@@ -1,10 +1,9 @@
-FROM node:10.15.3-stretch-slim
+FROM node:20.19.0-bullseye-slim
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git python build-essential && \
+    apt-get install -y curl openssl ca-certificates git python build-essential && \
     rm -rf /var/lib/apt/lists/* && \
-    npm config set unsafe-perm true && \
-    npm install pm2@3.2.7 sequelize-cli@5.4.0 mocha -g --loglevel=error
+    npm install --unsafe-perm=true pm2@5.2.0 sequelize-cli@6.5.1 mocha -g --loglevel=error
 
 ENV NODE_ENV=production
 
@@ -25,8 +24,6 @@ RUN npm install --loglevel=error && \
     pm2 update && \
     cd /app/mail && npm install --loglevel=error
 
-EXPOSE 10010
-
-EXPOSE 10080
+EXPOSE 10010 10080 10011
 
 ENTRYPOINT ["/entrypoint.sh"]

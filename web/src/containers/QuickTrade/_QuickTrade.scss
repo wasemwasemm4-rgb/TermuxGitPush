@@ -1,13 +1,69 @@
+@import './components/Details';
+
 .quote-container {
 	background-color: $quick-trade-background;
 	overflow-y: scroll;
 }
 
 .base_negative_balance,
-.success-review,
-.quote-review-wrapper {
+.success-review {
 	margin: 1rem 0;
 	width: 30rem;
+}
+.quote-review-wrapper {
+	margin: 1rem 0;
+	width: 40rem !important;
+	position: relative;
+	.quote_header {
+		font-size: 22px;
+		font-weight: bold;
+	}
+	.quote_content {
+		color: $colors-deactivate;
+	}
+	.disabled-area {
+		opacity: 0.3;
+	}
+
+	.quote_expiry_content {
+		margin-top: 1rem;
+
+		p {
+			margin: 0;
+		}
+
+		.clock-icon {
+			margin-right: 0.75rem;
+		}
+
+		&.expired-content {
+			* {
+				color: #fe9d00;
+			}
+		}
+	}
+
+	.expiry-progress {
+		display: flex;
+		.ant-progress.ant-progress-line.ant-progress-status-normal.ant-progress-small,
+		.ant-progress-outer {
+			display: flex;
+			border-radius: 0;
+		}
+
+		.ant-progress-inner {
+			background-color: transparent;
+			border-radius: 0;
+		}
+
+		.ant-progress-bg {
+			border-radius: 0;
+		}
+	}
+
+	.expired-block {
+		opacity: 0.25;
+	}
 }
 
 .quote-countdown-wrapper {
@@ -46,21 +102,48 @@
 	.quote-container {
 		background-color: transparent;
 		overflow-y: scroll;
-		min-height: $max-content-height-double-bar-mobile;
-		max-height: $max-content-height-double-bar-mobile;
+		min-height: $max-content-height-trade-mobile;
+		max-height: $max-content-height-trade-mobile;
 		.quick_trade-wrapper {
 			flex: 1 1;
-			min-width: 95vw !important;
-			max-width: 100vw !important;
-			margin: 10px;
 			flex-direction: column;
 			padding: 0;
-    		height: fit-content;
+			height: fit-content;
 		}
 	}
 	.base_negative_balance,
 	.success-review,
 	.quote-review-wrapper {
 		margin: auto;
+	}
+}
+
+.risky-trade-disclaimer {
+	.disclaimer-title {
+		font-size: xx-large;
+		text-align: center;
+		margin: 2rem auto;
+	}
+
+	.disclaimer-msg {
+		font-size: small;
+		margin: 2dvh auto;
+	}
+
+	.extreme-volatility-msg {
+		color: #ffaa00;
+	}
+
+	.disclaimer-checkbox span {
+		color: $colors-main-black;
+		opacity: 0.7;
+	}
+
+	.disclaimer-checkbox.disclaimer-checkbox-selected span {
+		opacity: 1;
+	}
+
+	.coin-icon-container {
+		text-align: center;
 	}
 }

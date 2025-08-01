@@ -1,26 +1,26 @@
 import React, { Component } from 'react';
 import { reduxForm } from 'redux-form';
 
-import renderFields from '../../components/Form/factoryFields';
-import { Button, IconTitle } from '../../components';
-import { getErrorLocalized } from '../../utils/errors';
-import STRINGS from '../../config/localizedStrings';
-import { EditWrapper } from 'components';
+import renderFields from 'components/Form/factoryFields';
+import { Button, IconTitle, EditWrapper } from 'components';
+import { getErrorLocalized } from 'utils/errors';
+import STRINGS from 'config/localizedStrings';
+// import { DEFAULT_TOGGLE_OPTIONS } from 'config/options';
 
-export const generateNotificationFormValues = () => ({
+export const generateNotificationFormValues = (DEFAULT_TOGGLE_OPTIONS) => ({
 	popup_order_confirmation: {
 		type: 'toggle',
-		stringId: 'USER_SETTINGS.NOTIFICATION_FORM.POPUP_ORDER_CONFIRMATION',
+		stringId: 'DEFAULT_TOGGLE_OPTIONS.ON',
 		label: STRINGS['USER_SETTINGS.NOTIFICATION_FORM.POPUP_ORDER_CONFIRMATION'],
 		className: 'toggle-wrapper',
-		options: STRINGS['DEFAULT_TOGGLE_OPTIONS'],
+		options: DEFAULT_TOGGLE_OPTIONS,
 	},
 	popup_order_completed: {
 		type: 'toggle',
 		stringId: 'USER_SETTINGS.NOTIFICATION_FORM.POPUP_ORDER_COMPLETED',
 		label: STRINGS['USER_SETTINGS.NOTIFICATION_FORM.POPUP_ORDER_COMPLETED'],
 		className: 'toggle-wrapper',
-		options: STRINGS['DEFAULT_TOGGLE_OPTIONS'],
+		options: DEFAULT_TOGGLE_OPTIONS,
 	},
 	popup_order_partially_filled: {
 		type: 'toggle',
@@ -28,7 +28,21 @@ export const generateNotificationFormValues = () => ({
 		label:
 			STRINGS['USER_SETTINGS.NOTIFICATION_FORM.POPUP_ORDER_PARTIALLY_FILLED'],
 		className: 'toggle-wrapper',
-		options: STRINGS['DEFAULT_TOGGLE_OPTIONS'],
+		options: DEFAULT_TOGGLE_OPTIONS,
+	},
+	popup_order_new: {
+		type: 'toggle',
+		stringId: 'USER_SETTINGS.NOTIFICATION_FORM.POPUP_NEW_ORDER_CREATED',
+		label: STRINGS['USER_SETTINGS.NOTIFICATION_FORM.POPUP_NEW_ORDER_CREATED'],
+		className: 'toggle-wrapper',
+		options: DEFAULT_TOGGLE_OPTIONS,
+	},
+	popup_order_canceled: {
+		type: 'toggle',
+		stringId: 'USER_SETTINGS.NOTIFICATION_FORM.POPUP_ORDER_CANCELLED',
+		label: STRINGS['USER_SETTINGS.NOTIFICATION_FORM.POPUP_ORDER_CANCELLED'],
+		className: 'toggle-wrapper',
+		options: DEFAULT_TOGGLE_OPTIONS,
 	},
 });
 

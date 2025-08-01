@@ -1,22 +1,18 @@
 import React, { Component } from 'react';
 // import { SubmissionError } from 'redux-form';
 import querystring from 'query-string';
-import { Link } from 'react-router';
-import { Icon as LegacyIcon } from '@ant-design/compatible';
-import { RightOutlined } from '@ant-design/icons';
-import { Table, Spin, Button, notification, Tabs, message } from 'antd';
+import { Spin, notification, message } from 'antd';
 import _get from 'lodash/get';
 
 import './index.css';
 import { connect } from 'react-redux';
 
 import './index.css';
-import { AdminHocForm } from '../../../components';
 
 import { requestUser, requestUsersDownload } from './actions';
 
 import UserContent from './UserContent';
-import { ListUsers, FullListUsers } from '../ListUsers';
+import { FullListUsers } from '../ListUsers';
 import { requestMyPlugins } from '../Plugins/action';
 // import { isSupport } from '../../../utils/token';
 
@@ -27,10 +23,6 @@ const INITIAL_STATE = {
 	userInformationList: [],
 	kycPluginName: 'kyc',
 };
-
-const Form = AdminHocForm('USER_REQUEST_FORM');
-
-const TabPane = Tabs.TabPane;
 
 class App extends Component {
 	constructor(props) {
@@ -44,7 +36,7 @@ class App extends Component {
 		};
 	}
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		this.getMyPlugins();
 		const { search } = this.props.location;
 		if (search) {
@@ -111,12 +103,6 @@ class App extends Component {
 		}
 		return requestUser(values, this.state.kycPluginName)
 			.then(([userInformation, userImages, userBalance]) => {
-				if (userImages.message) {
-					if (values.id === '0') {
-						message.error(userImages.message)
-						userInformation.data = [];
-					}
-				}
 				if (
 					userInformation &&
 					userInformation.data &&
@@ -146,9 +132,6 @@ class App extends Component {
 				}
 			})
 			.catch((err) => {
-				if (err.status === 403) {
-					// return this.logout();
-				}
 				this.setState({ loading: false });
 				// throw new SubmissionError({ _error: err.data.message });
 			});
@@ -201,12 +184,18 @@ class App extends Component {
 	};
 
 	searchUser = (values) => {
-		if (values.id === 0) {
-			this.props.router.replace(`/admin/user?id=${values.id}`);
-		} else if (values.id) {
-			this.requestUserData({ id: values.id });
+		let valueData = values;
+		if (values.id) {
+			valueData['id'] = parseInt(valueData.id);
+		}
+		if (valueData.id === 0) {
+			message.error('User not found');
+		} else if (valueData.id) {
+			this.requestUserData({ id: valueData.id });
 		} else {
-			const searchUserdata = values && values.input && values.input.trim();
+			let searchUserdata =
+				valueData && valueData.input ? valueData.input.trim() : '';
+			searchUserdata = searchUserdata.toLowerCase();
 			this.requestUserData({ search: searchUserdata });
 		}
 		// const REGEX = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
@@ -224,43 +213,9 @@ class App extends Component {
 			userImages,
 			userBalance,
 			loading,
-			userInformationList,
 			kycPluginName,
 		} = this.state;
 		const { coins, constants, isConfigure, showConfigure } = this.props;
-		const renderBoolean = (value) => (
-			<LegacyIcon type={value ? 'check-circle-o' : 'close-circle'} />
-		);
-
-		const renderLink = (value) => (
-			<Button
-				type="primary"
-				// onClick={() => this.requestUserData({ id: value })}
-				className="green-btn"
-			>
-				<Link to={`/admin/user?id=${value}`}>
-					GO
-					<RightOutlined />
-				</Link>
-			</Button>
-		);
-
-		const COLUMNS = [
-			{ title: 'ID', dataIndex: 'id', key: 'id' },
-			{ title: 'Email', dataIndex: 'email', key: 'email' },
-			{
-				title: 'Verification Level',
-				dataIndex: 'verification_level',
-				key: 'verification_level',
-			},
-			{
-				title: 'Activated',
-				dataIndex: 'activated',
-				key: 'activated',
-				render: renderBoolean,
-			},
-			{ title: 'See Data', dataIndex: 'id', key: 'data', render: renderLink },
-		];
 
 		if (loading) {
 			return (
@@ -284,63 +239,16 @@ class App extends Component {
 				clearData={this.clearData}
 				refreshData={this.refreshData}
 				onChangeUserDataSuccess={this.onChangeUserDataSuccess}
+				requestUserData={this.requestUserData}
+				referral_history_config={this.props.referral_history_config}
 			/>
 		) : (
 			<div className="app_container-content user-container">
-				<Tabs>
-					<TabPane tab="Search" key="search">
-						<h2>SEARCH FOR USER</h2>
-						<Form
-							onSubmit={this.searchUser}
-							buttonText="Search"
-							buttonClass="green-btn"
-							fields={{
-								id: {
-									type: 'number',
-									label: 'Id',
-									placeholder: ' id ',
-									validate: [],
-								},
-								input: {
-									type: 'string',
-									label: 'Email or User Name',
-									placeholder: 'email or username',
-									validate: [],
-								},
-							}}
-							initialValues={{ type: 'id' }}
-						/>
-						{userInformationList.length ? (
-							<Table
-								className="mt-4 blue-admin-table admin-user-container"
-								columns={COLUMNS}
-								dataSource={userInformationList}
-								rowKey={(data) => {
-									return data.id;
-								}}
-							/>
-						) : null}
-					</TabPane>
-
-					<TabPane tab="User Verification" key="userVerification">
-						<div className="list_users">
-							<ListUsers
-								requestUser={this.requestUserData}
-								handleDownload={this.requestUsersDownload}
-								columns={COLUMNS}
-							/>
-						</div>
-					</TabPane>
-
-					<TabPane tab="All Users" key="users">
-						<h2 className="m-top">LIST OF ALL USERS</h2>
-						<FullListUsers
-							coins={coins}
-							requestUser={this.requestUserData}
-							handleDownload={this.requestUsersDownload}
-						/>
-					</TabPane>
-				</Tabs>
+				<FullListUsers
+					coins={coins}
+					requestUser={this.requestUserData}
+					handleDownload={this.requestUsersDownload}
+				/>
 			</div>
 		);
 	}
@@ -349,6 +257,7 @@ class App extends Component {
 const mapStateToProps = (state) => ({
 	pluginNames: state.app.pluginNames,
 	coins: state.app.coins,
+	referral_history_config: state.app.constants.referral_history_config,
 	constants: state.app.constants,
 });
 

@@ -2,7 +2,7 @@
 
 const { Status } = require('../../db/models');
 const { publisher } = require('../../db/pubsub');
-const { CONFIGURATION_CHANNEL } = require('../../constants');
+const { CONFIGURATION_CHANNEL, API_HOST, DOMAIN } = require('../../constants');
 const { isBoolean } = require('lodash');
 
 Status.findOne()
@@ -31,7 +31,7 @@ Status.findOne()
 				api: process.env.API_HOST || '',
 				whitepaper: '',
 				website: '',
-				information: '',
+				information: ''
 			},
 			email_verification_required: isBoolean(existingKitConfigurations.email_verification_required) ? existingKitConfigurations.email_verification_required : false,
 			setup_completed: isBoolean(existingKitConfigurations.setup_completed) ? existingKitConfigurations.setup_completed : false,
@@ -52,6 +52,25 @@ Status.findOne()
 			features: existingKitConfigurations.features || {},
 			meta: existingKitConfigurations.meta || {},
 			user_meta: existingKitConfigurations.user_meta || {},
+			black_list_countries: existingKitConfigurations.black_list_countries || [],
+			onramp: existingKitConfigurations.onramp || {},
+			offramp: existingKitConfigurations.offramp || {},
+			user_payments: existingKitConfigurations.user_payments || {},
+			dust: existingKitConfigurations.dust || {
+				maker_id: 1,
+				quote: 'xht',
+				spread: 0
+			},
+			referral_history_config: existingKitConfigurations.referral_history_config || {},
+			chain_trade_config: existingKitConfigurations.chain_trade_config || {},
+			coin_customizations: existingKitConfigurations.coin_customizations || {},
+			balance_history_config: existingKitConfigurations.balance_history_config || {},
+			p2p_config: existingKitConfigurations.p2p_config || {},
+			fiat_fees: existingKitConfigurations.fiat_fees || {},
+			selectable_native_currencies: existingKitConfigurations?.selectable_native_currencies || [existingKitConfigurations.native_currency || process.env.NATIVE_CURRENCY || 'usdt'],
+			auto_trade_config: existingKitConfigurations.auto_trade_config || {},
+			apps: existingKitConfigurations.apps || {},
+			timezone: existingKitConfigurations?.timezone || existingSecrets.emails ? (existingSecrets.emails.timzeone || process.env.EMAILS_TIMEZONE || '') : (process.env.EMAILS_TIMEZONE || '')
 		};
 
 		const secrets = {
@@ -78,9 +97,11 @@ Status.findOne()
 			}
 		};
 
+		const constants = { ...status.constants, url: API_HOST, domain: DOMAIN };
+
 		return status.update(
-			{ kit, secrets },
-			{ fields: ['kit', 'secrets'] }
+			{ kit, secrets, constants },
+			{ fields: ['kit', 'secrets', 'constants'] }
 		);
 	})
 	.then((data) => {

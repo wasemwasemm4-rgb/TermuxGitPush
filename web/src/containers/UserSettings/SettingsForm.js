@@ -1,29 +1,36 @@
 import React, { Component } from 'react';
 import { reduxForm } from 'redux-form';
 import { isMobile } from 'react-device-detect';
-import renderFields from '../../components/Form/factoryFields';
-import { Button, IconTitle } from '../../components';
+import renderFields from 'components/Form/factoryFields';
+import { Button, IconTitle, EditWrapper } from 'components';
 import {
 	required,
 	minValue,
 	maxValue,
 	step,
-} from '../../components/Form/validations';
-import { getErrorLocalized } from '../../utils/errors';
-import STRINGS from '../../config/localizedStrings';
-import { EditWrapper } from 'components';
+} from 'components/Form/validations';
+import { getErrorLocalized } from 'utils/errors';
+import STRINGS from 'config/localizedStrings';
 
 const orderbook_level_step = 1;
 const orderbook_level_min = 1;
 const orderbook_level_max = 20;
 
-export const generateFormValues = ({ options = [] }) => ({
+export const generateFormValues = ({ options = [], currencyOptions = [] }) => ({
 	theme: {
 		type: 'select',
 		stringId: 'SETTINGS_THEME_LABEL',
 		label: STRINGS['SETTINGS_THEME_LABEL'],
 		options,
 		ishorizontalfield: true,
+	},
+	display_currency: {
+		type: 'select',
+		stringId: 'CUSTOM_NATIVE_CURRENCY',
+		label: STRINGS['CUSTOM_NATIVE_CURRENCY'],
+		options: currencyOptions,
+		ishorizontalfield: true,
+		placeholder: STRINGS['CUSTOM_NATIVE_CURRENCY'],
 	},
 	order_book_levels: {
 		type: 'number',

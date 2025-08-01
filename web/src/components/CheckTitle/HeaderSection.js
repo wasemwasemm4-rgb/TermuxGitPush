@@ -1,10 +1,9 @@
 import React from 'react';
 import Image from 'components/Image';
 
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import withConfig from 'components/ConfigProvider/withConfig';
-import { ActionNotification } from '../../components';
-import { EditWrapper } from 'components';
+import { ActionNotification, EditWrapper } from 'components';
 
 const HeaderSection = ({
 	title,
@@ -14,6 +13,7 @@ const HeaderSection = ({
 	iconId,
 	stringId,
 	icons: ICONS,
+	notification,
 }) => {
 	return (
 		<div className="header_title-wrapper d-flex flex-column w-100 f-1">
@@ -23,11 +23,21 @@ const HeaderSection = ({
 						<Image icon={icon} wrapperClassName="header_title-icon" />
 					</div>
 				)}
-				<div>
+				<div className="w-100">
 					<div className="d-flex justify-content-between w-100 f-1">
-						<EditWrapper stringId={stringId} iconId={iconId}>
-							<div className="header_title-text font-weight-bold">{title}</div>
-						</EditWrapper>
+						{title && (
+							<EditWrapper
+								stringId={stringId}
+								iconId={iconId}
+								render={(string) => (
+									<div className="header_title-text font-weight-bold">
+										{string}
+									</div>
+								)}
+							>
+								{title}
+							</EditWrapper>
+						)}
 						{!!openContactForm && (
 							<div className="header_title-action">
 								<ActionNotification
@@ -40,6 +50,7 @@ const HeaderSection = ({
 								/>
 							</div>
 						)}
+						{!openContactForm && notification && <div>{notification}</div>}
 					</div>
 					{children && <div className="header_title-children">{children}</div>}
 				</div>

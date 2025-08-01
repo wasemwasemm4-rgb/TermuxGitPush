@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import classnames from 'classnames';
 import moment from 'moment';
 
-import { playBackgroundAudioNotification } from '../../utils/utils';
-import STRINGS from '../../config/localizedStrings';
+import { playBackgroundAudioNotification } from 'utils/utils';
+import STRINGS from 'config/localizedStrings';
 
 import { Button, Loader } from '../';
 
@@ -16,7 +16,7 @@ const INIT_STATE = {
 class Countdown extends Component {
 	state = INIT_STATE;
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		this.onInit(this.props.end);
 	}
 

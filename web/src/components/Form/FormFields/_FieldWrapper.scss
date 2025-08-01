@@ -32,6 +32,23 @@ $outline-height: 1.5px;
 	.checkfield-input-wrapper {
 		align-items: center;
 	}
+
+	.multiple-actions-wrapper {
+		display: flex;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		margin: auto 0;
+		right: $valid-icon-size;
+		.action_notification-wrapper {
+			position: static !important;
+		}
+		.action_notification-wrapper:not(:last-child):after {
+			content: '|';
+			padding: 0 0.5rem;
+			color: $colors-main-border;
+		}
+	}
 }
 
 .field-label-wrapper {
@@ -56,6 +73,7 @@ $outline-height: 1.5px;
 	position: relative;
 	display: flex;
 	flex-direction: column;
+	scrollbar-color: $colors-black $app-background-color;
 	// margin-bottom: $underline-margin-bottom;
 }
 
@@ -74,6 +92,18 @@ $outline-height: 1.5px;
 			@include size($valid-icon-size);
 		}
 		bottom: 0.25rem;
+	}
+
+	.clear-field {
+		width: 1.25rem !important;
+		height: 1.25rem !important;
+		@include size($valid-icon-size);
+		svg {
+			@include size($valid-icon-size);
+		}
+		position: absolute;
+		right: 0px;
+		bottom: 0.5rem;
 	}
 }
 .input-box-field {
@@ -153,6 +183,14 @@ $outline-height: 1.5px;
 
 	.address-line {
 		word-break: break-all;
+
+		&.single-action {
+			padding-right: 4rem;
+		}
+
+		&.multi-action {
+			padding-right: 6rem;
+		}
 	}
 
 	.copy-wrapper {
@@ -185,7 +223,7 @@ $outline-height: 1.5px;
 		padding-left: 0.25rem;
 	}
 
-	.field-children {
+	.field-children:not(.padding_zero) {
 		&.valid > *:not(:last-child) {
 			padding-right: $valid-icon-size;
 		}
@@ -226,7 +264,7 @@ $outline-height: 1.5px;
 		padding-right: 0.25rem;
 	}
 
-	.field-children {
+	.field-children:not(.padding_zero) {
 		&.valid > *:not(:last-child) {
 			padding-left: $valid-icon-size;
 		}
@@ -253,6 +291,11 @@ $outline-height: 1.5px;
 			&.with-tick-icon {
 				left: $valid-icon-size;
 			}
+		}
+
+		.multiple-actions-wrapper {
+			right: auto;
+			left: $valid-icon-size;
 		}
 	}
 }
@@ -286,5 +329,15 @@ $outline-height: 1.5px;
 
 	.field_warning_wrapper {
 		padding-bottom: 1rem;
+	}
+}
+
+@media screen and (max-width: 550px) {
+	.field-children {
+		.clear-field {
+			bottom: 1.5rem;
+			padding: 1.5rem;
+			margin-right: 1rem;
+		}
 	}
 }

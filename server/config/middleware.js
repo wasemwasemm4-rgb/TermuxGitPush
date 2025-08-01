@@ -4,7 +4,7 @@ const { logger } = require('./logger');
 const { APM_ENABLED, DOMAIN } = require('../constants');
 const ALLOWED_DOMAINS = () => toolsLib.getKitSecrets().allowed_domains || (process.env.ALLOWED_DOMAINS ? process.env.ALLOWED_DOMAINS.split(',') : []);
 const helmet = require('helmet');
-const expectCt = require('expect-ct');
+const redis = require('../db/redis').duplicate();
 const { apm } = require('./logger');
 const toolsLib = require('hollaex-tools-lib');
 
@@ -31,52 +31,145 @@ const domainMiddleware = (req, res, next) => {
 		req.headers['x-real-origin'] = DOMAIN;
 	}
 	if (APM_ENABLED) {
-		apm.setTransactionName(req.method + ' ' + req.url);
+
+		let transactionName = req.method + ' ' + req.path;
+
+		if (req.path.indexOf('/v2/') > -1) {
+			apm.setLabel('endpointType', 'v2');
+		}
+
+		if (req.path.indexOf('/order/') > -1) {
+			apm.setLabel('endpointType', 'order');
+			let orderId = req.path.split('?order_id=')[3];
+			if (!isNaN(orderId)) {
+				transactionName = req.method + ' ' + req.path.replace(`?order_id=${orderId}`, '');
+			}
+		}
+		apm.setTransactionName(transactionName);
 	}
 	return next();
 };
 
-const HPKP_MAX_AGE = 90 * 24 * 60 * 60; // seconds
-
 const helmetMiddleware = (app) => {
 	app.use(helmet());
-
-	// contentSecurityPolicy
-	// app.use(
-	// 	helmet.contentSecurityPolicy({
-	// 		directives: {
-	// 			defaultSrc: ["'self'"],
-	// 			styleSrc: ["'self'", 'maxcdn.bootstrapcdn.com']
-	// 		}
-	// 	})
-	// );
-
-	// referrerPolicy
-	// app.use(helmet.referrerPolicy({ policy: 'same-origin' }))
-
-	// hpkp
-	// app.use(
-	// 	helmet.hpkp({
-	// 		maxAge: HPKP_MAX_AGE,
-	// 		sha256s: ['AbCdEf123=', 'ZyXwVu456='],
-	// 		includeSubdomains: true
-	// 	})
-	// );
-	//
-	// // expect-ct
-	// app.use(
-	// 	expectCt({
-	// 		enforce: true,
-	// 		maxAge: 123
-	// 	})
-	// );
 
 	// no cache
 	app.use(helmet.noCache());
 };
 
+const rateLimitMiddleware = (app) => {
+	var limiter = require('express-limiter')(app, redis);
+
+	limiter({
+		path: '/v2/user/request-withdrawal',
+		method: 'post',
+		total: 10,
+		expire: 1000 * 60 * 2,
+		lookup: (req, res, opts, next) => {
+			if (req.headers.hasOwnProperty('authorization') && req.headers.authorization.indexOf('Bearer ') > -1) {
+				opts.lookup = 'headers.authorization';
+			} else {
+				opts.lookup = 'headers.x-forwarded-for';
+			}
+			return next();
+		},
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'request-withdrawal');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+	limiter({
+		path: '/v2/signup',
+		method: 'post',
+		total: 4,
+		expire: 1000 * 60 * 2,
+		lookup: 'headers.x-forwarded-for',
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'signup');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+	limiter({
+		path: '/v2/login',
+		method: 'post',
+		total: 16,
+		expire: 1000 * 60 * 2,
+		lookup: 'headers.x-forwarded-for',
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'login');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+	limiter({
+		path: '/v2/verify',
+		method: 'get',
+		total: 4,
+		expire: 1000 * 60 * 2,
+		lookup: 'headers.x-forwarded-for',
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'get verify');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+	limiter({
+		path: '/v2/verify',
+		method: 'post',
+		total: 4,
+		expire: 1000 * 60 * 2,
+		lookup: 'headers.x-forwarded-for',
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'post verify');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+
+	limiter({
+		path: '/v2/reset-password',
+		method: 'get',
+		total: 4,
+		expire: 1000 * 60 * 2,
+		lookup: 'headers.x-forwarded-for',
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'get eset-password');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+
+	limiter({
+		path: '/v2/reset-password',
+		method: 'post',
+		total: 4,
+		expire: 1000 * 60 * 2,
+		lookup: 'headers.x-forwarded-for',
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'post reset-password');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+
+	limiter({
+		path: '/v2/user/change-password',
+		method: 'post',
+		total: 4,
+		expire: 1000 * 60 * 2,
+		lookup: (req, res, opts, next) => {
+			if (req.headers.hasOwnProperty('authorization') && req.headers.authorization.indexOf('Bearer ') > -1) {
+				opts.lookup = 'headers.authorization';
+			} else {
+				opts.lookup = 'headers.x-forwarded-for';
+			}
+			return next();
+		},
+		onRateLimited: function (req, res, next) {
+			logger.verbose('config/middleware/rateLimitMiddleware', 'abuse', 'change-password');
+			return res.status(429).json({ message: 'Too many requests. Your account is blocked for 2 minutes' });
+		}
+	});
+};
+
 module.exports = {
 	helmetMiddleware,
 	domainMiddleware,
+	rateLimitMiddleware,
 	apm
 };

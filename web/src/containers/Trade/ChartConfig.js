@@ -3,7 +3,7 @@ import Color from 'color';
 const UP_COLOR_WHITE = '#6496AA';
 const DOWN_COLOR_WHITE = '#000000';
 const BACKGROUND_COLOR = '#ffffff';
-const TRADING_VIEW_AXIS = '#E6ECEF';
+// const TRADING_VIEW_AXIS = '#E6ECEF';
 const TRADING_VIEW_WATERMARK = '#202020';
 const TRADING_VIEW_TEXT = '#292b2c';
 
@@ -23,19 +23,26 @@ export const getTheme = ({
 }) => ({
 	'paneProperties.background':
 		rest['base_wallet-sidebar-and-popup'] || BACKGROUND_COLOR,
-	'paneProperties.vertGridProperties.color':
-		rest['calculated_trad-view_axis'] || TRADING_VIEW_AXIS,
-	'paneProperties.horzGridProperties.color':
-		rest['calculated_trad-view_axis'] || TRADING_VIEW_AXIS,
-	// "paneProperties.crossHairProperties.color": "#1f212a",
-	'symbolWatermarkProperties.transparency': 90,
+	'paneProperties.backgroundType': 'solid',
+
+	'mainSeriesProperties.visible': true,
+
+	'paneProperties.legendProperties.showStudyArguments': true,
+	'paneProperties.legendProperties.showStudyTitles': true,
+	'paneProperties.legendProperties.showStudyValues': true,
+	'paneProperties.legendProperties.showSeriesTitle': true,
+	'paneProperties.legendProperties.showSeriesOHLC': true,
+	'paneProperties.legendProperties.showLegend': true,
+	'paneProperties.legendProperties.showBarChange': true,
+
+	// 'paneProperties.crossHairProperties.color': 'red',
 	'symbolWatermarkProperties.color':
 		rest['calculated_trad-view_watermark'] || TRADING_VIEW_WATERMARK,
 	'scalesProperties.textColor':
 		rest['calculated_trad-view_text'] || TRADING_VIEW_TEXT,
 	'scalesProperties.backgroundColor':
 		rest['base_wallet-sidebar-and-popup'] || BACKGROUND_COLOR,
-	'mainSeriesProperties.showPriceLine': true,
+	// 'mainSeriesProperties.showPriceLine': true,
 	// Candles-property
 	'mainSeriesProperties.candleStyle.upColor': buy,
 	'mainSeriesProperties.candleStyle.downColor': sell,
@@ -58,6 +65,12 @@ export const getTheme = ({
 	'mainSeriesProperties.hollowCandleStyle.wickUpColor': buy,
 	'mainSeriesProperties.hollowCandleStyle.wickDownColor': sell,
 
+	//  Line styles
+	'mainSeriesProperties.lineStyle.color': buy,
+	'mainSeriesProperties.lineStyle.linestyle': 0,
+	'mainSeriesProperties.lineStyle.linewidth': 2,
+	'mainSeriesProperties.lineStyle.priceSource': 'close',
+
 	//  Heiken Ashi styles
 	'mainSeriesProperties.haStyle.upColor': buy,
 	'mainSeriesProperties.haStyle.downColor': sell,
@@ -76,12 +89,12 @@ export const getTheme = ({
 	'mainSeriesProperties.barStyle.dontDrawOpen': false,
 
 	//	Area styles
-	'mainSeriesProperties.areaStyle.color1': buy,
-	'mainSeriesProperties.areaStyle.color2': sell,
-	'mainSeriesProperties.areaStyle.linecolor': sell,
-	// "mainSeriesProperties.areaStyle.linestyle": CanvasEx.LINESTYLE_SOLID,
-	'mainSeriesProperties.areaStyle.linewidth': 1,
-	'mainSeriesProperties.areaStyle.priceSource': 'close',
+	// 'mainSeriesProperties.areaStyle.color1': buy,
+	// 'mainSeriesProperties.areaStyle.color2': sell,
+	// 'mainSeriesProperties.areaStyle.linecolor': buy,
+	// 'mainSeriesProperties.areaStyle.linestyle': 0,
+	// 'mainSeriesProperties.areaStyle.linewidth': 2,
+	// 'mainSeriesProperties.areaStyle.priceSource': 'close',
 
 	//  Baseline styles
 	'mainSeriesProperties.baselineStyle.baselineColor': buy,
@@ -104,5 +117,31 @@ export const getVolume = ({
 }) => ({
 	'volume.volume.color.0': sell,
 	'volume.volume.color.1': buy,
-	'volume.volume.transparency': 50,
+	'volume.volume.transparency': 80,
 });
+
+export const addFullscreenButton = (tvWidget, symbol) => {
+	const newWindowButton = tvWidget.createButton({ align: 'right' });
+	newWindowButton.setAttribute(
+		'title',
+		'Open the trading view chart in a new tab.'
+	);
+	newWindowButton.classList.add('apply-common-tooltip');
+	newWindowButton.addEventListener('click', () => {
+		if (window) {
+			window.open(`/chart-embed/${symbol}`, '_blank');
+		}
+	});
+	// tvWidget.applyOverrides(getThemeOverrides(activeTheme, color));
+	// tvWidget.changeTheme(widgetTheme);
+
+	newWindowButton.innerHTML = `
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 17.8 17.8" width="17" height="17">
+				
+					<g>
+						<path fill="currentColor" d="M15.1,16.8H0.9V2.6h8.4V1.7H0.5c0,0,0,0,0,0C0.2,1.7,0,1.9,0,2.1v15.2c0,0.1,0,0.2,0.1,0.3
+							c0.1,0.1,0.1,0.1,0.2,0.1l0,0h15.2c0,0,0,0,0,0c0.3,0,0.4-0.2,0.4-0.5V8.4h-0.9V16.8z"/>
+						<polygon fill="currentColor" points="12.2,0 12.2,0.9 16.2,0.9 8,9.1 8.7,9.8 16.9,1.6 16.9,5.6 17.8,5.6 17.8,0 	"/>
+					</g>
+					</svg>`;
+};

@@ -1,11 +1,16 @@
 @import '../../variables';
 
-.action_notification-wrapper {
-	position: absolute;
-	top: 0.25rem;
+.action_notification-wrapper,
+.trade-notify-wrapper {
+	// position: absolute;
+	// top: 0.25rem;
 	display: flex;
 	// justify-content: center;
 	align-items: center;
+
+	&:hover {
+		opacity: 0.75;
+	}
 
 	.notification-info {
 		color: $link;
@@ -37,6 +42,7 @@
 
 	.action_notification-text {
 		font-size: $font-size-subtext;
+		line-height: $font-size-subtext;
 		text-transform: uppercase;
 	}
 
@@ -72,13 +78,11 @@
 	.icon-copy-1,
 	.icon-tamer-01,
 	.arrow-1,
-	.trans-history-1,
-	.trans-history-2,
-	.trans-history-3,
+	.trans-history,
 	.cancel-cross-1 {
 		fill: $link;
 	}
-	.trans-history-4,
+
 	.cancel-cross-3 {
 		stroke: $link;
 	}

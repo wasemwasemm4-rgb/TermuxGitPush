@@ -60,7 +60,7 @@ const transport = () => {
 			user: SMTP_USER(),
 			pass: SMTP_PASSWORD()
 		},
-		logger: true,
+		logger: true
 	});
 };
 
@@ -75,6 +75,42 @@ const getValidLanguage = (language = DEFAULT_LANGUAGE()) => {
 	return DEFAULT_LANGUAGE();
 };
 
+const sendSMTPTestEmail = async (params, smtp) => {
+	return new Promise((resolve, reject) => {
+		let transport;
+		if (Object.keys(smtp).length > 0) {
+			transport = nodemailer.createTransport({
+				host: smtp.server || SMTP_SERVER(),
+				port: smtp.port || SMTP_PORT(),
+				secure: false,
+				auth: {
+					user: smtp.user || SMTP_USER(),
+					pass: smtp.password || SMTP_PASSWORD()
+				},
+				logger: true
+			});
+		} else {
+			transport = nodemailer.createTransport({
+				host: SMTP_SERVER(),
+				port: SMTP_PORT(),
+				secure: false,
+				auth: {
+					user: SMTP_USER(),
+					pass: SMTP_PASSWORD()
+				},
+				logger: true
+			});
+		}
+
+		transport.sendMail(params, (err, info) => {
+			if (err) {
+				return reject(err);
+			}
+			return resolve();
+		});
+	});
+};
+
 module.exports = {
 	// sendAwsEmail,
 	// sendAwsRawEmail,
@@ -82,5 +118,6 @@ module.exports = {
 	formatTimezone,
 	getCountryFromIp,
 	sendSMTPEmail,
-	getValidLanguage
+	getValidLanguage,
+	sendSMTPTestEmail
 };

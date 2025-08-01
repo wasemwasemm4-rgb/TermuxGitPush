@@ -1,27 +1,27 @@
 import React from 'react';
 import math from 'mathjs';
-import STRINGS from '../../config/localizedStrings';
+import STRINGS from 'config/localizedStrings';
 import {
 	BASE_CURRENCY,
-	CURRENCY_PRICE_FORMAT,
+	// CURRENCY_PRICE_FORMAT,
 	DEFAULT_COIN_DATA,
-} from '../../config/constants';
-import { formatToCurrency } from '../../utils/currency';
+} from 'config/constants';
+import { formatToCurrency } from 'utils/currency';
 
 const TextHolders = ({ ordersOfSymbol, currencySymbol, hold, name }) => {
 	const ordersText =
 		ordersOfSymbol > 1
-			? STRINGS['WALLET.ORDERS_PLURAL']
-			: STRINGS['WALLET.ORDERS_SINGULAR'];
+			? STRINGS['TOOLS.OPEN_ORDERS']
+			: STRINGS['WALLET.OPEN_ORDERS_SINGULAR'];
 	const symbolComponent = <span className="text-uppercase">{name}</span>;
 	return (
 		<div>
 			{STRINGS.formatString(
-				STRINGS['WALLET.HOLD_ORDERS'],
-				ordersOfSymbol,
-				ordersText,
-				hold,
-				currencySymbol,
+				STRINGS['WALLET.ORDERS_HOLD'],
+				<span className="hold-orders-text">{ordersOfSymbol}</span>,
+				<span className="hold-orders-text text-lowercase">{ordersText}</span>,
+				<span className="hold-orders-text">{hold}</span>,
+				<span className="hold-orders-text">{currencySymbol}</span>,
 				symbolComponent
 			)}
 		</div>
@@ -29,16 +29,16 @@ const TextHolders = ({ ordersOfSymbol, currencySymbol, hold, name }) => {
 };
 
 const Section = ({ symbol = BASE_CURRENCY, balance, orders, price, coins }) => {
-	const { fullname, min, ...rest } = coins[symbol] || DEFAULT_COIN_DATA;
+	const { fullname, min, display_name } = coins[symbol] || DEFAULT_COIN_DATA;
 	const ordersOfSymbol = orders.filter((order) => {
 		if (symbol === BASE_CURRENCY) {
 			return order.side === 'buy';
 		} else {
-			return order.symbol === symbol && order.side === 'sell';
+			return order.symbol.split('-')[0] === symbol && order.side === 'sell';
 		}
 	}).length;
 
-	const amountFormat = CURRENCY_PRICE_FORMAT;
+	// const amountFormat = CURRENCY_PRICE_FORMAT;
 	// const amountFormat =
 	// 	symbol === BASE_CURRENCY
 	// 		? STRINGS[`${BASE_CURRENCY.toUpperCase()}_PRICE_FORMAT`]
@@ -50,34 +50,34 @@ const Section = ({ symbol = BASE_CURRENCY, balance, orders, price, coins }) => {
 	return (
 		<div className="wallet_section-content-wrapper">
 			<div className="wallet_section-content d-flex flex-column">
-				<div className="d-flex flex-column">
-					<div>{STRINGS['WALLET.TOTAL_ASSETS']}:</div>
-					<div>
-						{STRINGS.formatString(
+				{/* <div className="d-flex flex-column">
+						<div>{STRINGS['WALLET.TOTAL_ASSETS']}:</div>
+						<div>
+							{STRINGS.formatString(
 							amountFormat,
 							formatToCurrency(total, min),
-							rest.symbol.toUpperCase()
-						)}
-					</div>
-				</div>
+							display_name
+							)}
+						</div>
+				</div> */}
 				{ordersOfSymbol > 0 && (
 					<TextHolders
 						ordersOfSymbol={ordersOfSymbol}
-						currencySymbol={rest.symbol.toUpperCase()}
+						currencySymbol={display_name}
 						hold={formatToCurrency(hold, min)}
-						name={rest.symbol.toUpperCase() || fullname}
+						name={display_name || fullname}
 					/>
 				)}
-				<div className="d-flex flex-column">
-					<div>{STRINGS['WALLET.AVAILABLE_WITHDRAWAL']}:</div>
-					<div>
-						{STRINGS.formatString(
+				{/* <div className="d-flex flex-column">
+						<div>{STRINGS['WALLET.AVAILABLE_WITHDRAWAL']}:</div>
+						<div>
+							{STRINGS.formatString(
 							amountFormat,
 							formatToCurrency(available, min),
-							rest.symbol.toUpperCase()
-						)}
-					</div>
-				</div>
+							display_name
+							)}
+						</div>
+				</div> */}
 			</div>
 		</div>
 	);

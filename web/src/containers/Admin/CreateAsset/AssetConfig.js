@@ -1,14 +1,28 @@
 import React, { Fragment, useState } from 'react';
-import { Input, InputNumber, Button, Form, Checkbox, message, Modal } from 'antd';
+import {
+	Input,
+	InputNumber,
+	Button,
+	Form,
+	Checkbox,
+	message,
+	Modal,
+} from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import _toUpper from 'lodash/toUpper';
+import _get from 'lodash/get';
 
+import { STATIC_ICONS } from 'config/icons';
 import Coins from '../Coins';
 import ColorPicker from '../ColorPicker';
-import { getCoinInfo, storeAsset } from '../AdminFinancials/action';
+import {
+	getCoinInfo,
+	storeAsset,
+	uploadCoinLogo,
+} from '../AdminFinancials/action';
 
 const CONTACT_DESCRIPTION_LINK =
-	'https://metamask.zendesk.com/hc/en-us/articles/360015488811-What-is-a-Token-Contract-Address-';
+	'https://support.metamask.io/managing-my-tokens/custom-tokens/how-to-find-a-token-contract-address/';
 
 const { Search, TextArea } = Input;
 
@@ -27,6 +41,7 @@ const { Search, TextArea } = Input;
 const AssetConfig = (props) => {
 	const [isSupply, setIsApply] = useState(false);
 	const [showPresetAlert, setPresetAlert] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
 	const [form] = Form.useForm();
 	const {
 		coinFormData = {},
@@ -50,12 +65,16 @@ const AssetConfig = (props) => {
 				const body = {
 					...props.coinFormData,
 				};
-				let coinData = props.coins.filter((coin) => !coin.active).map((coin) => {
-					return coin.symbol;
-				});
+				let coinData = props.coins
+					.filter((coin) => !coin.active)
+					.map((coin) => {
+						return coin.symbol;
+					});
 				let presentKeys = exchangeCoins.map((coin) => coin.symbol);
 				if (presentKeys.includes(body.symbol)) {
-					message.error(`${_toUpper(body.symbol)} is already added in the exchange.`);
+					message.error(
+						`${_toUpper(body.symbol)} is already added in the exchange.`
+					);
 				} else if (coinData.includes(body.symbol)) {
 					setPresetAlert(true);
 				} else {
@@ -75,8 +94,9 @@ const AssetConfig = (props) => {
 	};
 
 	const updateAsset = async () => {
+		const { logoFile, iconName, ...resetFormData } = props.coinFormData;
 		const body = {
-			...props.coinFormData,
+			...resetFormData,
 		};
 		if (!body.estimated_price) {
 			body.estimated_price = 1;
@@ -96,7 +116,21 @@ const AssetConfig = (props) => {
 		if (body.decimals) {
 			body.decimals = parseInt(body.decimals, 10);
 		}
+		setSubmitting(true);
 		try {
+			if (logoFile) {
+				let formData = new FormData();
+				formData.append('name', iconName);
+				formData.append('file_name', iconName);
+				formData.append('file', logoFile);
+				const logo = await uploadCoinLogo(formData);
+				body.logo = _get(logo, 'data.path', '');
+				props.handleBulkUpdate({
+					logo: body.logo,
+					logoFile: null,
+					iconName: '',
+				});
+			}
 			const res = await storeAsset(body);
 			if (props.getCoins) {
 				await props.getCoins();
@@ -107,10 +141,12 @@ const AssetConfig = (props) => {
 			if (res) {
 				handleNext();
 			}
+			setSubmitting(false);
 		} catch (error) {
 			if (error && error.data) {
 				message.error(error.data.message);
 			}
+			setSubmitting(false);
 		}
 	};
 
@@ -123,15 +159,11 @@ const AssetConfig = (props) => {
 	// };
 
 	const handleSearch = async (address) => {
-		const {
-			handleBulkUpdate,
-			handleMetaChange,
-			coinFormData
-		} = props;
+		const { handleBulkUpdate, handleMetaChange, coinFormData } = props;
 		const params = {
 			address,
-			network: coinFormData.network
-		}
+			network: coinFormData.network,
+		};
 		try {
 			const res = await getCoinInfo(params);
 			if (res) {
@@ -158,9 +190,11 @@ const AssetConfig = (props) => {
 	};
 
 	const checkCoin = (rule, value, callback) => {
-		let coinData = props.coins.filter((coin) => coin.active).map((coin) => {
-			return coin.symbol;
-		});
+		let coinData = props.coins
+			.filter((coin) => coin.active)
+			.map((coin) => {
+				return coin.symbol;
+			});
 		if (coinData.includes(value)) {
 			callback('This symbol already exists for this asset');
 		} else {
@@ -181,7 +215,7 @@ const AssetConfig = (props) => {
 	};
 
 	const renderFields = () => {
-		const { coinFormData = {}, handleChange } = props;
+		const { coinFormData = {}, handleMetaChange } = props;
 
 		if (
 			coinFormData.type === 'blockchain' &&
@@ -208,9 +242,11 @@ const AssetConfig = (props) => {
 						<Search
 							enterButton="Search"
 							name="contract"
-							onChange={handleChange}
+							onChange={(e) => {
+								handleMetaChange(e.target.value, 'contract');
+							}}
 							onSearch={handleSearch}
-							value={coinFormData.contract}
+							value={coinFormData.meta ? coinFormData.meta.contract : ''}
 						/>
 					</Form.Item>
 				</div>
@@ -233,7 +269,11 @@ const AssetConfig = (props) => {
 									},
 								]}
 							>
-								<Input onChange={(e) => 'a'} />
+								<Input
+									onChange={(e) => {
+										handleMetaChange(e.target.value, 'blockchainName');
+									}}
+								/>
 							</Form.Item>
 						</div>
 					) : null}
@@ -256,9 +296,11 @@ const AssetConfig = (props) => {
 						<Input
 							enterButton="Search"
 							name="contract"
-							onChange={handleChange}
+							onChange={(e) => {
+								handleMetaChange(e.target.value, 'contract');
+							}}
 							onSearch={handleSearch}
-							value={coinFormData.contract}
+							value={coinFormData.meta ? coinFormData.meta.contract : ''}
 						/>
 					</Form.Item>
 				</div>
@@ -352,8 +394,8 @@ const AssetConfig = (props) => {
 													message: 'This field is required!',
 												},
 												{
-													max: 5,
-													message: 'Symbol must be maximum 5 characters.',
+													max: 8,
+													message: 'Symbol must be maximum 8 characters.',
 												},
 												{
 													min: 2,
@@ -396,7 +438,7 @@ const AssetConfig = (props) => {
 							<div>Write a short description of this asset</div>
 							<TextArea
 								placeholder="Input a message"
-								name="message"
+								name="description"
 								rows={3}
 								onChange={handleChange}
 							/>
@@ -409,7 +451,19 @@ const AssetConfig = (props) => {
 						<div className="md-field-wrap">
 							{coinFormData.logo ? (
 								<img
-									src={coinFormData.logo || ''}
+									src={
+										coinFormData.logo.type
+											? STATIC_ICONS['MISSING_ICON']
+											: coinFormData.logo
+											? coinFormData.logo
+											: STATIC_ICONS['COIN_ICONS'][
+													(coinFormData.symbol || '').toLowerCase()
+											  ]
+											? STATIC_ICONS['COIN_ICONS'][
+													(coinFormData.symbol || '').toLowerCase()
+											  ]
+											: STATIC_ICONS['MISSING_ICON']
+									}
 									alt="coin"
 									className="preview-icon"
 								/>
@@ -560,7 +614,12 @@ const AssetConfig = (props) => {
 						Back
 					</Button>
 					<div className="separator"></div>
-					<Button type="primary" className="green-btn" htmlType="submit">
+					<Button
+						type="primary"
+						className="green-btn"
+						htmlType="submit"
+						disabled={submitting}
+					>
 						Next
 					</Button>
 				</div>
@@ -571,13 +630,23 @@ const AssetConfig = (props) => {
 				onCancel={handleCloseAlert}
 			>
 				<div className="create-asset-container">
-					{`${_toUpper(coinFormData.symbol)} is already created by some one. Do you really want to add it on exchange?`}
+					{`${_toUpper(
+						coinFormData.symbol
+					)} is already created by some one. Do you really want to add it on exchange?`}
 					<div className="btn-wrapper">
-						<Button type="primary" className="green-btn" onClick={handleCloseAlert}>
+						<Button
+							type="primary"
+							className="green-btn"
+							onClick={handleCloseAlert}
+						>
 							Cancel
 						</Button>
 						<div className="separator"></div>
-						<Button type="primary" className="green-btn" onClick={handlePresetAdd}>
+						<Button
+							type="primary"
+							className="green-btn"
+							onClick={handlePresetAdd}
+						>
 							Okay
 						</Button>
 					</div>

@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
+import { connect } from 'react-redux';
+import { bindActionCreators } from 'redux';
 import classnames from 'classnames';
 import EventListener from 'react-event-listener';
 import { Helmet } from 'react-helmet';
@@ -7,30 +9,33 @@ import { FIT_SCREEN_HEIGHT } from 'config/constants';
 import { isBrowser, isMobile } from 'react-device-detect';
 import isEqual from 'lodash.isequal';
 import debounce from 'lodash.debounce';
+import { browserHistory } from 'react-router';
+import querystring from 'query-string';
 // import { CaretLeftOutlined, CaretRightOutlined } from '@ant-design/icons';
 // import { Button } from 'antd';
 import { setSideBarState, getSideBarState } from 'utils/sideBar';
-import AppMenuSidebar from '../../components/AppMenuSidebar';
+import AppMenuSidebar from 'components/AppMenuSidebar';
 import { addElements, injectHTML } from 'utils/script';
+import { SuccessDisplay } from 'components';
 
 import {
 	NOTIFICATIONS,
 	CONTACT_FORM,
 	HELPFUL_RESOURCES_FORM,
 	FEES_STRUCTURE_AND_LIMITS,
+	MARKET_SELECTOR,
+	CONNECT_VIA_DESKTOP,
 	RISK_PORTFOLIO_ORDER_WARING,
 	RISKY_ORDER,
 	LOGOUT_CONFORMATION,
-} from '../../actions/appActions';
+	setError,
+} from 'actions/appActions';
+import { storeTools } from 'actions/toolsAction';
 import STRINGS from 'config/localizedStrings';
 
-import {
-	getThemeClass,
-	getChatMinimized,
-	setChatMinimized,
-} from '../../utils/theme';
-import { checkUserSessionExpired } from '../../utils/utils';
-import { getTokenTimestamp, isLoggedIn, isAdmin } from '../../utils/token';
+import { getChatMinimized, setChatMinimized } from 'utils/theme';
+// eslint-disable-next-line
+import { isLoggedIn, isAdmin, hasPermissions } from 'utils/token';
 import {
 	AppBar,
 	AppMenuBar,
@@ -42,7 +47,7 @@ import {
 	SnackNotification,
 	SnackDialog,
 	PairTabs,
-} from '../../components';
+} from 'components';
 import {
 	ContactForm,
 	HelpfulResourcesForm,
@@ -57,18 +62,20 @@ import LogoutConfirmation from '../Summary/components/LogoutConfirmation';
 import RiskyOrder from '../Trade/components/RiskyOrder';
 import AppFooter from '../../components/AppFooter';
 import OperatorControls from 'containers/OperatorControls';
+import MarketSelector from 'components/AppBar/MarketSelector';
+import ConnectViaDesktop from 'containers/Stake/components/ConnectViaDesktop';
+import ConfigureApps from 'containers/Apps/ConfigureApps';
 
-import {
-	getClasesForLanguage,
-	getFontClassForLanguage,
-} from '../../utils/string';
-import { getExchangeInitialized } from '../../utils/initialize';
+import { getClasesForLanguage, getFontClassForLanguage } from 'utils/string';
+import { getExchangeInitialized } from 'utils/initialize';
 
 import Socket from './Socket';
 import Container from './Container';
 import GetSocketState from './GetSocketState';
 import withEdit from 'components/EditProvider/withEdit';
 import withConfig from 'components/ConfigProvider/withConfig';
+import { ETHEREUM_EVENTS } from 'actions/stakingActions';
+import { renderConfirmSignout } from 'components/AppBar/Utils';
 
 class App extends Component {
 	state = {
@@ -83,18 +90,22 @@ class App extends Component {
 		sidebarFitHeight: false,
 		isSidebarOpen: getSideBarState(),
 		activeMenu: '',
+		paramsData: {},
+		isCustomNotification: false,
+		isTradeTab: false,
+		isProTrade: false,
+		isQuickTrade: false,
+		isLogout: false,
+		isOnline: navigator.onLine,
 	};
 	ordersQueued = [];
 	limitTimeOut = null;
 
-	componentWillMount() {
+	UNSAFE_componentWillMount() {
 		const chatIsClosed = getChatMinimized();
 		this.setState({
 			chatIsClosed,
 		});
-		if (isLoggedIn() && checkUserSessionExpired(getTokenTimestamp())) {
-			this.logout('Token is expired');
-		}
 	}
 
 	componentDidMount() {
@@ -103,6 +114,9 @@ class App extends Component {
 			injected_values,
 			injected_html,
 			plugins_injected_html,
+			initializeTools,
+			loadBlockchainData,
+			disconnectWallet,
 		} = this.props;
 
 		if (
@@ -124,9 +138,40 @@ class App extends Component {
 			5000
 		);
 
+		initializeTools();
 		addElements(injected_values, 'body');
 		injectHTML(injected_html, 'body');
 		injectHTML(plugins_injected_html, 'body');
+		const qs = querystring.parse(this.props.location.search);
+		if (
+			Object.keys(qs).length &&
+			!this.props.location.pathname.includes('trade') &&
+			!this.props.location.pathname.includes('quick-trade')
+		) {
+			const { success_alert, error_alert } = qs;
+			if (success_alert) {
+				const paramsData = { status: true, message: success_alert };
+				this.setState({ paramsData, isCustomNotification: true });
+			} else if (error_alert) {
+				const paramsData = { status: false, message: error_alert };
+				this.setState({ paramsData, isCustomNotification: true });
+			}
+		}
+
+		if (!isMobile && window.ethereum) {
+			window.ethereum.on(ETHEREUM_EVENTS.ACCOUNT_CHANGE, ([account]) => {
+				loadBlockchainData();
+				if (!account) {
+					disconnectWallet();
+				}
+			});
+
+			window.ethereum.on(ETHEREUM_EVENTS.NETWORK_CHANGE, () => {
+				window.location.reload();
+			});
+		}
+		window.addEventListener('online', this.updateNetworkStatus);
+		window.addEventListener('offline', this.updateNetworkStatus);
 	}
 
 	UNSAFE_componentWillReceiveProps(nextProps) {
@@ -135,7 +180,10 @@ class App extends Component {
 			nextProps.activeNotification.timestamp !==
 			this.props.activeNotification.timestamp
 		) {
-			if (nextProps.activeNotification.type !== '') {
+			if (
+				nextProps.activeNotification.type !== '' &&
+				nextProps.activeNotification.type !== NOTIFICATIONS.ORDERS
+			) {
 				this.onOpenDialog();
 			} else {
 				this.onCloseDialog();
@@ -176,10 +224,38 @@ class App extends Component {
 	}
 
 	componentDidUpdate(prevProps) {
+		const { tools, activeTheme } = this.props;
+		const params = new URLSearchParams(window.location.search);
 		if (
 			JSON.stringify(prevProps.location) !== JSON.stringify(this.props.location)
 		) {
 			this.setActiveMenu();
+		}
+		if (JSON.stringify(prevProps.tools) !== JSON.stringify(tools)) {
+			storeTools(tools);
+		}
+		const { themeOptions, router } = this.props;
+		const isValidTheme = themeOptions.some(
+			(option) => option.value === this.props?.router?.location?.query?.theme
+		);
+		if (prevProps?.activeTheme !== activeTheme) {
+			if (!params.has('theme')) {
+				params.set('theme', activeTheme);
+				const currentUrl = window.location.href.split('?')[0];
+				const newUrl = `${currentUrl}?${params.toString()}`;
+				router.replace(newUrl);
+			}
+		} else if (params.has('theme') && !isValidTheme) {
+			params.set('theme', 'dark');
+			const currentUrl = window.location.href.split('?')[0];
+			const newUrl = `${currentUrl}?${params.toString()}`;
+			this.props.router.replace(newUrl);
+		}
+		if (!this.state.isOnline) {
+			this.props.setError({
+				message: STRINGS['ERROR_TAB.NETWORK_ERROR_MESSAGE'],
+			});
+			return;
 		}
 	}
 
@@ -196,7 +272,13 @@ class App extends Component {
 			clearTimeout(this.state.idleTimer);
 		}
 		clearTimeout(this.limitTimeOut);
+		window.removeEventListener('online', this.updateNetworkStatus);
+		window.removeEventListener('offline', this.updateNetworkStatus);
 	}
+
+	updateNetworkStatus = () => {
+		this.setState({ isOnline: navigator.onLine });
+	};
 
 	checkPath = (path) => {
 		var sheet = document.createElement('style');
@@ -224,8 +306,8 @@ class App extends Component {
 
 	handleFitHeight = (path) => {
 		let pathname = this.getClassForActivePath(path);
-		if (path.indexOf('/trade/add/tabs') !== -1) {
-			pathname = '/trade/add/tabs';
+		if (path.indexOf('/markets') !== -1) {
+			pathname = '/markets';
 		}
 		this.setState({ sidebarFitHeight: FIT_SCREEN_HEIGHT.includes(pathname) });
 	};
@@ -242,41 +324,67 @@ class App extends Component {
 		this.setState({ activeMenu });
 	};
 
-	handleMenuChange = (path = '', cb) => {
-		const { router, pairs } = this.props;
-
-		let pair = '';
-		if (Object.keys(pairs).length) {
-			pair = Object.keys(pairs)[0];
+	handleMenuChange = (path = '', cb, enableTrade = false) => {
+		if (enableTrade && path === '/trade') {
+			this.setState({ isTradeTab: !this.state.isTradeTab });
 		} else {
-			pair = this.props.pair;
-		}
+			this.setState({
+				isTradeTab: false,
+				isQuickTrade: false,
+				isProTrade: false,
+			});
+			const { router, pairs } = this.props;
 
-		switch (path) {
-			case 'logout':
-				this.logout();
-				break;
-			case 'help':
-				this.props.openHelpfulResourcesForm();
-				break;
-			case 'quick-trade':
-				router.push(`/quick-trade/${pair}`);
-				break;
-			default:
-				router.push(path);
-		}
-
-		this.setState({ activePath: path }, () => {
-			if (cb) {
-				cb();
+			let pair = '';
+			if (Object.keys(pairs).length) {
+				pair = Object.keys(pairs)[0];
+			} else {
+				pair = this.props.pair;
 			}
-		});
+
+			switch (path) {
+				case 'logout':
+					this.setState({ isLogout: true });
+					break;
+				case 'help':
+					this.props.openHelpfulResourcesForm();
+					break;
+				case 'quick-trade':
+					router.push(`/quick-trade/${pair}`);
+					break;
+				case 'trades':
+					break;
+				default:
+					router.push(path);
+			}
+
+			this.setState({ activePath: path }, () => {
+				if (cb) {
+					cb();
+				}
+			});
+		}
 	};
 
 	goToPage = (path) => {
 		if (this.props.location.pathname !== path) {
 			this.props.router.push(path);
 		}
+	};
+
+	goToPair = (pair, isQuickTrade) => {
+		const { router } = this.props;
+
+		if (isQuickTrade) {
+			router.push(`/quick-trade/${pair}`);
+		} else {
+			router.push(`/trade/${pair}`);
+		}
+	};
+
+	onViewMarketsClick = () => {
+		const { setTradeTab } = this.props;
+		setTradeTab(3);
 	};
 
 	logout = (message = '') => {
@@ -330,10 +438,14 @@ class App extends Component {
 				return 'home';
 			default:
 		}
-		if (path.indexOf('/trade/') === 0) {
+		if (path.indexOf('/trade/') === 0 || path.indexOf('trade/') === 0) {
 			return 'trade';
 		} else if (path.indexOf('/quick-trade/') === 0) {
 			return 'quick-trade';
+		} else if (path.indexOf('/chart-embed') === 0) {
+			return 'chart-embed';
+		} else if (path.indexOf('/stake') === 0) {
+			return 'stake';
 		}
 
 		return '';
@@ -342,7 +454,7 @@ class App extends Component {
 	renderDialogContent = ({ type, data }, prices = {}) => {
 		const { icons: ICONS, config_level, openContactForm } = this.props;
 		switch (type) {
-			case NOTIFICATIONS.ORDERS:
+			// case NOTIFICATIONS.ORDERS:
 			case NOTIFICATIONS.TRADES:
 			case NOTIFICATIONS.WITHDRAWAL:
 				return (
@@ -411,6 +523,7 @@ class App extends Component {
 					<Notification
 						type={type}
 						data={rest}
+						coins={this.props.coins}
 						onConfirm={data.onConfirm}
 						onBack={this.onCloseDialog}
 					/>
@@ -430,9 +543,37 @@ class App extends Component {
 						type={type}
 						data={data}
 						onClose={this.onCloseDialog}
-						activeTheme={this.props.activeTheme}
 					/>
 				);
+			case MARKET_SELECTOR:
+				return (
+					<MarketSelector
+						onViewMarketsClick={this.onViewMarketsClick}
+						closeAddTabMenu={this.onCloseDialog}
+						addTradePairTab={this.goToPair}
+						wrapperClassName="modal-market-menu"
+					/>
+				);
+			case NOTIFICATIONS.METAMASK_ERROR:
+				return (
+					<MessageDisplay
+						iconId="META_MASK_NOT_FOUND"
+						iconPath={ICONS['META_MASK_NOT_FOUND']}
+						onClick={this.onCloseDialog}
+						text={data}
+						title={STRINGS['STAKE.INSTALL_METAMASK_TITLE']}
+						titleId={'STAKE.INSTALL_METAMASK_TITLE'}
+					/>
+				);
+			case NOTIFICATIONS.CONFIGURE_APPS:
+				return (
+					<ConfigureApps
+						onClose={this.onCloseDialog}
+						onRemove={data.onRemove}
+					/>
+				);
+			case CONNECT_VIA_DESKTOP:
+				return <ConnectViaDesktop onClose={this.onCloseDialog} />;
 			case RISK_PORTFOLIO_ORDER_WARING:
 				return <SetOrderPortfolio data={data} onClose={this.onCloseDialog} />;
 			case LOGOUT_CONFORMATION:
@@ -512,6 +653,15 @@ class App extends Component {
 					/>
 				);
 			}
+			case NOTIFICATIONS.MOVE_XHT: {
+				return (
+					<Notification
+						type={type}
+						data={data}
+						onCloseDialog={this.onCloseDialog}
+					/>
+				);
+			}
 			default:
 				return <div />;
 		}
@@ -538,21 +688,41 @@ class App extends Component {
 		);
 	};
 
+	onCloseNotification = () => {
+		this.setState({ paramsData: {}, isCustomNotification: false });
+		this.props.location.search = '';
+	};
+
+	onHandleTradeTabs = (path = '') => {
+		this.setState({
+			isTradeTab: !this.state.isTradeTab,
+			isProTrade: true,
+			isQuickTrade: true,
+		});
+		browserHistory.push(path);
+	};
+
+	onHandleClose = () => {
+		this.setState({ isLogout: false });
+	};
+
+	onHandleLogout = () => {
+		this.onHandleClose();
+		this.logout();
+	};
+
 	render() {
 		const {
 			symbol,
-			pair,
 			children,
 			activeNotification,
 			// prices,
 			// verification_level,
 			activeLanguage,
 			// openContactForm,
-			activeTheme,
 			// unreadMessages,
 			router,
 			location,
-			enabledPlugins,
 			constants = { captcha: {} },
 			isEditMode,
 			// user,
@@ -561,14 +731,19 @@ class App extends Component {
 			pairsTradesFetched,
 			icons: ICONS,
 			menuItems,
+			pairs,
 		} = this.props;
 
 		const {
 			dialogIsOpen,
 			appLoaded,
 			chatIsClosed,
+			isCustomNotification,
+			paramsData,
 			// sidebarFitHeight,
 			// isSidebarOpen,
+			isProTrade,
+			isQuickTrade,
 		} = this.state;
 
 		const languageClasses = getClasesForLanguage(activeLanguage, 'array');
@@ -586,14 +761,19 @@ class App extends Component {
 			: this.getClassForActivePath(this.props.location.pathname);
 
 		const isHome = this.props.location.pathname === '/';
+		const isStakePage = activePath === 'stake';
+		const isChartEmbed = activePath === 'chart-embed';
 		const isMenubar = !isHome;
 		const isMenuSider =
-			activePath !== 'trade' && activePath !== 'quick-trade' && !isHome;
+			activePath !== 'trade' &&
+			activePath !== 'quick-trade' &&
+			activePath !== 'chart-embed' &&
+			!isHome;
 		const showFooter = !isMobile || isHome;
 
-		const homeBackgroundProps = isHome
+		const stakeBackgroundProps = isStakePage
 			? {
-					backgroundImage: `url(${ICONS['EXCHANGE_LANDING_PAGE']})`,
+					backgroundImage: `url(${ICONS['STAKING_BACKGROUND']})`,
 					backgroundSize: '100%',
 					backgroundRepeat: 'repeat-y',
 			  }
@@ -619,7 +799,6 @@ class App extends Component {
 					/>
 					<div
 						className={classnames(
-							getThemeClass(activeTheme),
 							activePath,
 							symbol,
 							fontClass,
@@ -635,7 +814,6 @@ class App extends Component {
 							className={classnames(
 								'app_container',
 								'd-flex',
-								getThemeClass(activeTheme),
 								activePath,
 								symbol,
 								fontClass,
@@ -646,7 +824,6 @@ class App extends Component {
 									'layout-edit': isEditMode && isBrowser,
 								}
 							)}
-							style={homeBackgroundProps}
 						>
 							<EventListener
 								target="window"
@@ -656,15 +833,16 @@ class App extends Component {
 								onClick={this.resetTimer}
 								onKeyPress={this.resetTimer}
 							/>
-							<div className="d-flex flex-column f-1">
-								{!isHome && (
+							<div className="d-flex flex-column f-1 w-100">
+								{!isChartEmbed && (
 									<AppBar
 										router={router}
 										menuItems={menuItems}
 										activePath={this.state.activeMenu}
 										onMenuChange={this.handleMenuChange}
+										isHome={isHome}
 									>
-										{isBrowser && isMenubar && isLoggedIn() && (
+										{isBrowser && (
 											<AppMenuBar
 												menuItems={menuItems}
 												activePath={this.state.activeMenu}
@@ -673,7 +851,7 @@ class App extends Component {
 										)}
 									</AppBar>
 								)}
-								{isBrowser && !isHome && (
+								{isBrowser && !isHome && !isChartEmbed && (
 									<PairTabs
 										activePath={activePath}
 										location={location}
@@ -688,6 +866,7 @@ class App extends Component {
 										{
 											'app_container-secondary-content': isMenubar,
 											no_bottom_navigation: isHome,
+											'chart-embed': isChartEmbed,
 										}
 									)}
 								>
@@ -707,8 +886,10 @@ class App extends Component {
 											{
 												'overflow-y': !isMobile,
 												no_bottom_navigation: isHome,
+												'background-color-layer': isStakePage,
 											}
 										)}
+										style={stakeBackgroundProps}
 									>
 										<Container
 											router={router}
@@ -738,22 +919,14 @@ class App extends Component {
 													className="sidebar-toggle"
 												/>
 											</div>
-											<Sidebar
-												activePath={activePath}
-												logout={this.logout}
-												// help={openContactForm}
-												theme={activeTheme}
-												isLogged={isLoggedIn()}
-												help={openHelpfulResourcesForm}
-												pair={pair}
-												enabledPlugins={enabledPlugins}
-												minimizeChat={this.minimizeChat}
-												chatIsClosed={chatIsClosed}
-												unreadMessages={unreadMessages}
-												sidebarFitHeight={sidebarFitHeight}
-											/>
 										</div>
 									)} */}
+									{this.state.isLogout &&
+										renderConfirmSignout(
+											this.state.isLogout,
+											this.onHandleClose,
+											this.onHandleLogout
+										)}
 									<Dialog
 										isOpen={dialogIsOpen && !isHome}
 										label="hollaex-modal"
@@ -774,32 +947,38 @@ class App extends Component {
 													activeNotification.type === NOTIFICATIONS.STAKE ||
 													activeNotification.type === NOTIFICATIONS.UNSTAKE ||
 													activeNotification.type ===
-														NOTIFICATIONS.EARLY_UNSTAKE,
+														NOTIFICATIONS.EARLY_UNSTAKE ||
+													activeNotification.type === NOTIFICATIONS.MOVE_XHT,
+											},
+											{
+												menu: activeNotification.type === MARKET_SELECTOR,
+												'signout-confirmation-popup-wrapper':
+													activeNotification.type === LOGOUT_CONFORMATION,
 											}
 										)}
 										onCloseDialog={this.onCloseDialog}
 										shouldCloseOnOverlayClick={shouldCloseOnOverlayClick}
-										theme={activeTheme}
 										showCloseText={
 											!(
 												activeNotification.type === NOTIFICATIONS.STAKE ||
 												activeNotification.type === NOTIFICATIONS.UNSTAKE ||
 												activeNotification.type ===
 													NOTIFICATIONS.EARLY_UNSTAKE ||
+												activeNotification.type === NOTIFICATIONS.MOVE_XHT ||
 												activeNotification.type === CONTACT_FORM ||
 												activeNotification.type === HELPFUL_RESOURCES_FORM ||
 												activeNotification.type === NOTIFICATIONS.NEW_ORDER ||
 												(activeNotification.type === NOTIFICATIONS.TRADES &&
 													!isMobile) ||
-												(activeNotification.type === NOTIFICATIONS.ORDERS &&
-													!isMobile) ||
+												// (activeNotification.type === NOTIFICATIONS.ORDERS &&
+												// 	!isMobile) ||
 												activeNotification.type === NOTIFICATIONS.ERROR ||
 												activeNotification.type ===
 													NOTIFICATIONS.UNDEFINED_ERROR
 											)
 										}
 										compressed={
-											activeNotification.type === NOTIFICATIONS.ORDERS ||
+											// activeNotification.type === NOTIFICATIONS.ORDERS ||
 											activeNotification.type === NOTIFICATIONS.TRADES
 										}
 										style={{ 'z-index': 100 }}
@@ -808,7 +987,6 @@ class App extends Component {
 											this.renderDialogContent(
 												activeNotification
 												// prices,
-												// activeTheme
 											)}
 									</Dialog>
 									{!isMobile && !isHome && features && features.chat && (
@@ -820,14 +998,18 @@ class App extends Component {
 										/>
 									)}
 								</div>
-								{isMobile && !isHome && (
+								{isMobile && !isHome && !isChartEmbed && (
 									<div className="app_container-bottom_bar">
 										<SidebarBottom
+											menuItems={menuItems}
 											isLogged={isLoggedIn()}
-											activePath={activePath}
-											pair={pair}
-											enabledPlugins={enabledPlugins}
-											features={features}
+											activePath={this.state.activeMenu}
+											onMenuChange={this.handleMenuChange}
+											tradeTab={this.state.isTradeTab}
+											onHandleTradeTabs={this.onHandleTradeTabs}
+											pairs={pairs}
+											isProTrade={isProTrade}
+											isQuickTrade={isQuickTrade}
 										/>
 									</div>
 								)}
@@ -840,26 +1022,43 @@ class App extends Component {
 						<SnackDialog />
 					</div>
 					<div
-						className={classnames(
-							getThemeClass(activeTheme),
-							languageClasses[0],
-							{
-								'layout-mobile': isMobile,
-								'layout-desktop': isBrowser,
-							}
-						)}
+						className={classnames(languageClasses[0], {
+							'layout-mobile': isMobile,
+							'layout-desktop': isBrowser,
+						})}
 					>
-						{showFooter && (
-							<AppFooter theme={activeTheme} constants={constants} />
-						)}
+						{showFooter && !isChartEmbed && <AppFooter constants={constants} />}
 					</div>
 				</div>
-				{isAdmin() && isBrowser && (
+				{hasPermissions() && isBrowser && !isChartEmbed && (
 					<OperatorControls initialData={this.props.location} />
 				)}
+				<Dialog
+					label="successful_dialog"
+					isOpen={isCustomNotification}
+					onCloseDialog={this.onCloseNotification}
+				>
+					<SuccessDisplay
+						onClick={this.onCloseNotification}
+						text={paramsData.message}
+						success={paramsData.status}
+						iconPath={null}
+					/>
+				</Dialog>
 			</ThemeProvider>
 		);
 	}
 }
 
-export default withEdit(withConfig(App));
+const mapStateToProps = (store) => ({
+	activeTheme: store.app.theme,
+});
+
+const mapDispatchToProps = (dispatch) => ({
+	setError: bindActionCreators(setError, dispatch),
+});
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(withEdit(withConfig(App)));
